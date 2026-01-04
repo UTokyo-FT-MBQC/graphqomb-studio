@@ -4,6 +4,7 @@ SPECIFICATION.md
 # Dependencies
 node_modules/
 .pnpm-store/
+package-lock.json
 
 # Build outputs
 .next/
@@ -59,6 +60,7 @@ env/
 # Type checking
 .mypy_cache/
 .pyright/
+*.tsbuildinfo
 
 # Misc
 *.bak

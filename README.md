@@ -33,7 +33,7 @@ A web application for visually editing Graph, Flow, and Schedule for Measurement
 ### Prerequisites
 
 - Node.js 20+
-- pnpm 9+
+- pnpm 10+
 - Python 3.12+
 - uv (Python package manager)
 
