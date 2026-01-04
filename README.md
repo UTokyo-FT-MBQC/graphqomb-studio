@@ -17,7 +17,7 @@ A web application for visually editing Graph, Flow, and Schedule for Measurement
 - Next.js 15 (App Router)
 - React 19
 - TypeScript 5.7+ (strict mode)
-- Tailwind CSS 4
+- Tailwind CSS 3.4
 - React Flow (graph visualization)
 - Zustand (state management)
 - Zod (validation)
@@ -97,10 +97,13 @@ graphqomb-studio/
 └── ...
 ```
 
-## API Endpoints
+## API Endpoints (Phase 3 - Planned)
+
+The following API endpoints are planned for Phase 3 and not yet implemented:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| GET | `/health` | Health check (implemented) |
 | POST | `/api/validate` | Validate graph and flow |
 | POST | `/api/schedule` | Compute measurement schedule |
 | POST | `/api/compute-zflow` | Auto-compute Z-flow from X-flow |

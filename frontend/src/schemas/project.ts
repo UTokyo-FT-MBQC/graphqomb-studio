@@ -202,7 +202,9 @@ export function validatePayload(data: unknown): ProjectPayload {
   return ProjectPayloadSchema.parse(data);
 }
 
-export function safeValidateProject(data: unknown): { success: true; data: Project } | { success: false; error: z.ZodError } {
+export function safeValidateProject(
+  data: unknown
+): { success: true; data: Project } | { success: false; error: z.ZodError } {
   const result = ProjectSchema.safeParse(data);
   if (result.success) {
     return { success: true, data: result.data };

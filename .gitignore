@@ -66,3 +66,6 @@ env/
 *.bak
 *.tmp
 .cache/
+
+# custom
+tmp/*

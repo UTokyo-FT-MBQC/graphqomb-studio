@@ -7,8 +7,8 @@
 
 "use client";
 
-import type { CustomNodeData } from "@/components/canvas/CustomNode";
 import { CustomEdge } from "@/components/canvas/CustomEdge";
+import type { CustomNodeData } from "@/components/canvas/CustomNode";
 import { CustomNode } from "@/components/canvas/CustomNode";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
@@ -17,13 +17,15 @@ import { createEdge, is3D } from "@/types";
 import {
   Background,
   Controls,
+  type EdgeTypes,
+  type NodeTypes,
   ReactFlow,
+  ReactFlowProvider,
   useEdgesState,
   useNodesState,
-  type NodeTypes,
-  type EdgeTypes,
+  useReactFlow,
 } from "@xyflow/react";
-import type { Connection, Node, Edge } from "@xyflow/react";
+import type { Connection, Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
@@ -75,7 +77,8 @@ function generateNodeId(existingIds: string[]): string {
   return id;
 }
 
-export function GraphCanvas2D(): React.ReactNode {
+// Inner component that uses useReactFlow (must be inside ReactFlowProvider)
+function GraphCanvas2DInner(): React.ReactNode {
   const project = useProjectStore((state) => state.project);
   const addNode = useProjectStore((state) => state.addNode);
   const updateNode = useProjectStore((state) => state.updateNode);
@@ -88,6 +91,8 @@ export function GraphCanvas2D(): React.ReactNode {
   const selectNode = useSelectionStore((state) => state.selectNode);
   const selectEdge = useSelectionStore((state) => state.selectEdge);
   const clearSelection = useSelectionStore((state) => state.clearSelection);
+
+  const { screenToFlowPosition } = useReactFlow();
 
   // Track if we're syncing from external state changes
   const isSyncing = useRef(false);
@@ -118,23 +123,33 @@ export function GraphCanvas2D(): React.ReactNode {
 
   // Handle node changes (position, selection)
   const handleNodesChange = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (changes: any[]) => {
+    (changes: NodeChange<Node<CustomNodeData>>[]) => {
       onNodesChange(changes);
 
       // Skip updates when syncing from store
       if (isSyncing.current) return;
 
       for (const change of changes) {
-        if (change.type === "position" && change.position !== undefined && change.dragging === false) {
-          const is3DMode = project.dimension === 3;
-          const existingNode = project.nodes.find((n) => n.id === change.id);
-          const currentZ = existingNode !== undefined && is3D(existingNode.coordinate) ? existingNode.coordinate.z : 0;
+        if (change.type === "position" && "position" in change && change.position !== undefined) {
+          // Only update store when dragging ends
+          if ("dragging" in change && change.dragging === false) {
+            const is3DMode = project.dimension === 3;
+            const existingNode = project.nodes.find((n) => n.id === change.id);
+            const currentZ =
+              existingNode !== undefined && is3D(existingNode.coordinate)
+                ? existingNode.coordinate.z
+                : 0;
 
-          updateNode(change.id, {
-            coordinate: toGraphCoordinate(change.position.x, change.position.y, is3DMode, currentZ),
-          });
-        } else if (change.type === "select") {
+            updateNode(change.id, {
+              coordinate: toGraphCoordinate(
+                change.position.x,
+                change.position.y,
+                is3DMode,
+                currentZ
+              ),
+            });
+          }
+        } else if (change.type === "select" && "selected" in change) {
           if (change.selected === true) {
             selectNode(change.id);
           }
@@ -148,15 +163,14 @@ export function GraphCanvas2D(): React.ReactNode {
 
   // Handle edge changes (selection, removal)
   const handleEdgesChange = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (changes: any[]) => {
+    (changes: EdgeChange<Edge>[]) => {
       onEdgesChange(changes);
 
       // Skip updates when syncing from store
       if (isSyncing.current) return;
 
       for (const change of changes) {
-        if (change.type === "select") {
+        if (change.type === "select" && "selected" in change) {
           if (change.selected === true) {
             selectEdge(change.id);
           }
@@ -171,7 +185,11 @@ export function GraphCanvas2D(): React.ReactNode {
   // Handle new edge connection
   const handleConnect = useCallback(
     (connection: Connection) => {
-      if (connection.source !== null && connection.target !== null && connection.source !== connection.target) {
+      if (
+        connection.source !== null &&
+        connection.target !== null &&
+        connection.source !== connection.target
+      ) {
         const edge = createEdge(connection.source, connection.target);
         addEdgeToStore(edge);
       }
@@ -179,19 +197,21 @@ export function GraphCanvas2D(): React.ReactNode {
     [addEdgeToStore]
   );
 
-  // Handle double-click to add new node
+  // Handle double-click to add new node (using screenToFlowPosition for correct pan/zoom handling)
   const handlePaneDoubleClick = useCallback(
     (event: React.MouseEvent) => {
-      const target = event.target as HTMLElement;
-      const bounds = target.getBoundingClientRect();
-      const x = event.clientX - bounds.left;
-      const y = event.clientY - bounds.top;
+      // Use screenToFlowPosition to correctly convert screen coordinates
+      // accounting for pan and zoom
+      const flowPosition = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
 
       const existingIds = project.nodes.map((n) => n.id);
       const newId = generateNodeId(existingIds);
 
       const is3DMode = project.dimension === 3;
-      const coordinate = toGraphCoordinate(x, y, is3DMode, 0);
+      const coordinate = toGraphCoordinate(flowPosition.x, flowPosition.y, is3DMode, 0);
 
       // Create new intermediate node with default measurement basis
       const newNode: IntermediateNode = {
@@ -208,7 +228,7 @@ export function GraphCanvas2D(): React.ReactNode {
       addNode(newNode);
       selectNode(newId);
     },
-    [project.nodes, project.dimension, addNode, selectNode]
+    [project.nodes, project.dimension, addNode, selectNode, screenToFlowPosition]
   );
 
   // Handle pane click to clear selection
@@ -236,26 +256,35 @@ export function GraphCanvas2D(): React.ReactNode {
   );
 
   return (
+    <ReactFlow
+      nodes={nodesWithSelection}
+      edges={edgesWithSelection}
+      onNodesChange={handleNodesChange}
+      onEdgesChange={handleEdgesChange}
+      onConnect={handleConnect}
+      onPaneClick={handlePaneClick}
+      onDoubleClick={handlePaneDoubleClick}
+      nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
+      fitView
+      snapToGrid
+      snapGrid={[10, 10]}
+      deleteKeyCode={["Backspace", "Delete"]}
+      proOptions={{ hideAttribution: true }}
+    >
+      <Background gap={20} size={1} />
+      <Controls />
+    </ReactFlow>
+  );
+}
+
+// Outer component that provides ReactFlowProvider context
+export function GraphCanvas2D(): React.ReactNode {
+  return (
     <div className="w-full h-full">
-      <ReactFlow
-        nodes={nodesWithSelection}
-        edges={edgesWithSelection}
-        onNodesChange={handleNodesChange}
-        onEdgesChange={handleEdgesChange}
-        onConnect={handleConnect}
-        onPaneClick={handlePaneClick}
-        onDoubleClick={handlePaneDoubleClick}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        fitView
-        snapToGrid
-        snapGrid={[10, 10]}
-        deleteKeyCode={["Backspace", "Delete"]}
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background gap={20} size={1} />
-        <Controls />
-      </ReactFlow>
+      <ReactFlowProvider>
+        <GraphCanvas2DInner />
+      </ReactFlowProvider>
     </div>
   );
 }

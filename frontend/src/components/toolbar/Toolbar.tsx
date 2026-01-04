@@ -109,6 +109,7 @@ export function Toolbar(): React.ReactNode {
       {/* Action Buttons */}
       <div className="flex items-center gap-2">
         <button
+          type="button"
           onClick={handleNew}
           className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded transition-colors"
         >
@@ -116,6 +117,7 @@ export function Toolbar(): React.ReactNode {
         </button>
 
         <button
+          type="button"
           onClick={handleImportClick}
           className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded transition-colors"
         >
@@ -130,6 +132,7 @@ export function Toolbar(): React.ReactNode {
         />
 
         <button
+          type="button"
           onClick={handleExport}
           className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded transition-colors"
         >
@@ -140,6 +143,7 @@ export function Toolbar(): React.ReactNode {
 
         {/* Disabled buttons for Phase 3 */}
         <button
+          type="button"
           disabled
           className="px-3 py-1.5 text-sm bg-gray-100 text-gray-400 rounded cursor-not-allowed"
           title="Available in Phase 3"
@@ -148,6 +152,7 @@ export function Toolbar(): React.ReactNode {
         </button>
 
         <button
+          type="button"
           disabled
           className="px-3 py-1.5 text-sm bg-gray-100 text-gray-400 rounded cursor-not-allowed"
           title="Available in Phase 3"
@@ -161,6 +166,7 @@ export function Toolbar(): React.ReactNode {
         <div className="ml-auto flex items-center gap-2">
           <span className="text-sm text-red-600">{error}</span>
           <button
+            type="button"
             onClick={() => setError(null)}
             className="text-red-600 hover:text-red-800"
           >

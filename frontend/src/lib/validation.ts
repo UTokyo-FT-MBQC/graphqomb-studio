@@ -21,9 +21,9 @@ export function parseProject(jsonString: string): Project {
 /**
  * Safely parse JSON string to Project
  */
-export function safeParseProject(jsonString: string):
-  | { success: true; data: Project }
-  | { success: false; error: Error } {
+export function safeParseProject(
+  jsonString: string
+): { success: true; data: Project } | { success: false; error: Error } {
   try {
     const data: unknown = JSON.parse(jsonString);
     const result = safeValidateProject(data);

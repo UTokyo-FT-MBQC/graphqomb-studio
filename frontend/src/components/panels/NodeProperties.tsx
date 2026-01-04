@@ -12,7 +12,14 @@
 "use client";
 
 import { useProjectStore } from "@/stores/projectStore";
-import type { GraphNode, InputNode, IntermediateNode, NodeRole, OutputNode } from "@/types";
+import type {
+  Coordinate,
+  GraphNode,
+  InputNode,
+  IntermediateNode,
+  NodeRole,
+  OutputNode,
+} from "@/types";
 import { is3D } from "@/types";
 import type { ChangeEvent } from "react";
 import { useCallback, useMemo } from "react";
@@ -31,20 +38,21 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
   // Handle position changes
   const handlePositionChange = useCallback(
     (axis: "x" | "y" | "z", value: string) => {
-      const numValue = parseFloat(value);
+      const numValue = Number.parseFloat(value);
       if (Number.isNaN(numValue)) return;
 
       const currentCoord = node.coordinate;
-      let newCoord;
+      let newCoord: Coordinate;
 
       if (axis === "z") {
-        if (is3D(currentCoord)) {
-          newCoord = { ...currentCoord, z: numValue };
-        } else {
-          newCoord = { ...currentCoord, z: numValue };
-        }
+        // When setting Z, we always create a 3D coordinate
+        newCoord = { x: currentCoord.x, y: currentCoord.y, z: numValue };
       } else {
-        newCoord = { ...currentCoord, [axis]: numValue };
+        if (is3D(currentCoord)) {
+          newCoord = { ...currentCoord, [axis]: numValue };
+        } else {
+          newCoord = { ...currentCoord, [axis]: numValue };
+        }
       }
 
       updateNode(node.id, { coordinate: newCoord });
@@ -62,9 +70,10 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
         const updates: Partial<InputNode> = {
           role: "input",
           qubitIndex: 0,
-          measBasis: node.role !== "output" && "measBasis" in node && node.measBasis !== undefined
-            ? node.measBasis
-            : { type: "planner", plane: "XY", angleCoeff: 0 },
+          measBasis:
+            node.role !== "output" && "measBasis" in node && node.measBasis !== undefined
+              ? node.measBasis
+              : { type: "planner", plane: "XY", angleCoeff: 0 },
         };
         updateNode(node.id, updates);
       } else if (newRole === "output") {
@@ -78,9 +87,10 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
         const updates: Partial<IntermediateNode> = {
           role: "intermediate",
           qubitIndex: undefined,
-          measBasis: node.role !== "output" && "measBasis" in node && node.measBasis !== undefined
-            ? node.measBasis
-            : { type: "planner", plane: "XY", angleCoeff: 0 },
+          measBasis:
+            node.role !== "output" && "measBasis" in node && node.measBasis !== undefined
+              ? node.measBasis
+              : { type: "planner", plane: "XY", angleCoeff: 0 },
         };
         updateNode(node.id, updates);
       }
@@ -91,7 +101,7 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
   // Handle qubit index change
   const handleQubitIndexChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
-      const value = parseInt(e.target.value, 10);
+      const value = Number.parseInt(e.target.value, 10);
       if (!Number.isNaN(value) && value >= 0) {
         updateNode(node.id, { qubitIndex: value });
       }
@@ -119,6 +129,7 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Node: {node.id}</h3>
         <button
+          type="button"
           onClick={handleDelete}
           className="px-2 py-1 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
         >
@@ -129,11 +140,14 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
       <div className="border-t pt-4 space-y-3">
         {/* Position */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
+          <span className="block text-sm font-medium text-gray-700 mb-1">Position</span>
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="block text-xs text-gray-500">X</label>
+              <label htmlFor={`node-${node.id}-pos-x`} className="block text-xs text-gray-500">
+                X
+              </label>
               <input
+                id={`node-${node.id}-pos-x`}
                 type="number"
                 step="0.1"
                 value={position.x}
@@ -142,8 +156,11 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500">Y</label>
+              <label htmlFor={`node-${node.id}-pos-y`} className="block text-xs text-gray-500">
+                Y
+              </label>
               <input
+                id={`node-${node.id}-pos-y`}
                 type="number"
                 step="0.1"
                 value={position.y}
@@ -153,8 +170,11 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
             </div>
             {is3DMode && (
               <div>
-                <label className="block text-xs text-gray-500">Z</label>
+                <label htmlFor={`node-${node.id}-pos-z`} className="block text-xs text-gray-500">
+                  Z
+                </label>
                 <input
+                  id={`node-${node.id}-pos-z`}
                   type="number"
                   step="0.1"
                   value={position.z}
@@ -168,8 +188,14 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
 
         {/* Role */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+          <label
+            htmlFor={`node-${node.id}-role`}
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Role
+          </label>
           <select
+            id={`node-${node.id}-role`}
             value={node.role}
             onChange={handleRoleChange}
             className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
@@ -183,8 +209,14 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
         {/* Qubit Index (for input/output) */}
         {(node.role === "input" || node.role === "output") && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Qubit Index</label>
+            <label
+              htmlFor={`node-${node.id}-qubit-index`}
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Qubit Index
+            </label>
             <input
+              id={`node-${node.id}-qubit-index`}
               type="number"
               min="0"
               step="1"
@@ -198,7 +230,7 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
         {/* Measurement Basis (for input/intermediate) - Placeholder for Phase 2 */}
         {node.role !== "output" && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Measurement Basis</label>
+            <span className="block text-sm font-medium text-gray-700 mb-1">Measurement Basis</span>
             <div className="text-sm text-gray-500 bg-gray-50 p-2 rounded">
               {node.measBasis?.type === "planner"
                 ? `Planner: ${node.measBasis.plane}, angle = 2π × ${node.measBasis.angleCoeff}`

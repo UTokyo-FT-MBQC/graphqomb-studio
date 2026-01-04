@@ -5,7 +5,13 @@
  * Includes persistence to localStorage.
  */
 
-import type { FlowDefinition, GraphEdge, GraphNode, GraphQOMBProject, ScheduleResult } from "@/types";
+import type {
+  FlowDefinition,
+  GraphEdge,
+  GraphNode,
+  GraphQOMBProject,
+  ScheduleResult,
+} from "@/types";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -75,7 +81,9 @@ export const useProjectStore = create<ProjectState>()(
         set((state) => ({
           project: {
             ...state.project,
-            nodes: state.project.nodes.map((n) => (n.id === id ? ({ ...n, ...updates } as GraphNode) : n)),
+            nodes: state.project.nodes.map((n) =>
+              n.id === id ? ({ ...n, ...updates } as GraphNode) : n
+            ),
             schedule: undefined,
           },
         }));

@@ -22,12 +22,14 @@ export function PropertyPanel(): React.ReactNode {
 
   // Find selected node/edge from project
   const selectedNode = useMemo(
-    () => (selectedNodeId !== null ? project.nodes.find((n) => n.id === selectedNodeId) : undefined),
+    () =>
+      selectedNodeId !== null ? project.nodes.find((n) => n.id === selectedNodeId) : undefined,
     [project.nodes, selectedNodeId]
   );
 
   const selectedEdge = useMemo(
-    () => (selectedEdgeId !== null ? project.edges.find((e) => e.id === selectedEdgeId) : undefined),
+    () =>
+      selectedEdgeId !== null ? project.edges.find((e) => e.id === selectedEdgeId) : undefined,
     [project.edges, selectedEdgeId]
   );
 
