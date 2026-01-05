@@ -4,12 +4,20 @@ A web application for visually editing Graph, Flow, and Schedule for Measurement
 
 ## Features
 
+### Implemented
 - **Graph Editor**: Create and edit MBQC resource graphs with an intuitive 2D canvas
-- **Node Management**: Define input, output, and intermediate nodes with measurement bases
+- **Node Management**: Define input, output, and intermediate nodes with qubit indices
 - **Edge Connections**: Connect nodes to build quantum graph states
-- **Flow Definition**: Configure X-flow and Z-flow for classical feedforward
-- **Schedule Visualization**: View computed measurement schedules in a timeline
+- **Measurement Basis Editor**: Configure measurement basis (Planner/Axis mode) for each node
+- **Flow Editor**: Configure X-flow targets and Z-flow mode (Auto/Manual) per node
+- **Flow Visualization**: Toggle X-flow (red) and Z-flow (blue) arrows on the canvas
 - **Import/Export**: Save and load projects in JSON format
+
+### Planned (Phase 3+)
+- **Backend Validation**: Validate graph structure and flow definitions via API
+- **Schedule Computation**: Compute measurement schedules using constraint solver
+- **Schedule Visualization**: View computed measurement schedules in a timeline
+- **3D Support**: Z-slice editing and isometric 3D view
 
 ## Tech Stack
 
@@ -21,7 +29,7 @@ A web application for visually editing Graph, Flow, and Schedule for Measurement
 - React Flow (graph visualization)
 - Zustand (state management)
 - Zod (validation)
-- Three.js + React Three Fiber (3D visualization)
+- Three.js + React Three Fiber (3D visualization - Phase 4)
 
 ### Backend
 - FastAPI
