@@ -17,7 +17,7 @@ describe("Project validation", () => {
       edges: [],
       flow: {
         xflow: {},
-        zflowMode: "auto" as const,
+        zflow: "auto" as const,
       },
     };
 
@@ -57,7 +57,7 @@ describe("Project validation", () => {
       edges: [{ id: "n0-n1", source: "n0", target: "n1" }],
       flow: {
         xflow: {},
-        zflowMode: "auto" as const,
+        zflow: "auto" as const,
       },
     };
 
@@ -81,7 +81,7 @@ describe("Project validation", () => {
       edges: [],
       flow: {
         xflow: {},
-        zflowMode: "auto" as const,
+        zflow: "auto" as const,
       },
     };
 
@@ -98,7 +98,7 @@ describe("Project validation", () => {
       edges: [],
       flow: {
         xflow: {},
-        zflowMode: "auto" as const,
+        zflow: "auto" as const,
       },
     };
 

@@ -1,7 +1,6 @@
 """Health check endpoint tests."""
 
 from httpx import ASGITransport, AsyncClient
-
 from src.main import app
 
 

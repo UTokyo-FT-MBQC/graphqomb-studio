@@ -5,28 +5,39 @@
  * - New: Reset project
  * - Import: Load JSON file
  * - Export: Download JSON file
- * - Validate: (disabled - Phase 3)
- * - Schedule: (disabled - Phase 3)
+ * - Validate: Validate graph and flow (API call)
+ * - Schedule: Compute measurement schedule (API call)
  */
 
 "use client";
 
 import { ViewControls } from "@/components/toolbar/ViewControls";
+import { isApiError, schedule, validate } from "@/lib/api";
 import { downloadProject, safeParseProject } from "@/lib/validation";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
+import { toPayload } from "@/types";
 import type { ChangeEvent } from "react";
 import { useCallback, useRef, useState } from "react";
+
+interface ValidationState {
+  valid: boolean;
+  errors: Array<{ type: string; message: string }>;
+}
 
 export function Toolbar(): React.ReactNode {
   const project = useProjectStore((state) => state.project);
   const setProject = useProjectStore((state) => state.setProject);
   const reset = useProjectStore((state) => state.reset);
   const setProjectName = useProjectStore((state) => state.setProjectName);
+  const setSchedule = useProjectStore((state) => state.setSchedule);
   const clearSelection = useSelectionStore((state) => state.clearSelection);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [validationResult, setValidationResult] = useState<ValidationState | null>(null);
 
   // Handle new project
   const handleNew = useCallback(() => {
@@ -39,6 +50,7 @@ export function Toolbar(): React.ReactNode {
     reset();
     clearSelection();
     setError(null);
+    setValidationResult(null);
   }, [project.nodes.length, reset, clearSelection]);
 
   // Handle import
@@ -59,6 +71,7 @@ export function Toolbar(): React.ReactNode {
           setProject(result.data);
           clearSelection();
           setError(null);
+          setValidationResult(null);
         } else {
           setError(`Invalid project file: ${result.error.message}`);
         }
@@ -87,6 +100,54 @@ export function Toolbar(): React.ReactNode {
     },
     [setProjectName]
   );
+
+  // Handle validate
+  const handleValidate = useCallback(async () => {
+    setIsValidating(true);
+    setError(null);
+    setValidationResult(null);
+
+    try {
+      const payload = toPayload(project);
+      const result = await validate(payload);
+      setValidationResult(result);
+
+      if (!result.valid) {
+        const errorMessages = result.errors.map((e) => e.message).join("; ");
+        setError(`Validation failed: ${errorMessages}`);
+      }
+    } catch (err) {
+      if (isApiError(err)) {
+        setError(`Validation error: ${err.detail}`);
+      } else {
+        setError(`Validation error: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    } finally {
+      setIsValidating(false);
+    }
+  }, [project]);
+
+  // Handle schedule
+  const handleSchedule = useCallback(async () => {
+    setIsScheduling(true);
+    setError(null);
+
+    try {
+      const payload = toPayload(project);
+      const result = await schedule(payload);
+      setSchedule(result);
+    } catch (err) {
+      if (isApiError(err)) {
+        setError(`Schedule error: ${err.detail}`);
+      } else {
+        setError(`Schedule error: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    } finally {
+      setIsScheduling(false);
+    }
+  }, [project, setSchedule]);
+
+  const hasNodes = project.nodes.length > 0;
 
   return (
     <div className="flex items-center gap-4 px-4 py-2 border-b border-gray-200 bg-white">
@@ -147,24 +208,38 @@ export function Toolbar(): React.ReactNode {
 
         <div className="h-6 w-px bg-gray-300" />
 
-        {/* Disabled buttons for Phase 3 */}
+        {/* Validate Button */}
         <button
           type="button"
-          disabled
-          className="px-3 py-1.5 text-sm bg-gray-100 text-gray-400 rounded cursor-not-allowed"
-          title="Available in Phase 3"
+          onClick={handleValidate}
+          disabled={isValidating || !hasNodes}
+          className={`px-3 py-1.5 text-sm rounded transition-colors ${
+            isValidating || !hasNodes
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-green-100 hover:bg-green-200 text-green-700"
+          }`}
         >
-          Validate
+          {isValidating ? "Validating..." : "Validate"}
         </button>
 
+        {/* Schedule Button */}
         <button
           type="button"
-          disabled
-          className="px-3 py-1.5 text-sm bg-gray-100 text-gray-400 rounded cursor-not-allowed"
-          title="Available in Phase 3"
+          onClick={handleSchedule}
+          disabled={isScheduling || !hasNodes}
+          className={`px-3 py-1.5 text-sm rounded transition-colors ${
+            isScheduling || !hasNodes
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-blue-100 hover:bg-blue-200 text-blue-700"
+          }`}
         >
-          Schedule
+          {isScheduling ? "Scheduling..." : "Schedule"}
         </button>
+
+        {/* Validation Success Indicator */}
+        {validationResult?.valid === true && (
+          <span className="text-sm text-green-600 font-medium">Valid</span>
+        )}
       </div>
 
       {/* Error Message */}

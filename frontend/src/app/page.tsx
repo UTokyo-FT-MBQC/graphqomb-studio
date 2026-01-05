@@ -2,6 +2,7 @@
 
 import { GraphCanvas2D } from "@/components/canvas/GraphCanvas2D";
 import { PropertyPanel } from "@/components/panels/PropertyPanel";
+import { TimelineView } from "@/components/timeline/TimelineView";
 import { Toolbar } from "@/components/toolbar/Toolbar";
 import type { ReactNode } from "react";
 
@@ -24,9 +25,9 @@ export default function Home(): ReactNode {
         </aside>
       </div>
 
-      {/* Timeline placeholder (Phase 3) */}
-      <footer className="border-t border-gray-200 bg-white px-4 py-2">
-        <p className="text-xs text-gray-400">Timeline (Schedule visualization - Phase 3)</p>
+      {/* Timeline */}
+      <footer className="h-28 border-t border-gray-200 bg-white">
+        <TimelineView />
       </footer>
     </main>
   );

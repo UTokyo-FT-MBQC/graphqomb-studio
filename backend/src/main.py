@@ -3,6 +3,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.routers import flow_router, schedule_router, validate_router
+
 app = FastAPI(
     title="GraphQOMB Studio API",
     description="Backend API for GraphQOMB Studio - Visual MBQC editor",
@@ -17,6 +19,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include API routers
+app.include_router(validate_router)
+app.include_router(schedule_router)
+app.include_router(flow_router)
 
 
 @app.get("/health")
