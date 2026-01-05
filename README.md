@@ -12,11 +12,12 @@ A web application for visually editing Graph, Flow, and Schedule for Measurement
 - **Flow Editor**: Configure X-flow targets and Z-flow mode (Auto/Manual) per node
 - **Flow Visualization**: Toggle X-flow (red) and Z-flow (blue) arrows on the canvas
 - **Import/Export**: Save and load projects in JSON format
-
-### Planned (Phase 3+)
 - **Backend Validation**: Validate graph structure and flow definitions via API
+- **Auto Z-Flow Computation**: Compute Z-flow from X-flow using odd_neighbors algorithm
 - **Schedule Computation**: Compute measurement schedules using constraint solver
 - **Schedule Visualization**: View computed measurement schedules in a timeline
+
+### Planned (Phase 4)
 - **3D Support**: Z-slice editing and isometric 3D view
 
 ## Tech Stack
@@ -105,14 +106,12 @@ graphqomb-studio/
 └── ...
 ```
 
-## API Endpoints (Phase 3 - Planned)
-
-The following API endpoints are planned for Phase 3 and not yet implemented:
+## API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/health` | Health check (implemented) |
-| POST | `/api/validate` | Validate graph and flow |
+| GET | `/health` | Health check |
+| POST | `/api/validate` | Validate graph and flow definitions |
 | POST | `/api/schedule` | Compute measurement schedule |
 | POST | `/api/compute-zflow` | Auto-compute Z-flow from X-flow |
 
