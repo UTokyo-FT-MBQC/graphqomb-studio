@@ -65,6 +65,8 @@ export function useResolvedFlow(): {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to compute zflow";
       setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   }, [project, setResolvedFlow, setLoading, setError]);
 
