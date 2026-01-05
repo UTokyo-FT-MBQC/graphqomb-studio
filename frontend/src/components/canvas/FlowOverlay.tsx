@@ -13,7 +13,7 @@
 import { useProjectStore } from "@/stores/projectStore";
 import { useResolvedFlowStore } from "@/stores/resolvedFlowStore";
 import { useUIStore } from "@/stores/uiStore";
-import { Panel, useReactFlow } from "@xyflow/react";
+import { Panel, useNodes, useViewport } from "@xyflow/react";
 import { useMemo } from "react";
 
 // Arrow offset from node center (to avoid overlapping with node)
@@ -60,11 +60,11 @@ export function FlowOverlay(): React.ReactNode {
   const showXFlow = useUIStore((state) => state.showXFlow);
   const showZFlow = useUIStore((state) => state.showZFlow);
   const resolvedFlow = useResolvedFlowStore((state) => state.resolvedFlow);
-  const { getNodes } = useReactFlow();
+  const nodes = useNodes();
+  const { x: viewportX, y: viewportY, zoom } = useViewport();
 
-  // Get node positions from React Flow
+  // Get node positions from React Flow (reactive to node changes)
   const nodePositions = useMemo(() => {
-    const nodes = getNodes();
     const positions: Record<string, { x: number; y: number }> = {};
     for (const node of nodes) {
       positions[node.id] = {
@@ -73,7 +73,7 @@ export function FlowOverlay(): React.ReactNode {
       };
     }
     return positions;
-  }, [getNodes]);
+  }, [nodes]);
 
   // Generate X-Flow arrows
   const xflowArrows = useMemo<ArrowData[]>(() => {
@@ -140,7 +140,12 @@ export function FlowOverlay(): React.ReactNode {
     <Panel position="top-left" className="!m-0 !p-0 pointer-events-none">
       <svg
         className="absolute top-0 left-0 overflow-visible"
-        style={{ width: 1, height: 1 }}
+        style={{
+          width: 1,
+          height: 1,
+          transform: `translate(${viewportX}px, ${viewportY}px) scale(${zoom})`,
+          transformOrigin: "0 0",
+        }}
         role="img"
         aria-label="Flow visualization arrows"
       >
