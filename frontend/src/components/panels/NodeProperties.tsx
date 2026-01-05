@@ -6,17 +6,21 @@
  * - Position (x, y, z for 3D)
  * - Role (input, output, intermediate)
  * - Qubit index (for input/output nodes)
- * - Measurement basis (for input/intermediate nodes) - Phase 2
+ * - Measurement basis (for input/intermediate nodes)
+ * - Flow targets (for input/intermediate nodes)
  */
 
 "use client";
 
+import { FlowEditor } from "@/components/panels/FlowEditor";
+import { MeasBasisEditor } from "@/components/panels/MeasBasisEditor";
 import { useProjectStore } from "@/stores/projectStore";
 import type {
   Coordinate,
   GraphNode,
   InputNode,
   IntermediateNode,
+  MeasBasis,
   NodeRole,
   OutputNode,
 } from "@/types";
@@ -227,20 +231,16 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
           </div>
         )}
 
-        {/* Measurement Basis (for input/intermediate) - Placeholder for Phase 2 */}
-        {node.role !== "output" && (
-          <div>
-            <span className="block text-sm font-medium text-gray-700 mb-1">Measurement Basis</span>
-            <div className="text-sm text-gray-500 bg-gray-50 p-2 rounded">
-              {node.measBasis?.type === "planner"
-                ? `Planner: ${node.measBasis.plane}, angle = 2π × ${node.measBasis.angleCoeff}`
-                : node.measBasis?.type === "axis"
-                  ? `Axis: ${node.measBasis.axis} (${node.measBasis.sign})`
-                  : "Not set"}
-              <p className="text-xs text-gray-400 mt-1">(Editing in Phase 2)</p>
-            </div>
-          </div>
+        {/* Measurement Basis (for input/intermediate) */}
+        {node.role !== "output" && node.measBasis !== undefined && (
+          <MeasBasisEditor
+            basis={node.measBasis}
+            onChange={(basis: MeasBasis) => updateNode(node.id, { measBasis: basis })}
+          />
         )}
+
+        {/* Flow Editor (for input/intermediate) */}
+        {node.role !== "output" && <FlowEditor nodeId={node.id} />}
       </div>
     </div>
   );

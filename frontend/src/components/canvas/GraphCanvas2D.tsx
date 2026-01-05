@@ -10,6 +10,7 @@
 import { CustomEdge } from "@/components/canvas/CustomEdge";
 import type { CustomNodeData } from "@/components/canvas/CustomNode";
 import { CustomNode } from "@/components/canvas/CustomNode";
+import { FlowOverlay } from "@/components/canvas/FlowOverlay";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import type { Coordinate, GraphNode, IntermediateNode } from "@/types";
@@ -274,6 +275,7 @@ function GraphCanvas2DInner(): React.ReactNode {
     >
       <Background gap={20} size={1} />
       <Controls />
+      <FlowOverlay />
     </ReactFlow>
   );
 }

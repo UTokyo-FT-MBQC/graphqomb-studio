@@ -11,6 +11,7 @@
 
 "use client";
 
+import { ViewControls } from "@/components/toolbar/ViewControls";
 import { downloadProject, safeParseProject } from "@/lib/validation";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
@@ -138,6 +139,11 @@ export function Toolbar(): React.ReactNode {
         >
           Export
         </button>
+
+        <div className="h-6 w-px bg-gray-300" />
+
+        {/* Flow View Controls */}
+        <ViewControls />
 
         <div className="h-6 w-px bg-gray-300" />
 
