@@ -1,12 +1,21 @@
 "use client";
 
 import { GraphCanvas2D } from "@/components/canvas/GraphCanvas2D";
+import { GraphCanvas3D } from "@/components/canvas/GraphCanvas3D";
 import { PropertyPanel } from "@/components/panels/PropertyPanel";
 import { TimelineView } from "@/components/timeline/TimelineView";
 import { Toolbar } from "@/components/toolbar/Toolbar";
+import { useProjectStore } from "@/stores/projectStore";
+import { useUIStore } from "@/stores/uiStore";
 import type { ReactNode } from "react";
 
 export default function Home(): ReactNode {
+  const dimension = useProjectStore((state) => state.project.dimension);
+  const viewMode = useUIStore((state) => state.viewMode);
+
+  // Use 3D canvas only when in 3D mode with 3D isometric view
+  const show3DCanvas = dimension === 3 && viewMode === "3d-isometric";
+
   return (
     <main className="flex h-screen flex-col overflow-hidden">
       {/* Toolbar */}
@@ -16,7 +25,7 @@ export default function Home(): ReactNode {
       <div className="flex flex-1 overflow-hidden">
         {/* Canvas */}
         <div className="flex-1 bg-gray-50">
-          <GraphCanvas2D />
+          {show3DCanvas ? <GraphCanvas3D /> : <GraphCanvas2D />}
         </div>
 
         {/* Property Panel */}

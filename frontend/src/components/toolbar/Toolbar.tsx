@@ -12,13 +12,16 @@
 "use client";
 
 import { ViewControls } from "@/components/toolbar/ViewControls";
+import { ZSliceSlider } from "@/components/toolbar/ZSliceSlider";
 import { isApiError, schedule, validate } from "@/lib/api";
+import { getZRange } from "@/lib/geometry";
 import { downloadProject, safeParseProject } from "@/lib/validation";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
+import { useUIStore } from "@/stores/uiStore";
 import { toPayload } from "@/types";
 import type { ChangeEvent } from "react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 interface ValidationState {
   valid: boolean;
@@ -33,7 +36,14 @@ export function Toolbar(): React.ReactNode {
   const setSchedule = useProjectStore((state) => state.setSchedule);
   const clearSelection = useSelectionStore((state) => state.clearSelection);
 
+  const viewMode = useUIStore((state) => state.viewMode);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Calculate Z range from nodes
+  const zRange = useMemo(() => getZRange(project.nodes), [project.nodes]);
+
+  const is3DSliceMode = project.dimension === 3 && viewMode === "2d-slice";
   const [error, setError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
@@ -205,6 +215,14 @@ export function Toolbar(): React.ReactNode {
 
         {/* Flow View Controls */}
         <ViewControls />
+
+        {/* Z-Slice Slider - only in 3D mode with 2D-slice view */}
+        {is3DSliceMode && (
+          <>
+            <div className="h-6 w-px bg-gray-300" />
+            <ZSliceSlider minZ={zRange.min} maxZ={zRange.max} />
+          </>
+        )}
 
         <div className="h-6 w-px bg-gray-300" />
 

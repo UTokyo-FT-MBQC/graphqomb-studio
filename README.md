@@ -16,9 +16,8 @@ A web application for visually editing Graph, Flow, and Schedule for Measurement
 - **Auto Z-Flow Computation**: Compute Z-flow from X-flow using odd_neighbors algorithm
 - **Schedule Computation**: Compute measurement schedules using constraint solver
 - **Schedule Visualization**: View computed measurement schedules in a timeline
-
-### Planned (Phase 4)
-- **3D Support**: Z-slice editing and isometric 3D view
+- **3D Support**: Z-slice editing for 3D graphs with ghost node preview
+- **3D Isometric View**: Full 3D visualization using Three.js with orbit controls
 
 ## Tech Stack
 
@@ -30,7 +29,7 @@ A web application for visually editing Graph, Flow, and Schedule for Measurement
 - React Flow (graph visualization)
 - Zustand (state management)
 - Zod (validation)
-- Three.js + React Three Fiber (3D visualization - Phase 4)
+- Three.js + React Three Fiber (3D visualization)
 
 ### Backend
 - FastAPI

@@ -3,6 +3,7 @@
  *
  * Main canvas component using React Flow for 2D graph visualization.
  * Handles node/edge rendering, selection, and editing.
+ * Supports Z-slice mode for 3D projects with ghost nodes.
  */
 
 "use client";
@@ -11,8 +12,18 @@ import { CustomEdge } from "@/components/canvas/CustomEdge";
 import type { CustomNodeData } from "@/components/canvas/CustomNode";
 import { CustomNode } from "@/components/canvas/CustomNode";
 import { FlowOverlay } from "@/components/canvas/FlowOverlay";
+import { GhostNode, type GhostNodeData } from "@/components/canvas/GhostNode";
+
+// Internal type for ghost node computation (includes position before converting to React Flow node)
+interface GhostNodeComputedData {
+  node: GraphNode;
+  position: { x: number; y: number };
+  zOffset: number;
+}
+import { SCALE, getAdjacentZNodes, getGhostPosition, getNodeZ } from "@/lib/geometry";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
+import { useUIStore } from "@/stores/uiStore";
 import type { Coordinate, GraphNode, IntermediateNode } from "@/types";
 import { createEdge, is3D } from "@/types";
 import {
@@ -30,11 +41,9 @@ import type { Connection, Edge, EdgeChange, Node, NodeChange } from "@xyflow/rea
 import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
-// Scale factor for converting graph coordinates to canvas pixels
-const SCALE = 100;
-
 const nodeTypes: NodeTypes = {
   custom: CustomNode,
+  ghost: GhostNode,
 };
 
 const edgeTypes: EdgeTypes = {
@@ -52,6 +61,22 @@ function toFlowNode(node: GraphNode): Node<CustomNodeData> {
       y: coord.y * SCALE,
     },
     data: { node },
+  };
+}
+
+// Convert ghost node data to React Flow node
+function toGhostFlowNode(ghostData: GhostNodeComputedData): Node<GhostNodeData> {
+  return {
+    id: ghostData.node.id,
+    type: "ghost",
+    position: {
+      x: ghostData.position.x * SCALE,
+      y: ghostData.position.y * SCALE,
+    },
+    data: { node: ghostData.node, zOffset: ghostData.zOffset },
+    draggable: false,
+    selectable: false,
+    connectable: true,
   };
 }
 
@@ -93,22 +118,91 @@ function GraphCanvas2DInner(): React.ReactNode {
   const selectEdge = useSelectionStore((state) => state.selectEdge);
   const clearSelection = useSelectionStore((state) => state.clearSelection);
 
+  const currentZSlice = useUIStore((state) => state.currentZSlice);
+
   const { screenToFlowPosition } = useReactFlow();
+
+  const is3DMode = project.dimension === 3;
 
   // Track if we're syncing from external state changes
   const isSyncing = useRef(false);
 
-  // Convert project nodes/edges to React Flow format
-  const flowNodes = useMemo(() => project.nodes.map(toFlowNode), [project.nodes]);
+  // Filter nodes by current Z-slice in 3D mode
+  const visibleNodes = useMemo(() => {
+    if (!is3DMode) return project.nodes;
+    return project.nodes.filter((node) => getNodeZ(node) === currentZSlice);
+  }, [project.nodes, is3DMode, currentZSlice]);
+
+  // Get ghost nodes from adjacent Z levels
+  const ghostNodesData = useMemo((): GhostNodeComputedData[] => {
+    if (!is3DMode) return [];
+
+    const { above, below } = getAdjacentZNodes(project.nodes, currentZSlice);
+    const ghostNodes: GhostNodeComputedData[] = [];
+
+    for (const node of above) {
+      const position = getGhostPosition(node, currentZSlice, project.nodes);
+      if (position !== null) {
+        ghostNodes.push({ node, position, zOffset: 1 });
+      }
+    }
+
+    for (const node of below) {
+      const position = getGhostPosition(node, currentZSlice, project.nodes);
+      if (position !== null) {
+        ghostNodes.push({ node, position, zOffset: -1 });
+      }
+    }
+
+    return ghostNodes;
+  }, [project.nodes, is3DMode, currentZSlice]);
+
+  // Set of visible node IDs for edge filtering
+  const visibleNodeIds = useMemo(() => new Set(visibleNodes.map((n) => n.id)), [visibleNodes]);
+
+  // Set of ghost node IDs
+  const ghostNodeIds = useMemo(
+    () => new Set(ghostNodesData.map((g) => g.node.id)),
+    [ghostNodesData]
+  );
+
+  // Convert project nodes/edges to React Flow format (including ghost nodes)
+  const flowNodes = useMemo(() => {
+    const regularNodes = visibleNodes.map(toFlowNode);
+    const ghostNodes = ghostNodesData.map(toGhostFlowNode);
+    return [...regularNodes, ...ghostNodes];
+  }, [visibleNodes, ghostNodesData]);
+
+  // Filter edges: show edges where both nodes are visible, or one is visible and one is ghost
   const flowEdges: Edge[] = useMemo(
     () =>
-      project.edges.map((edge) => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        type: "custom",
-      })),
-    [project.edges]
+      project.edges
+        .filter((edge) => {
+          const sourceVisible = visibleNodeIds.has(edge.source);
+          const targetVisible = visibleNodeIds.has(edge.target);
+          const sourceGhost = ghostNodeIds.has(edge.source);
+          const targetGhost = ghostNodeIds.has(edge.target);
+
+          // Show edge if both visible, or one visible and one ghost
+          return (
+            (sourceVisible && targetVisible) ||
+            (sourceVisible && targetGhost) ||
+            (targetVisible && sourceGhost)
+          );
+        })
+        .map((edge) => {
+          // Check if this is a cross-Z edge (connects to ghost)
+          const isCrossZ = ghostNodeIds.has(edge.source) || ghostNodeIds.has(edge.target);
+
+          return {
+            id: edge.id,
+            source: edge.source,
+            target: edge.target,
+            type: "custom",
+            ...(isCrossZ ? { style: { strokeDasharray: "5,5", opacity: 0.5 } } : {}),
+          };
+        }),
+    [project.edges, visibleNodeIds, ghostNodeIds]
   );
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes);
@@ -211,8 +305,8 @@ function GraphCanvas2DInner(): React.ReactNode {
       const existingIds = project.nodes.map((n) => n.id);
       const newId = generateNodeId(existingIds);
 
-      const is3DMode = project.dimension === 3;
-      const coordinate = toGraphCoordinate(flowPosition.x, flowPosition.y, is3DMode, 0);
+      // Use currentZSlice for new nodes in 3D mode
+      const coordinate = toGraphCoordinate(flowPosition.x, flowPosition.y, is3DMode, currentZSlice);
 
       // Create new intermediate node with default measurement basis
       const newNode: IntermediateNode = {
@@ -229,7 +323,7 @@ function GraphCanvas2DInner(): React.ReactNode {
       addNode(newNode);
       selectNode(newId);
     },
-    [project.nodes, project.dimension, addNode, selectNode, screenToFlowPosition]
+    [project.nodes, is3DMode, currentZSlice, addNode, selectNode, screenToFlowPosition]
   );
 
   // Handle pane click to clear selection
