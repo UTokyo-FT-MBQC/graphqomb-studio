@@ -4,7 +4,6 @@ A web application for visually editing Graph, Flow, and Schedule for Measurement
 
 ## Features
 
-### Implemented
 - **Graph Editor**: Create and edit MBQC resource graphs with an intuitive 2D canvas
 - **Node Management**: Define input, output, and intermediate nodes with qubit indices
 - **Edge Connections**: Connect nodes to build quantum graph states
@@ -18,6 +17,70 @@ A web application for visually editing Graph, Flow, and Schedule for Measurement
 - **Schedule Visualization**: View computed measurement schedules in a timeline
 - **3D Support**: Z-slice editing for 3D graphs with ghost node preview
 - **3D Isometric View**: Full 3D visualization using Three.js with orbit controls
+
+## Usage
+
+### Creating a Graph
+
+1. **Add Nodes**: Double-click on the canvas to create a new node
+2. **Connect Nodes**: Drag from a node's handle to another node to create an edge
+3. **Select Elements**: Click on a node or edge to select it
+4. **Delete Elements**: Select a node/edge and press `Delete` or `Backspace`
+5. **Pan Canvas**: Click and drag on the background
+6. **Zoom**: Use mouse wheel to zoom in/out
+
+### Node Configuration
+
+Select a node to open the Property Panel on the right side:
+
+- **Role**: Set as Input, Output, or Intermediate
+- **Qubit Index**: Assign qubit indices for input/output nodes
+- **Measurement Basis**:
+  - *Planner Mode*: Select plane (XY, YZ, XZ) and angle coefficient
+  - *Axis Mode*: Select axis (X, Y, Z) and sign (PLUS, MINUS)
+
+### Flow Configuration
+
+In the Property Panel, configure classical feedforward:
+
+- **X-Flow**: Select target nodes for X corrections
+- **Z-Flow Mode**:
+  - *Auto*: Automatically computed using odd_neighbors algorithm
+  - *Manual*: Manually select Z correction targets
+
+### Flow Visualization
+
+Use the toolbar checkboxes to toggle flow arrows:
+
+- **X-Flow**: Red arrows showing X correction dependencies
+- **Z-Flow**: Blue arrows showing Z correction dependencies
+
+### 3D Graphs
+
+For 3D projects (dimension = 3):
+
+1. **2D Slice Mode** (default):
+   - Use the Z-slider to navigate between Z levels
+   - Ghost nodes show adjacent Z-level nodes (semi-transparent)
+   - Cross-Z edges appear as dashed lines
+   - New nodes are created at the current Z level
+
+2. **3D Isometric View**:
+   - Click "3D View" button to switch to 3D visualization
+   - Rotate: Left-click and drag
+   - Pan: Right-click and drag
+   - Zoom: Mouse wheel
+
+### Validation & Scheduling
+
+1. **Validate**: Click "Validate" to check graph structure and flow definitions
+2. **Schedule**: Click "Schedule" to compute measurement order
+3. **Timeline**: View the computed schedule in the timeline panel at the bottom
+
+### Import/Export
+
+- **Export**: Click "Export" to download the project as JSON
+- **Import**: Click "Import" to load a previously saved project
 
 ## Tech Stack
 
