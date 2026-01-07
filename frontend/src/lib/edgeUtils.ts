@@ -214,7 +214,21 @@ export function groupOverlappingEdges(edges: readonly EdgeWithPosition[]): EdgeW
 }
 
 /**
+ * Check if two edges point in the same direction (not antiparallel)
+ * Returns true if same direction, false if opposite direction
+ */
+function isSameDirection(pos1: EdgePosition, pos2: EdgePosition): boolean {
+  const dir1 = getEdgeDirection(pos1);
+  const dir2 = getEdgeDirection(pos2);
+  // Positive dot product means same direction, negative means opposite
+  return dot(dir1.x, dir1.y, dir2.x, dir2.y) >= 0;
+}
+
+/**
  * Calculate offset values for all edges based on overlap groups
+ *
+ * For antiparallel edges (same line but opposite directions), the offset sign
+ * is flipped to ensure they separate on opposite sides of the line.
  */
 export function calculateEdgeOffsets(
   edges: readonly EdgeWithPosition[],
@@ -239,12 +253,20 @@ export function calculateEdgeOffsets(
     // Sort by edge ID for consistent ordering
     group.sort((a, b) => a.id.localeCompare(b.id));
 
-    // Assign offsets centered around zero
+    // Use the first edge as the reference direction
+    const referenceEdge = group[0];
+    if (referenceEdge === undefined) {
+      continue;
+    }
+
+    // Assign offsets centered around zero, flipping sign for antiparallel edges
     for (let i = 0; i < group.length; i++) {
       const edge = group[i];
       if (edge !== undefined) {
-        const offset = (i - (group.length - 1) / 2) * offsetMultiplier;
-        offsets.set(edge.id, offset);
+        const baseOffset = (i - (group.length - 1) / 2) * offsetMultiplier;
+        // Flip offset sign if edge points in opposite direction to reference
+        const directionMultiplier = isSameDirection(referenceEdge.position, edge.position) ? 1 : -1;
+        offsets.set(edge.id, baseOffset * directionMultiplier);
       }
     }
   }

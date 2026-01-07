@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Frontend
 
+#### Added
+- Bezier curve offset for overlapping edges to prevent visual overlap
+- Edge utility module (`edgeUtils.ts`) with overlap detection and offset calculation
+
 ### Backend
 
 ---
