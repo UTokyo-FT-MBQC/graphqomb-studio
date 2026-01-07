@@ -44,14 +44,20 @@ function calculateArrow(
   fromY: number,
   toX: number,
   toY: number
-): { x1: number; y1: number; x2: number; y2: number } | null {
+): { x1: number; y1: number; x2: number; y2: number } {
   const dx = toX - fromX;
   const dy = toY - fromY;
   const length = Math.sqrt(dx * dx + dy * dy);
 
-  // Self-loop case - return null to handle separately
+  // Handle overlapping nodes (different nodes at same position)
+  // Draw a very short arrow pointing right
   if (length === 0) {
-    return null;
+    return {
+      x1: fromX + ARROW_OFFSET,
+      y1: fromY,
+      x2: fromX + ARROW_OFFSET + 1,
+      y2: fromY,
+    };
   }
 
   // Normalize direction
@@ -125,9 +131,8 @@ export function FlowOverlay(): React.ReactNode {
         const targetPos = nodePositions[targetId];
         if (targetPos === undefined) continue;
 
-        const arrow = calculateArrow(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y);
-        if (arrow === null) {
-          // Self-loop
+        // Detect self-loop by node ID, not by position
+        if (sourceId === targetId) {
           selfLoops.push({
             id: `xflow-${sourceId}-${targetId}`,
             cx: sourcePos.x,
@@ -135,6 +140,7 @@ export function FlowOverlay(): React.ReactNode {
             path: calculateSelfLoopPath(sourcePos.x, sourcePos.y),
           });
         } else {
+          const arrow = calculateArrow(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y);
           arrows.push({
             id: `xflow-${sourceId}-${targetId}`,
             ...arrow,
@@ -169,9 +175,8 @@ export function FlowOverlay(): React.ReactNode {
         const targetPos = nodePositions[targetId];
         if (targetPos === undefined) continue;
 
-        const arrow = calculateArrow(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y);
-        if (arrow === null) {
-          // Self-loop
+        // Detect self-loop by node ID, not by position
+        if (sourceId === targetId) {
           selfLoops.push({
             id: `zflow-${sourceId}-${targetId}`,
             cx: sourcePos.x,
@@ -179,6 +184,7 @@ export function FlowOverlay(): React.ReactNode {
             path: calculateSelfLoopPath(sourcePos.x, sourcePos.y),
           });
         } else {
+          const arrow = calculateArrow(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y);
           arrows.push({
             id: `zflow-${sourceId}-${targetId}`,
             ...arrow,
