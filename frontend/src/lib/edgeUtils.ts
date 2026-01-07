@@ -117,7 +117,41 @@ export function areEdgesParallel(pos1: EdgePosition, pos2: EdgePosition): boolea
 }
 
 /**
- * Check if two edges are overlapping (parallel and close together)
+ * Project a point onto a line and return the parameter t (0 = start, 1 = end)
+ * t can be outside [0,1] if point projects outside the segment
+ */
+function projectPointOntoLine(
+  pointX: number,
+  pointY: number,
+  lineStartX: number,
+  lineStartY: number,
+  lineEndX: number,
+  lineEndY: number
+): number {
+  const dx = lineEndX - lineStartX;
+  const dy = lineEndY - lineStartY;
+  const lengthSq = dx * dx + dy * dy;
+
+  if (lengthSq === 0) {
+    return 0;
+  }
+
+  return ((pointX - lineStartX) * dx + (pointY - lineStartY) * dy) / lengthSq;
+}
+
+/**
+ * Check if two 1D intervals overlap
+ */
+function intervalsOverlap(a1: number, a2: number, b1: number, b2: number): boolean {
+  const aMin = Math.min(a1, a2);
+  const aMax = Math.max(a1, a2);
+  const bMin = Math.min(b1, b2);
+  const bMax = Math.max(b1, b2);
+  return aMax >= bMin && bMax >= aMin;
+}
+
+/**
+ * Check if two edges are overlapping (parallel, close together, and segments overlap)
  */
 export function areEdgesOverlapping(pos1: EdgePosition, pos2: EdgePosition): boolean {
   // First check if parallel
@@ -125,16 +159,9 @@ export function areEdgesOverlapping(pos1: EdgePosition, pos2: EdgePosition): boo
     return false;
   }
 
-  // Check distance between midpoints
+  // Check perpendicular distance between the edges
+  // Use midpoint of edge1 to measure distance to edge2's line
   const mid1 = getEdgeMidpoint(pos1);
-  const mid2 = getEdgeMidpoint(pos2);
-  const midDistance = distance(mid1.x, mid1.y, mid2.x, mid2.y);
-
-  if (midDistance > OVERLAP_DISTANCE_THRESHOLD * 2) {
-    return false;
-  }
-
-  // Check perpendicular distance from one edge's midpoint to the other edge
   const perpDist = perpendicularDistance(
     mid1.x,
     mid1.y,
@@ -142,7 +169,32 @@ export function areEdgesOverlapping(pos1: EdgePosition, pos2: EdgePosition): boo
     { x: pos2.targetX, y: pos2.targetY }
   );
 
-  return perpDist < OVERLAP_DISTANCE_THRESHOLD;
+  if (perpDist >= OVERLAP_DISTANCE_THRESHOLD) {
+    return false;
+  }
+
+  // Check if the projections of the two edges onto a common axis overlap
+  // Project edge1's endpoints onto edge2's line
+  const t1Start = projectPointOntoLine(
+    pos1.sourceX,
+    pos1.sourceY,
+    pos2.sourceX,
+    pos2.sourceY,
+    pos2.targetX,
+    pos2.targetY
+  );
+  const t1End = projectPointOntoLine(
+    pos1.targetX,
+    pos1.targetY,
+    pos2.sourceX,
+    pos2.sourceY,
+    pos2.targetX,
+    pos2.targetY
+  );
+
+  // Edge2's projection onto itself is [0, 1]
+  // Check if edge1's projection [t1Start, t1End] overlaps with [0, 1]
+  return intervalsOverlap(t1Start, t1End, 0, 1);
 }
 
 /**
