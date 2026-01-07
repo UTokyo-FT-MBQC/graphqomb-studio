@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bezier curve offset for overlapping edges to prevent visual overlap
 - Edge utility module (`edgeUtils.ts`) with overlap detection and offset calculation
 
+#### Fixed
+- Z-flow auto-computation now works properly (useResolvedFlow hook was not being called)
+- Self-loop arrows in flow visualization now render as visible curved loops instead of invisible points
+
 ### Backend
 
 #### Changed

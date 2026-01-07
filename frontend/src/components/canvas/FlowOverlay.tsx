@@ -10,8 +10,8 @@
 
 "use client";
 
+import { useResolvedFlow } from "@/hooks/useResolvedFlow";
 import { useProjectStore } from "@/stores/projectStore";
-import { useResolvedFlowStore } from "@/stores/resolvedFlowStore";
 import { useUIStore } from "@/stores/uiStore";
 import { Panel, useNodes, useViewport } from "@xyflow/react";
 import { useMemo } from "react";
@@ -19,12 +19,23 @@ import { useMemo } from "react";
 // Arrow offset from node center (to avoid overlapping with node)
 const ARROW_OFFSET = 20;
 
+// Self-loop configuration
+const SELF_LOOP_RADIUS = 20;
+const SELF_LOOP_OFFSET = 15; // Offset from node center
+
 interface ArrowData {
   id: string;
   x1: number;
   y1: number;
   x2: number;
   y2: number;
+}
+
+interface SelfLoopData {
+  id: string;
+  cx: number; // Node center x
+  cy: number; // Node center y
+  path: string; // SVG path for the loop
 }
 
 // Calculate arrow start and end points with offset
@@ -38,8 +49,15 @@ function calculateArrow(
   const dy = toY - fromY;
   const length = Math.sqrt(dx * dx + dy * dy);
 
+  // Handle overlapping nodes (different nodes at same position)
+  // Draw a very short arrow pointing right
   if (length === 0) {
-    return { x1: fromX, y1: fromY, x2: toX, y2: toY };
+    return {
+      x1: fromX + ARROW_OFFSET,
+      y1: fromY,
+      x2: fromX + ARROW_OFFSET + 1,
+      y2: fromY,
+    };
   }
 
   // Normalize direction
@@ -55,11 +73,31 @@ function calculateArrow(
   };
 }
 
+// Calculate self-loop path (loop at top-right of node)
+function calculateSelfLoopPath(cx: number, cy: number): string {
+  // Start point: right side of node
+  const startX = cx + SELF_LOOP_OFFSET;
+  const startY = cy;
+
+  // Control points for a smooth loop going up and around
+  const r = SELF_LOOP_RADIUS;
+
+  // Create a loop path using cubic bezier curves
+  // The loop goes: right -> up-right -> up -> up-left -> left -> back to start area
+  return `M ${startX} ${startY}
+          C ${startX + r} ${startY - r * 0.5},
+            ${startX + r} ${startY - r * 1.5},
+            ${cx} ${cy - SELF_LOOP_OFFSET - r}
+          C ${cx - r} ${cy - SELF_LOOP_OFFSET - r},
+            ${cx - SELF_LOOP_OFFSET - r * 0.5} ${cy - r * 0.5},
+            ${cx - SELF_LOOP_OFFSET} ${cy}`;
+}
+
 export function FlowOverlay(): React.ReactNode {
   const project = useProjectStore((state) => state.project);
   const showXFlow = useUIStore((state) => state.showXFlow);
   const showZFlow = useUIStore((state) => state.showZFlow);
-  const resolvedFlow = useResolvedFlowStore((state) => state.resolvedFlow);
+  const { resolvedFlow } = useResolvedFlow();
   const nodes = useNodes();
   const { x: viewportX, y: viewportY, zoom } = useViewport();
 
@@ -75,11 +113,16 @@ export function FlowOverlay(): React.ReactNode {
     return positions;
   }, [nodes]);
 
-  // Generate X-Flow arrows
-  const xflowArrows = useMemo<ArrowData[]>(() => {
-    if (!showXFlow) return [];
+  // Generate X-Flow arrows and self-loops
+  const { xflowArrows, xflowSelfLoops } = useMemo<{
+    xflowArrows: ArrowData[];
+    xflowSelfLoops: SelfLoopData[];
+  }>(() => {
+    if (!showXFlow) return { xflowArrows: [], xflowSelfLoops: [] };
 
     const arrows: ArrowData[] = [];
+    const selfLoops: SelfLoopData[] = [];
+
     for (const [sourceId, targets] of Object.entries(project.flow.xflow)) {
       const sourcePos = nodePositions[sourceId];
       if (sourcePos === undefined) continue;
@@ -88,19 +131,32 @@ export function FlowOverlay(): React.ReactNode {
         const targetPos = nodePositions[targetId];
         if (targetPos === undefined) continue;
 
-        const arrow = calculateArrow(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y);
-        arrows.push({
-          id: `xflow-${sourceId}-${targetId}`,
-          ...arrow,
-        });
+        // Detect self-loop by node ID, not by position
+        if (sourceId === targetId) {
+          selfLoops.push({
+            id: `xflow-${sourceId}-${targetId}`,
+            cx: sourcePos.x,
+            cy: sourcePos.y,
+            path: calculateSelfLoopPath(sourcePos.x, sourcePos.y),
+          });
+        } else {
+          const arrow = calculateArrow(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y);
+          arrows.push({
+            id: `xflow-${sourceId}-${targetId}`,
+            ...arrow,
+          });
+        }
       }
     }
-    return arrows;
+    return { xflowArrows: arrows, xflowSelfLoops: selfLoops };
   }, [showXFlow, project.flow.xflow, nodePositions]);
 
-  // Generate Z-Flow arrows
-  const zflowArrows = useMemo<ArrowData[]>(() => {
-    if (!showZFlow) return [];
+  // Generate Z-Flow arrows and self-loops
+  const { zflowArrows, zflowSelfLoops } = useMemo<{
+    zflowArrows: ArrowData[];
+    zflowSelfLoops: SelfLoopData[];
+  }>(() => {
+    if (!showZFlow) return { zflowArrows: [], zflowSelfLoops: [] };
 
     // Use resolved flow if available, otherwise use manual zflow
     const zflowData =
@@ -109,6 +165,8 @@ export function FlowOverlay(): React.ReactNode {
         : project.flow.zflow;
 
     const arrows: ArrowData[] = [];
+    const selfLoops: SelfLoopData[] = [];
+
     for (const [sourceId, targets] of Object.entries(zflowData)) {
       const sourcePos = nodePositions[sourceId];
       if (sourcePos === undefined) continue;
@@ -117,14 +175,24 @@ export function FlowOverlay(): React.ReactNode {
         const targetPos = nodePositions[targetId];
         if (targetPos === undefined) continue;
 
-        const arrow = calculateArrow(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y);
-        arrows.push({
-          id: `zflow-${sourceId}-${targetId}`,
-          ...arrow,
-        });
+        // Detect self-loop by node ID, not by position
+        if (sourceId === targetId) {
+          selfLoops.push({
+            id: `zflow-${sourceId}-${targetId}`,
+            cx: sourcePos.x,
+            cy: sourcePos.y,
+            path: calculateSelfLoopPath(sourcePos.x, sourcePos.y),
+          });
+        } else {
+          const arrow = calculateArrow(sourcePos.x, sourcePos.y, targetPos.x, targetPos.y);
+          arrows.push({
+            id: `zflow-${sourceId}-${targetId}`,
+            ...arrow,
+          });
+        }
       }
     }
-    return arrows;
+    return { zflowArrows: arrows, zflowSelfLoops: selfLoops };
   }, [showZFlow, project.flow.zflow, resolvedFlow, nodePositions]);
 
   // Don't render if nothing to show
@@ -132,7 +200,10 @@ export function FlowOverlay(): React.ReactNode {
     return null;
   }
 
-  if (xflowArrows.length === 0 && zflowArrows.length === 0) {
+  const hasXFlow = xflowArrows.length > 0 || xflowSelfLoops.length > 0;
+  const hasZFlow = zflowArrows.length > 0 || zflowSelfLoops.length > 0;
+
+  if (!hasXFlow && !hasZFlow) {
     return null;
   }
 
@@ -190,6 +261,19 @@ export function FlowOverlay(): React.ReactNode {
           />
         ))}
 
+        {/* X-Flow self-loops (red) */}
+        {xflowSelfLoops.map((loop) => (
+          <path
+            key={loop.id}
+            d={loop.path}
+            stroke="#ef4444"
+            strokeWidth={2}
+            strokeDasharray="4 2"
+            fill="none"
+            markerEnd="url(#xflow-arrowhead)"
+          />
+        ))}
+
         {/* Z-Flow arrows (blue) */}
         {zflowArrows.map((arrow) => (
           <line
@@ -201,6 +285,19 @@ export function FlowOverlay(): React.ReactNode {
             stroke="#3b82f6"
             strokeWidth={2}
             strokeDasharray="4 2"
+            markerEnd="url(#zflow-arrowhead)"
+          />
+        ))}
+
+        {/* Z-Flow self-loops (blue) */}
+        {zflowSelfLoops.map((loop) => (
+          <path
+            key={loop.id}
+            d={loop.path}
+            stroke="#3b82f6"
+            strokeWidth={2}
+            strokeDasharray="4 2"
+            fill="none"
             markerEnd="url(#zflow-arrowhead)"
           />
         ))}

@@ -161,8 +161,6 @@ export function FlowEditor({ nodeId }: FlowEditorProps): React.ReactNode {
         {isZFlowAuto ? (
           <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
             Z-Flow will be computed automatically using odd_neighbors calculation.
-            <br />
-            <span className="text-gray-400">(Resolved in Phase 3 backend integration)</span>
           </div>
         ) : (
           <>
