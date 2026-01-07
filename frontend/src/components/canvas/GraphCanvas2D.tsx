@@ -20,6 +20,7 @@ interface GhostNodeComputedData {
   position: { x: number; y: number };
   zOffset: number;
 }
+import { type EdgeWithPosition, calculateEdgeOffsets } from "@/lib/edgeUtils";
 import { SCALE, getAdjacentZNodes, getGhostPosition, getNodeZ } from "@/lib/geometry";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
@@ -173,37 +174,85 @@ function GraphCanvas2DInner(): React.ReactNode {
     return [...regularNodes, ...ghostNodes];
   }, [visibleNodes, ghostNodesData]);
 
+  // Build node position map for offset calculation
+  const nodePositions = useMemo(() => {
+    const positions = new Map<string, { x: number; y: number }>();
+
+    // Add visible nodes
+    for (const node of visibleNodes) {
+      positions.set(node.id, {
+        x: node.coordinate.x * SCALE,
+        y: node.coordinate.y * SCALE,
+      });
+    }
+
+    // Add ghost nodes
+    for (const ghost of ghostNodesData) {
+      positions.set(ghost.node.id, {
+        x: ghost.position.x * SCALE,
+        y: ghost.position.y * SCALE,
+      });
+    }
+
+    return positions;
+  }, [visibleNodes, ghostNodesData]);
+
   // Filter edges: show edges where both nodes are visible, or one is visible and one is ghost
-  const flowEdges: Edge[] = useMemo(
-    () =>
-      project.edges
-        .filter((edge) => {
-          const sourceVisible = visibleNodeIds.has(edge.source);
-          const targetVisible = visibleNodeIds.has(edge.target);
-          const sourceGhost = ghostNodeIds.has(edge.source);
-          const targetGhost = ghostNodeIds.has(edge.target);
+  const flowEdges: Edge[] = useMemo(() => {
+    // First, filter visible edges
+    const filteredEdges = project.edges.filter((edge) => {
+      const sourceVisible = visibleNodeIds.has(edge.source);
+      const targetVisible = visibleNodeIds.has(edge.target);
+      const sourceGhost = ghostNodeIds.has(edge.source);
+      const targetGhost = ghostNodeIds.has(edge.target);
 
-          // Show edge if both visible, or one visible and one ghost
-          return (
-            (sourceVisible && targetVisible) ||
-            (sourceVisible && targetGhost) ||
-            (targetVisible && sourceGhost)
-          );
-        })
-        .map((edge) => {
-          // Check if this is a cross-Z edge (connects to ghost)
-          const isCrossZ = ghostNodeIds.has(edge.source) || ghostNodeIds.has(edge.target);
+      // Show edge if both visible, or one visible and one ghost
+      return (
+        (sourceVisible && targetVisible) ||
+        (sourceVisible && targetGhost) ||
+        (targetVisible && sourceGhost)
+      );
+    });
 
-          return {
-            id: edge.id,
-            source: edge.source,
-            target: edge.target,
-            type: "custom",
-            ...(isCrossZ ? { style: { strokeDasharray: "5,5", opacity: 0.5 } } : {}),
-          };
-        }),
-    [project.edges, visibleNodeIds, ghostNodeIds]
-  );
+    // Build edges with position info for offset calculation
+    const edgesWithPositions: EdgeWithPosition[] = [];
+    for (const edge of filteredEdges) {
+      const sourcePos = nodePositions.get(edge.source);
+      const targetPos = nodePositions.get(edge.target);
+
+      if (sourcePos !== undefined && targetPos !== undefined) {
+        edgesWithPositions.push({
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          position: {
+            sourceX: sourcePos.x,
+            sourceY: sourcePos.y,
+            targetX: targetPos.x,
+            targetY: targetPos.y,
+          },
+        });
+      }
+    }
+
+    // Calculate offsets for overlapping edges
+    const offsets = calculateEdgeOffsets(edgesWithPositions);
+
+    // Map to final edge format with offset data
+    return filteredEdges.map((edge) => {
+      const isCrossZ = ghostNodeIds.has(edge.source) || ghostNodeIds.has(edge.target);
+      const offset = offsets.get(edge.id) ?? 0;
+
+      return {
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        type: "custom",
+        data: { offset },
+        ...(isCrossZ ? { style: { strokeDasharray: "5,5", opacity: 0.5 } } : {}),
+      };
+    });
+  }, [project.edges, visibleNodeIds, ghostNodeIds, nodePositions]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges);
