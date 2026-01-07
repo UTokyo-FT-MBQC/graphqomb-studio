@@ -1,10 +1,12 @@
 """Validation API endpoint tests."""
 
+from typing import Any
+
 from httpx import ASGITransport, AsyncClient
 from src.main import app
 
 
-def create_simple_project() -> dict:
+def create_simple_project() -> dict[str, Any]:
     """Create a simple valid project for testing."""
     return {
         "name": "Test Project",

@@ -1,10 +1,12 @@
 """Schedule API endpoint tests."""
 
+from typing import Any
+
 from httpx import ASGITransport, AsyncClient
 from src.main import app
 
 
-def create_schedulable_project() -> dict:
+def create_schedulable_project() -> dict[str, Any]:
     """Create a project that can be scheduled."""
     return {
         "name": "Schedulable Project",
