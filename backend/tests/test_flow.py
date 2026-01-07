@@ -1,10 +1,12 @@
 """Flow API endpoint tests."""
 
+from typing import Any
+
 from httpx import ASGITransport, AsyncClient
 from src.main import app
 
 
-def create_project_with_xflow() -> dict:
+def create_project_with_xflow() -> dict[str, Any]:
     """Create a project with xflow for testing zflow computation."""
     return {
         "name": "Flow Test",
