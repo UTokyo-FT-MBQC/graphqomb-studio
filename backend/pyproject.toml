@@ -59,6 +59,7 @@ skip-magic-trailing-comma = false
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 include = ["src"]
+reportMissingTypeStubs = false
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
