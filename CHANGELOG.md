@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Frontend
 
 #### Added
+- Node/Edge list panel in the property panel sidebar
+  - Collapsible panel with tab switching (Nodes/Edges)
+  - Filtering by ID, role (nodes), source/target (edges)
+  - Sorting by various fields (ID, role, coordinates for nodes; ID, source, target for edges)
+  - Click-to-select synchronization with canvas
 - Bezier curve offset for overlapping edges to prevent visual overlap
 - Edge utility module (`edgeUtils.ts`) with overlap detection and offset calculation
 

@@ -10,6 +10,7 @@
 "use client";
 
 import { EdgeProperties } from "@/components/panels/EdgeProperties";
+import { NodeEdgeList } from "@/components/panels/NodeEdgeList";
 import { NodeProperties } from "@/components/panels/NodeProperties";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
@@ -34,22 +35,28 @@ export function PropertyPanel(): React.ReactNode {
   );
 
   return (
-    <div className="p-4">
-      {selectedNode !== undefined ? (
-        <NodeProperties node={selectedNode} />
-      ) : selectedEdge !== undefined ? (
-        <EdgeProperties edge={selectedEdge} />
-      ) : (
-        <div className="text-gray-500 text-sm">
-          <p className="font-medium mb-2">No selection</p>
-          <ul className="space-y-1 text-xs">
-            <li>• Click a node or edge to select it</li>
-            <li>• Double-click the canvas to add a node</li>
-            <li>• Drag from node handle to create an edge</li>
-            <li>• Press Delete/Backspace to remove selection</li>
-          </ul>
-        </div>
-      )}
+    <div className="flex flex-col h-full">
+      {/* Node/Edge List (always visible at top) */}
+      <NodeEdgeList />
+
+      {/* Properties Section */}
+      <div className="flex-1 p-4 overflow-y-auto">
+        {selectedNode !== undefined ? (
+          <NodeProperties node={selectedNode} />
+        ) : selectedEdge !== undefined ? (
+          <EdgeProperties edge={selectedEdge} />
+        ) : (
+          <div className="text-gray-500 text-sm">
+            <p className="font-medium mb-2">No selection</p>
+            <ul className="space-y-1 text-xs">
+              <li>• Click a node or edge to select it</li>
+              <li>• Double-click the canvas to add a node</li>
+              <li>• Drag from node handle to create an edge</li>
+              <li>• Press Delete/Backspace to remove selection</li>
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
