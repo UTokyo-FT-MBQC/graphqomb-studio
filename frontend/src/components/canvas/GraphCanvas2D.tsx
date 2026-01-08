@@ -22,6 +22,7 @@ interface GhostNodeComputedData {
 }
 import { type EdgeWithPosition, calculateEdgeOffsets } from "@/lib/edgeUtils";
 import { SCALE, getAdjacentZNodes, getGhostPosition, getNodeZ } from "@/lib/geometry";
+import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -120,6 +121,11 @@ function GraphCanvas2DInner(): React.ReactNode {
   const clearSelection = useSelectionStore((state) => state.clearSelection);
 
   const currentZSlice = useUIStore((state) => state.currentZSlice);
+
+  const isEdgeCreationMode = useEdgeCreationStore((state) => state.isEdgeCreationMode);
+  const sourceNodeId = useEdgeCreationStore((state) => state.sourceNodeId);
+  const setSourceNode = useEdgeCreationStore((state) => state.setSourceNode);
+  const clearSourceNode = useEdgeCreationStore((state) => state.clearSourceNode);
 
   const { screenToFlowPosition } = useReactFlow();
 
@@ -326,7 +332,7 @@ function GraphCanvas2DInner(): React.ReactNode {
     [onEdgesChange, selectEdge, removeEdge]
   );
 
-  // Handle new edge connection
+  // Handle new edge connection (supports cross-Z edges via ghost nodes)
   const handleConnect = useCallback(
     (connection: Connection) => {
       if (
@@ -334,11 +340,57 @@ function GraphCanvas2DInner(): React.ReactNode {
         connection.target !== null &&
         connection.source !== connection.target
       ) {
-        const edge = createEdge(connection.source, connection.target);
-        addEdgeToStore(edge);
+        // Verify both nodes exist in project (handles ghost nodes from adjacent Z layers)
+        const sourceExists = project.nodes.some((n) => n.id === connection.source);
+        const targetExists = project.nodes.some((n) => n.id === connection.target);
+
+        if (sourceExists && targetExists) {
+          const edge = createEdge(connection.source, connection.target);
+          addEdgeToStore(edge);
+        }
       }
     },
-    [addEdgeToStore]
+    [addEdgeToStore, project.nodes]
+  );
+
+  // Handle node click for edge creation mode
+  const handleNodeClick = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      if (!isEdgeCreationMode) {
+        // Normal mode: just select the node
+        selectNode(node.id);
+        return;
+      }
+
+      // Edge creation mode
+      const nodeId = node.id;
+
+      // Verify node exists in project (handles ghost nodes)
+      const nodeExists = project.nodes.some((n) => n.id === nodeId);
+      if (!nodeExists) return;
+
+      if (sourceNodeId === null) {
+        // First click: set source node
+        setSourceNode(nodeId);
+        selectNode(nodeId);
+      } else if (sourceNodeId !== nodeId) {
+        // Second click on different node: create edge
+        const edge = createEdge(sourceNodeId, nodeId);
+        addEdgeToStore(edge);
+        clearSourceNode();
+        selectNode(nodeId);
+      }
+      // If clicking the same node as source, do nothing
+    },
+    [
+      isEdgeCreationMode,
+      sourceNodeId,
+      project.nodes,
+      selectNode,
+      setSourceNode,
+      clearSourceNode,
+      addEdgeToStore,
+    ]
   );
 
   // Handle double-click to add new node (using screenToFlowPosition for correct pan/zoom handling)
@@ -406,6 +458,7 @@ function GraphCanvas2DInner(): React.ReactNode {
       onNodesChange={handleNodesChange}
       onEdgesChange={handleEdgesChange}
       onConnect={handleConnect}
+      onNodeClick={handleNodeClick}
       onPaneClick={handlePaneClick}
       onDoubleClick={handlePaneDoubleClick}
       nodeTypes={nodeTypes}

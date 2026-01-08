@@ -2,63 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
 ## [Unreleased]
 
-### Frontend
-
-#### Added
-- Node/Edge list panel in the property panel sidebar
-  - Collapsible panel with tab switching (Nodes/Edges)
-  - Filtering by ID, role (nodes), source/target (edges)
-  - Sorting by various fields (ID, role, coordinates for nodes; ID, source, target for edges)
-  - Click-to-select synchronization with canvas
-- Bezier curve offset for overlapping edges to prevent visual overlap
-- Edge utility module (`edgeUtils.ts`) with overlap detection and offset calculation
-
-#### Fixed
-- Z-flow auto-computation now works properly (useResolvedFlow hook was not being called)
-- Self-loop arrows in flow visualization now render as visible curved loops instead of invisible points
-
-### Backend
-
-#### Changed
-- Align linter settings with graphqomb library (ruff `select = ["ALL"]`, mypy `strict = true`)
-- Add mypy to dev dependencies
-
----
-
-## [Frontend v0.1.0] - 2026-01-07
-
-Initial release of GraphQOMB Studio frontend.
-
 ### Added
-- Graph Editor with React Flow integration
-- Node management (input, output, intermediate nodes with qubit indices)
-- Edge connections for building quantum graph states
-- Measurement basis editor (Planner mode: plane + angle, Axis mode: axis + sign)
-- X-flow editor with target node selection
-- Z-flow editor (Auto mode using odd_neighbors, Manual mode)
-- Flow visualization overlays (X-flow: red arrows, Z-flow: blue arrows)
-- Import/Export functionality (JSON format)
-- Schedule visualization timeline
-- 3D support with Z-slice editing and ghost node preview
-- 3D isometric view with Three.js and orbit controls
 
-### Fixed
-- Reset loading state after zflow computation
-- React 19 compatibility with updated react-three packages
+#### 3D Graph Editing Support
 
-## [Backend v0.1.0] - 2026-01-07
+- **Cross-Z Edge Creation**
+  - Added `edgeCreationStore` for managing edge creation mode state
+  - Added `EdgeCreationToolbar` component for toggling edge creation mode
+  - Enhanced `GhostNode` component with visual feedback during edge creation mode
+  - Modified `GraphCanvas2D` to support edge creation via ghost nodes (drag connection)
+  - Added sequential node selection mode to create edges across Z layers
 
-Initial release of GraphQOMB Studio backend.
+- **3D View Direct Editing**
+  - Extended `uiStore` with working plane configuration (XY/XZ/YZ plane selection, offset, grid visibility)
+  - Added `WorkingPlaneGrid` component for 3D editing reference grid
+  - Added `WorkingPlaneControls` toolbar component for 3D editing configuration
+  - Added `useWorkingPlane` hook for coordinate conversion between Three.js and graph space
+  - Enhanced `GraphCanvas3D` with node creation on working plane click
+  - Added edge creation mode support in 3D view
 
-### Added
-- FastAPI-based REST API
-- Health check endpoint (`GET /health`)
-- Graph validation endpoint (`POST /api/validate`)
-- Schedule computation endpoint (`POST /api/schedule`)
-- Z-flow auto-computation endpoint (`POST /api/compute-zflow`)
-- Integration with graphqomb library for MBQC operations
+### Changed
+
+- `GraphCanvas2D.tsx`: Updated `handleConnect` to verify nodes exist in project (supports ghost node connections)
+- `GraphCanvas3D.tsx`: Added working plane grid, node click handling for edge creation mode
+- `GhostNode.tsx`: Added edge creation mode visual feedback (enhanced opacity, cursor, ring highlight)
+- `Toolbar.tsx`: Integrated EdgeCreationToolbar and WorkingPlaneControls
+
+### Technical Details
+
+**New Files:**
+- `frontend/src/stores/edgeCreationStore.ts`
+- `frontend/src/components/toolbar/EdgeCreationToolbar.tsx`
+- `frontend/src/components/toolbar/WorkingPlaneControls.tsx`
+- `frontend/src/components/canvas/WorkingPlaneGrid.tsx`
+- `frontend/src/hooks/useWorkingPlane.ts`
+
+**Modified Files:**
+- `frontend/src/stores/uiStore.ts`
+- `frontend/src/components/canvas/GraphCanvas2D.tsx`
+- `frontend/src/components/canvas/GraphCanvas3D.tsx`
+- `frontend/src/components/canvas/GhostNode.tsx`
+- `frontend/src/components/toolbar/Toolbar.tsx`

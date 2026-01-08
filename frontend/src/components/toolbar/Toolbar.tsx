@@ -11,7 +11,9 @@
 
 "use client";
 
+import { EdgeCreationToolbar } from "@/components/toolbar/EdgeCreationToolbar";
 import { ViewControls } from "@/components/toolbar/ViewControls";
+import { WorkingPlaneControls } from "@/components/toolbar/WorkingPlaneControls";
 import { ZSliceSlider } from "@/components/toolbar/ZSliceSlider";
 import { isApiError, schedule, validate } from "@/lib/api";
 import { getZRange } from "@/lib/geometry";
@@ -44,6 +46,7 @@ export function Toolbar(): React.ReactNode {
   const zRange = useMemo(() => getZRange(project.nodes), [project.nodes]);
 
   const is3DSliceMode = project.dimension === 3 && viewMode === "2d-slice";
+  const is3DIsometricMode = project.dimension === 3 && viewMode === "3d-isometric";
   const [error, setError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
@@ -216,11 +219,24 @@ export function Toolbar(): React.ReactNode {
         {/* Flow View Controls */}
         <ViewControls />
 
+        <div className="h-6 w-px bg-gray-300" />
+
+        {/* Edge Creation Mode */}
+        <EdgeCreationToolbar />
+
         {/* Z-Slice Slider - only in 3D mode with 2D-slice view */}
         {is3DSliceMode && (
           <>
             <div className="h-6 w-px bg-gray-300" />
             <ZSliceSlider minZ={zRange.min} maxZ={zRange.max} />
+          </>
+        )}
+
+        {/* Working Plane Controls - only in 3D isometric view */}
+        {is3DIsometricMode && (
+          <>
+            <div className="h-6 w-px bg-gray-300" />
+            <WorkingPlaneControls minOffset={zRange.min} maxOffset={zRange.max} />
           </>
         )}
 
