@@ -11,10 +11,14 @@
 
 "use client";
 
+import { EdgeCreationToolbar } from "@/components/toolbar/EdgeCreationToolbar";
+import { GhostRangeSlider } from "@/components/toolbar/GhostRangeSlider";
+import { NodeCreationToolbar } from "@/components/toolbar/NodeCreationToolbar";
 import { ViewControls } from "@/components/toolbar/ViewControls";
+import { WorkingPlaneControls } from "@/components/toolbar/WorkingPlaneControls";
 import { ZSliceSlider } from "@/components/toolbar/ZSliceSlider";
 import { isApiError, schedule, validate } from "@/lib/api";
-import { getZRange } from "@/lib/geometry";
+import { getAxisRange, getZRange } from "@/lib/geometry";
 import { downloadProject, safeParseProject } from "@/lib/validation";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
@@ -40,10 +44,19 @@ export function Toolbar(): React.ReactNode {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Calculate Z range from nodes
+  // Calculate axis ranges from nodes
   const zRange = useMemo(() => getZRange(project.nodes), [project.nodes]);
+  const axisRanges = useMemo(
+    () => ({
+      x: getAxisRange(project.nodes, "x"),
+      y: getAxisRange(project.nodes, "y"),
+      z: zRange,
+    }),
+    [project.nodes, zRange]
+  );
 
-  const is3DSliceMode = project.dimension === 3 && viewMode === "2d-slice";
+  const is3DSliceMode = viewMode === "2d-slice";
+  const is3DIsometricMode = viewMode === "3d-isometric";
   const [error, setError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
@@ -216,11 +229,28 @@ export function Toolbar(): React.ReactNode {
         {/* Flow View Controls */}
         <ViewControls />
 
-        {/* Z-Slice Slider - only in 3D mode with 2D-slice view */}
+        <div className="h-6 w-px bg-gray-300" />
+
+        {/* Node Creation */}
+        <NodeCreationToolbar />
+
+        {/* Edge Creation Mode */}
+        <EdgeCreationToolbar />
+
+        {/* Z-Slice Slider and Ghost Range - only in 2D-slice view */}
         {is3DSliceMode && (
           <>
             <div className="h-6 w-px bg-gray-300" />
             <ZSliceSlider minZ={zRange.min} maxZ={zRange.max} />
+            <GhostRangeSlider />
+          </>
+        )}
+
+        {/* Working Plane Controls - only in 3D isometric view */}
+        {is3DIsometricMode && (
+          <>
+            <div className="h-6 w-px bg-gray-300" />
+            <WorkingPlaneControls axisRanges={axisRanges} />
           </>
         )}
 

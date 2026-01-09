@@ -6,17 +6,22 @@
  * - Line segments for edges
  * - OrbitControls for camera manipulation
  * - Z-axis pointing up
+ * - 3D editing mode with working plane
  */
 
 "use client";
 
+import { WorkingPlaneGrid } from "@/components/canvas/WorkingPlaneGrid";
+import { useWorkingPlane } from "@/hooks/useWorkingPlane";
+import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
-import type { GraphEdge, GraphNode, NodeRole } from "@/types";
-import { is3D } from "@/types";
+import { useUIStore } from "@/stores/uiStore";
+import type { GraphEdge, GraphNode, IntermediateNode, NodeRole } from "@/types";
+import { createEdge } from "@/types";
 import { Line, OrbitControls, Text } from "@react-three/drei";
 import { Canvas, type ThreeElements } from "@react-three/fiber";
-import { memo, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import * as THREE from "three";
 
 // Extend JSX.IntrinsicElements for React Three Fiber
@@ -47,8 +52,7 @@ const SELECTED_EMISSIVE = "#ffffff";
 
 // Get 3D position from graph node (graph Z -> Three.js Y for upward axis)
 function getPosition(node: GraphNode): [number, number, number] {
-  const { x, y } = node.coordinate;
-  const z = is3D(node.coordinate) ? node.coordinate.z : 0;
+  const { x, y, z } = node.coordinate;
   // Map: graph X -> Three X, graph Y -> Three Z, graph Z -> Three Y (up)
   return [x, z, y];
 }
@@ -56,21 +60,33 @@ function getPosition(node: GraphNode): [number, number, number] {
 interface Node3DProps {
   node: GraphNode;
   isSelected: boolean;
+  isSourceNode: boolean;
+  isEdgeCreationMode: boolean;
   onClick: () => void;
 }
 
-function Node3DComponent({ node, isSelected, onClick }: Node3DProps): React.ReactNode {
+function Node3DComponent({
+  node,
+  isSelected,
+  isSourceNode,
+  isEdgeCreationMode,
+  onClick,
+}: Node3DProps): React.ReactNode {
   const position = useMemo(() => getPosition(node), [node]);
   const color = ROLE_COLORS[node.role];
+
+  // Determine emissive effect based on selection state
+  const emissiveColor = isSourceNode ? "#a855f7" : isSelected ? SELECTED_EMISSIVE : undefined;
+  const emissiveIntensity = isSourceNode ? 0.5 : isSelected ? 0.3 : 0;
 
   return (
     <group position={position}>
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: Three.js mesh elements don't support keyboard events */}
       <mesh onClick={onClick}>
-        <sphereGeometry args={[0.15, 32, 32]} />
+        <sphereGeometry args={[isEdgeCreationMode ? 0.18 : 0.15, 32, 32]} />
         <meshStandardMaterial
           color={color}
-          {...(isSelected ? { emissive: SELECTED_EMISSIVE, emissiveIntensity: 0.3 } : {})}
+          {...(emissiveColor !== undefined ? { emissive: emissiveColor, emissiveIntensity } : {})}
         />
       </mesh>
       {/* Node label */}
@@ -119,12 +135,87 @@ function Edge3DComponent({ edge, nodes, isSelected, onClick }: Edge3DProps): Rea
 
 const Edge3D = memo(Edge3DComponent);
 
+// Generate unique node ID
+function generateNodeId(existingIds: string[]): string {
+  let counter = 0;
+  let id = `n${counter}`;
+  while (existingIds.includes(id)) {
+    counter++;
+    id = `n${counter}`;
+  }
+  return id;
+}
+
 function Scene(): React.ReactNode {
   const project = useProjectStore((state) => state.project);
+  const addNode = useProjectStore((state) => state.addNode);
+  const addEdgeToStore = useProjectStore((state) => state.addEdge);
   const selectedNodeId = useSelectionStore((state) => state.selectedNodeId);
   const selectedEdgeId = useSelectionStore((state) => state.selectedEdgeId);
   const selectNode = useSelectionStore((state) => state.selectNode);
   const selectEdge = useSelectionStore((state) => state.selectEdge);
+
+  // UI state for 3D editing
+  const is3DEditMode = useUIStore((state) => state.is3DEditMode);
+  const workingPlane = useUIStore((state) => state.workingPlane);
+  const workingPlaneOffset = useUIStore((state) => state.workingPlaneOffset);
+  const showWorkingPlaneGrid = useUIStore((state) => state.showWorkingPlaneGrid);
+
+  // Edge creation state
+  const isEdgeCreationMode = useEdgeCreationStore((state) => state.isEdgeCreationMode);
+  const sourceNodeId = useEdgeCreationStore((state) => state.sourceNodeId);
+  const setSourceNode = useEdgeCreationStore((state) => state.setSourceNode);
+  const clearSourceNode = useEdgeCreationStore((state) => state.clearSourceNode);
+
+  // Working plane utilities
+  const { threeToGraph } = useWorkingPlane(workingPlane, workingPlaneOffset);
+
+  // Handle node click for edge creation mode
+  const handleNodeClick = useCallback(
+    (nodeId: string) => {
+      if (!isEdgeCreationMode) {
+        selectNode(nodeId);
+        return;
+      }
+
+      if (sourceNodeId === null) {
+        setSourceNode(nodeId);
+        selectNode(nodeId);
+      } else if (sourceNodeId !== nodeId) {
+        const edge = createEdge(sourceNodeId, nodeId);
+        addEdgeToStore(edge);
+        clearSourceNode();
+        selectNode(nodeId);
+      }
+    },
+    [isEdgeCreationMode, sourceNodeId, selectNode, setSourceNode, clearSourceNode, addEdgeToStore]
+  );
+
+  // Handle working plane click for node creation
+  const handlePlaneClick = useCallback(
+    (point: THREE.Vector3) => {
+      if (!is3DEditMode) return;
+
+      const graphCoord = threeToGraph(point);
+      const existingIds = project.nodes.map((n) => n.id);
+      const newId = generateNodeId(existingIds);
+
+      const newNode: IntermediateNode = {
+        id: newId,
+        coordinate: graphCoord,
+        role: "intermediate",
+        measBasis: {
+          type: "planner",
+          plane: "XY",
+          angleCoeff: 0,
+        },
+      };
+
+      addNode(newNode);
+      selectNode(newId);
+    },
+    [is3DEditMode, threeToGraph, project.nodes, addNode, selectNode]
+  );
 
   // Calculate bounding box center for camera focus
   const center = useMemo(() => {
@@ -158,13 +249,25 @@ function Scene(): React.ReactNode {
       {/* Axes helper */}
       <axesHelper args={[2]} />
 
+      {/* Working plane grid (only in edit mode) */}
+      {is3DEditMode && (
+        <WorkingPlaneGrid
+          plane={workingPlane}
+          offset={workingPlaneOffset}
+          visible={showWorkingPlaneGrid}
+          onClick={handlePlaneClick}
+        />
+      )}
+
       {/* Nodes */}
       {project.nodes.map((node) => (
         <Node3D
           key={node.id}
           node={node}
           isSelected={node.id === selectedNodeId}
-          onClick={() => selectNode(node.id)}
+          isSourceNode={node.id === sourceNodeId}
+          isEdgeCreationMode={isEdgeCreationMode}
+          onClick={() => handleNodeClick(node.id)}
         />
       ))}
 

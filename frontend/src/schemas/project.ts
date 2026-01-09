@@ -7,27 +7,16 @@
 
 import { z } from "zod";
 
-// === Coordinate Schemas ===
-// .strict() prevents extra fields
-// 3D is evaluated first (important: 2D should not incorrectly accept 3D)
+// === Coordinate Schema ===
+// All coordinates are 3D (x, y, z)
 
-export const Coordinate2DSchema = z
-  .object({
-    x: z.number(),
-    y: z.number(),
-  })
-  .strict();
-
-export const Coordinate3DSchema = z
+export const CoordinateSchema = z
   .object({
     x: z.number(),
     y: z.number(),
     z: z.number(),
   })
   .strict();
-
-// Important: 3D first to ensure proper discrimination
-export const CoordinateSchema = z.union([Coordinate3DSchema, Coordinate2DSchema]);
 
 // === Measurement Basis Schemas ===
 
@@ -154,7 +143,6 @@ export const ProjectSchema = z
   .object({
     $schema: z.literal("graphqomb-studio/v1"),
     name: z.string(),
-    dimension: z.union([z.literal(2), z.literal(3)]),
     nodes: z.array(GraphNodeSchema),
     edges: z.array(GraphEdgeSchema),
     flow: FlowDefinitionSchema,

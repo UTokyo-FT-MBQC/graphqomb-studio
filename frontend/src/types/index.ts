@@ -7,22 +7,10 @@
 
 // === Coordinates ===
 
-export interface Coordinate2D {
-  x: number;
-  y: number;
-}
-
-export interface Coordinate3D {
+export interface Coordinate {
   x: number;
   y: number;
   z: number;
-}
-
-export type Coordinate = Coordinate2D | Coordinate3D;
-
-// Type guard for 3D coordinates
-export function is3D(coord: Coordinate): coord is Coordinate3D {
-  return "z" in coord;
 }
 
 // === Measurement Basis ===
@@ -155,7 +143,6 @@ export interface ScheduleResult {
 export interface GraphQOMBProject {
   $schema: "graphqomb-studio/v1";
   name: string;
-  dimension: 2 | 3;
   nodes: GraphNode[];
   edges: GraphEdge[];
   flow: FlowDefinition;

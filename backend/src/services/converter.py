@@ -11,8 +11,6 @@ from graphqomb.graphstate import GraphState
 
 from src.models.dto import (
     AxisMeasBasisDTO,
-    Coordinate2D,
-    Coordinate3D,
     PlannerMeasBasisDTO,
     ProjectPayloadDTO,
     ScheduleResultDTO,
@@ -37,13 +35,7 @@ def dto_to_graphstate(project: ProjectPayloadDTO) -> tuple[GraphState, dict[str,
     # Add nodes
     for node_dto in project.nodes:
         coord = node_dto.coordinate
-        coord_tuple: tuple[float, ...] | None = None
-
-        if isinstance(coord, Coordinate3D):
-            coord_tuple = (coord.x, coord.y, coord.z)
-        elif isinstance(coord, Coordinate2D):
-            coord_tuple = (coord.x, coord.y)
-
+        coord_tuple = (coord.x, coord.y, coord.z)
         node_id = graph.add_physical_node(coordinate=coord_tuple)
         node_map[node_dto.id] = node_id
 

@@ -6,7 +6,6 @@
  */
 
 import type { Coordinate, GraphNode } from "@/types";
-import { is3D } from "@/types";
 
 // Micro-shift offset for overlapping XY coordinates
 export const GHOST_OFFSET = 0.15;
@@ -15,10 +14,10 @@ export const GHOST_OFFSET = 0.15;
 export const SCALE = 100;
 
 /**
- * Get the Z coordinate of a node, defaulting to 0 for 2D nodes
+ * Get the Z coordinate of a node
  */
 export function getNodeZ(node: GraphNode): number {
-  return is3D(node.coordinate) ? node.coordinate.z : 0;
+  return node.coordinate.z;
 }
 
 /**
@@ -29,31 +28,34 @@ export function getNodesAtZ(nodes: readonly GraphNode[], z: number): GraphNode[]
 }
 
 /**
- * Get nodes from adjacent Z levels (z-1 and z+1)
+ * Get nodes that should be shown as ghosts (Z distance <= range from currentZ)
+ * @param range - Maximum Z distance to show as ghost (default: 1)
  */
-export function getAdjacentZNodes(
+export function getGhostCandidateNodes(
   nodes: readonly GraphNode[],
-  currentZ: number
-): { above: GraphNode[]; below: GraphNode[] } {
-  const above: GraphNode[] = [];
-  const below: GraphNode[] = [];
-
-  for (const node of nodes) {
-    const nodeZ = getNodeZ(node);
-    if (nodeZ === currentZ + 1) {
-      above.push(node);
-    } else if (nodeZ === currentZ - 1) {
-      below.push(node);
-    }
-  }
-
-  return { above, below };
+  currentZ: number,
+  range = 1
+): GraphNode[] {
+  return nodes.filter((node) => {
+    const diff = Math.abs(node.coordinate.z - currentZ);
+    return diff > 0 && diff <= range;
+  });
 }
 
 /**
- * Get the Z range (min and max) from all nodes
+ * Get the value of a specific axis from a node's coordinate
  */
-export function getZRange(nodes: readonly GraphNode[]): { min: number; max: number } {
+function getNodeAxisValue(node: GraphNode, axis: "x" | "y" | "z"): number {
+  return node.coordinate[axis];
+}
+
+/**
+ * Get the range (min and max) of a specific axis from all nodes
+ */
+export function getAxisRange(
+  nodes: readonly GraphNode[],
+  axis: "x" | "y" | "z"
+): { min: number; max: number } {
   if (nodes.length === 0) {
     return { min: 0, max: 0 };
   }
@@ -62,12 +64,19 @@ export function getZRange(nodes: readonly GraphNode[]): { min: number; max: numb
   let max = Number.NEGATIVE_INFINITY;
 
   for (const node of nodes) {
-    const z = getNodeZ(node);
-    if (z < min) min = z;
-    if (z > max) max = z;
+    const value = getNodeAxisValue(node, axis);
+    if (value < min) min = value;
+    if (value > max) max = value;
   }
 
   return { min, max };
+}
+
+/**
+ * Get the Z range (min and max) from all nodes
+ */
+export function getZRange(nodes: readonly GraphNode[]): { min: number; max: number } {
+  return getAxisRange(nodes, "z");
 }
 
 /**
@@ -87,22 +96,20 @@ export function hasOverlappingXY(node: GraphNode, currentZNodes: readonly GraphN
  * @param node - The node to get ghost position for
  * @param currentZ - The current Z slice being viewed
  * @param allNodes - All nodes in the project
+ * @param range - Maximum Z distance to show as ghost (default: 1)
  * @returns Position in graph coordinates (not screen pixels), or null if not a ghost node
  */
 export function getGhostPosition(
   node: GraphNode,
   currentZ: number,
-  allNodes: readonly GraphNode[]
+  allNodes: readonly GraphNode[],
+  range = 1
 ): { x: number; y: number } | null {
-  const nodeZ = getNodeZ(node);
+  const nodeZ = node.coordinate.z;
+  const diff = Math.abs(nodeZ - currentZ);
 
-  // Not a ghost node if on current Z
-  if (nodeZ === currentZ) {
-    return null;
-  }
-
-  // Only show ghosts from adjacent Z levels
-  if (Math.abs(nodeZ - currentZ) !== 1) {
+  // Not a ghost if on current Z or outside threshold (|Z diff| > range)
+  if (diff === 0 || diff > range) {
     return null;
   }
 
@@ -134,20 +141,10 @@ export function toScreenPosition(coord: Coordinate): { x: number; y: number } {
 }
 
 /**
- * Convert screen position to graph coordinates
+ * Convert screen position to graph coordinates (always 3D)
  */
-export function toGraphCoordinate(
-  screenX: number,
-  screenY: number,
-  is3DMode: boolean,
-  z: number
-): Coordinate {
+export function toGraphCoordinate(screenX: number, screenY: number, z: number): Coordinate {
   const x = Math.round((screenX / SCALE) * 100) / 100;
   const y = Math.round((screenY / SCALE) * 100) / 100;
-
-  if (is3DMode) {
-    return { x, y, z };
-  }
-
-  return { x, y };
+  return { x, y, z };
 }

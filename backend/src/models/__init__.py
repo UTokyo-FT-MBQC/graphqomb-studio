@@ -2,8 +2,6 @@
 
 from src.models.dto import (
     AxisMeasBasisDTO,
-    Coordinate2D,
-    Coordinate3D,
     CoordinateDTO,
     FlowDefinitionDTO,
     GraphEdgeDTO,
@@ -20,8 +18,6 @@ from src.models.dto import (
 
 __all__ = [
     "AxisMeasBasisDTO",
-    "Coordinate2D",
-    "Coordinate3D",
     "CoordinateDTO",
     "FlowDefinitionDTO",
     "GraphEdgeDTO",

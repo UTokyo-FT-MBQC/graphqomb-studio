@@ -12,7 +12,6 @@ describe("Project validation", () => {
     const validProject = {
       $schema: "graphqomb-studio/v1",
       name: "Test Project",
-      dimension: 2,
       nodes: [],
       edges: [],
       flow: {
@@ -38,18 +37,17 @@ describe("Project validation", () => {
     const projectWithNodes = {
       $schema: "graphqomb-studio/v1",
       name: "Test Project",
-      dimension: 2,
       nodes: [
         {
           id: "n0",
-          coordinate: { x: 0, y: 0 },
+          coordinate: { x: 0, y: 0, z: 0 },
           role: "input",
           qubitIndex: 0,
           measBasis: { type: "planner", plane: "XY", angleCoeff: 0 },
         },
         {
           id: "n1",
-          coordinate: { x: 1, y: 0 },
+          coordinate: { x: 1, y: 0, z: 0 },
           role: "output",
           qubitIndex: 0,
         },
@@ -69,11 +67,10 @@ describe("Project validation", () => {
     const projectWithIntermediate = {
       $schema: "graphqomb-studio/v1",
       name: "Test Project",
-      dimension: 2,
       nodes: [
         {
           id: "n0",
-          coordinate: { x: 0, y: 0 },
+          coordinate: { x: 0, y: 0, z: 0 },
           role: "intermediate",
           measBasis: { type: "axis", axis: "X", sign: "PLUS" },
         },
@@ -89,12 +86,24 @@ describe("Project validation", () => {
     expect(result.success).toBe(true);
   });
 
-  it("should reject invalid dimension", () => {
-    const invalidDimension = {
+  it("should validate a project with fractional Z coordinates", () => {
+    const projectWithFractionalZ = {
       $schema: "graphqomb-studio/v1",
       name: "Test Project",
-      dimension: 4,
-      nodes: [],
+      nodes: [
+        {
+          id: "n0",
+          coordinate: { x: 0, y: 0, z: 0.5 },
+          role: "intermediate",
+          measBasis: { type: "planner", plane: "XY", angleCoeff: 0 },
+        },
+        {
+          id: "n1",
+          coordinate: { x: 1, y: 0, z: -0.3 },
+          role: "intermediate",
+          measBasis: { type: "planner", plane: "XY", angleCoeff: 0 },
+        },
+      ],
       edges: [],
       flow: {
         xflow: {},
@@ -102,7 +111,7 @@ describe("Project validation", () => {
       },
     };
 
-    const result = safeValidateProject(invalidDimension);
-    expect(result.success).toBe(false);
+    const result = safeValidateProject(projectWithFractionalZ);
+    expect(result.success).toBe(true);
   });
 });

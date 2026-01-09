@@ -16,7 +16,6 @@ import { FlowEditor } from "@/components/panels/FlowEditor";
 import { MeasBasisEditor } from "@/components/panels/MeasBasisEditor";
 import { useProjectStore } from "@/stores/projectStore";
 import type {
-  Coordinate,
   GraphNode,
   InputNode,
   IntermediateNode,
@@ -24,7 +23,6 @@ import type {
   NodeRole,
   OutputNode,
 } from "@/types";
-import { is3D } from "@/types";
 import type { ChangeEvent } from "react";
 import { useCallback, useMemo } from "react";
 
@@ -33,11 +31,8 @@ interface NodePropertiesProps {
 }
 
 export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
-  const project = useProjectStore((state) => state.project);
   const updateNode = useProjectStore((state) => state.updateNode);
   const removeNode = useProjectStore((state) => state.removeNode);
-
-  const is3DMode = project.dimension === 3;
 
   // Handle position changes
   const handlePositionChange = useCallback(
@@ -45,20 +40,7 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
       const numValue = Number.parseFloat(value);
       if (Number.isNaN(numValue)) return;
 
-      const currentCoord = node.coordinate;
-      let newCoord: Coordinate;
-
-      if (axis === "z") {
-        // When setting Z, we always create a 3D coordinate
-        newCoord = { x: currentCoord.x, y: currentCoord.y, z: numValue };
-      } else {
-        if (is3D(currentCoord)) {
-          newCoord = { ...currentCoord, [axis]: numValue };
-        } else {
-          newCoord = { ...currentCoord, [axis]: numValue };
-        }
-      }
-
+      const newCoord = { ...node.coordinate, [axis]: numValue };
       updateNode(node.id, { coordinate: newCoord });
     },
     [node.id, node.coordinate, updateNode]
@@ -119,14 +101,7 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
   }, [node.id, removeNode]);
 
   // Get current position values
-  const position = useMemo(() => {
-    const coord = node.coordinate;
-    return {
-      x: coord.x,
-      y: coord.y,
-      z: is3D(coord) ? coord.z : 0,
-    };
-  }, [node.coordinate]);
+  const position = useMemo(() => node.coordinate, [node.coordinate]);
 
   return (
     <div className="space-y-4">
@@ -172,21 +147,19 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
                 className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
               />
             </div>
-            {is3DMode && (
-              <div>
-                <label htmlFor={`node-${node.id}-pos-z`} className="block text-xs text-gray-500">
-                  Z
-                </label>
-                <input
-                  id={`node-${node.id}-pos-z`}
-                  type="number"
-                  step="0.1"
-                  value={position.z}
-                  onChange={(e) => handlePositionChange("z", e.target.value)}
-                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                />
-              </div>
-            )}
+            <div>
+              <label htmlFor={`node-${node.id}-pos-z`} className="block text-xs text-gray-500">
+                Z
+              </label>
+              <input
+                id={`node-${node.id}-pos-z`}
+                type="number"
+                step="0.1"
+                value={position.z}
+                onChange={(e) => handlePositionChange("z", e.target.value)}
+                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+              />
+            </div>
           </div>
         </div>
 
