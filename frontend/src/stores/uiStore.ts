@@ -16,6 +16,9 @@ interface UIState {
   showXFlow: boolean;
   showZFlow: boolean;
 
+  // Ghost node display range (Z distance threshold)
+  ghostZRange: number;
+
   // 3D editing state
   workingPlane: WorkingPlane;
   workingPlaneOffset: number;
@@ -31,6 +34,7 @@ interface UIState {
   toggleZFlow: () => void;
   setShowXFlow: (show: boolean) => void;
   setShowZFlow: (show: boolean) => void;
+  setGhostZRange: (range: number) => void;
 
   // 3D editing actions
   setWorkingPlane: (plane: WorkingPlane) => void;
@@ -45,6 +49,9 @@ export const useUIStore = create<UIState>((set) => ({
   currentZSlice: 0,
   showXFlow: false,
   showZFlow: false,
+
+  // Ghost node display range (default: show nodes within Z distance <= 1)
+  ghostZRange: 1,
 
   // 3D editing defaults
   workingPlane: "XY",
@@ -67,6 +74,8 @@ export const useUIStore = create<UIState>((set) => ({
   setShowXFlow: (show) => set({ showXFlow: show }),
 
   setShowZFlow: (show) => set({ showZFlow: show }),
+
+  setGhostZRange: (range) => set({ ghostZRange: range }),
 
   // 3D editing actions
   setWorkingPlane: (plane) => set({ workingPlane: plane }),

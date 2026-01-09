@@ -28,12 +28,17 @@ export function getNodesAtZ(nodes: readonly GraphNode[], z: number): GraphNode[]
 }
 
 /**
- * Get nodes that should be shown as ghosts (Z distance < 1 from currentZ)
+ * Get nodes that should be shown as ghosts (Z distance <= range from currentZ)
+ * @param range - Maximum Z distance to show as ghost (default: 1)
  */
-export function getGhostCandidateNodes(nodes: readonly GraphNode[], currentZ: number): GraphNode[] {
+export function getGhostCandidateNodes(
+  nodes: readonly GraphNode[],
+  currentZ: number,
+  range = 1
+): GraphNode[] {
   return nodes.filter((node) => {
     const diff = Math.abs(node.coordinate.z - currentZ);
-    return diff > 0 && diff < 1;
+    return diff > 0 && diff <= range;
   });
 }
 
@@ -91,18 +96,20 @@ export function hasOverlappingXY(node: GraphNode, currentZNodes: readonly GraphN
  * @param node - The node to get ghost position for
  * @param currentZ - The current Z slice being viewed
  * @param allNodes - All nodes in the project
+ * @param range - Maximum Z distance to show as ghost (default: 1)
  * @returns Position in graph coordinates (not screen pixels), or null if not a ghost node
  */
 export function getGhostPosition(
   node: GraphNode,
   currentZ: number,
-  allNodes: readonly GraphNode[]
+  allNodes: readonly GraphNode[],
+  range = 1
 ): { x: number; y: number } | null {
   const nodeZ = node.coordinate.z;
   const diff = Math.abs(nodeZ - currentZ);
 
-  // Not a ghost if on current Z or outside threshold (|Z diff| >= 1)
-  if (diff === 0 || diff >= 1) {
+  // Not a ghost if on current Z or outside threshold (|Z diff| > range)
+  if (diff === 0 || diff > range) {
     return null;
   }
 

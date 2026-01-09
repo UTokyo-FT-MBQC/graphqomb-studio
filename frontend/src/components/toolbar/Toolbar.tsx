@@ -12,6 +12,7 @@
 "use client";
 
 import { EdgeCreationToolbar } from "@/components/toolbar/EdgeCreationToolbar";
+import { GhostRangeSlider } from "@/components/toolbar/GhostRangeSlider";
 import { NodeCreationToolbar } from "@/components/toolbar/NodeCreationToolbar";
 import { ViewControls } from "@/components/toolbar/ViewControls";
 import { WorkingPlaneControls } from "@/components/toolbar/WorkingPlaneControls";
@@ -236,11 +237,12 @@ export function Toolbar(): React.ReactNode {
         {/* Edge Creation Mode */}
         <EdgeCreationToolbar />
 
-        {/* Z-Slice Slider - only in 3D mode with 2D-slice view */}
+        {/* Z-Slice Slider and Ghost Range - only in 2D-slice view */}
         {is3DSliceMode && (
           <>
             <div className="h-6 w-px bg-gray-300" />
             <ZSliceSlider minZ={zRange.min} maxZ={zRange.max} />
+            <GhostRangeSlider />
           </>
         )}
 

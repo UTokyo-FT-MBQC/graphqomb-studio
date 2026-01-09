@@ -121,6 +121,7 @@ function GraphCanvas2DInner(): React.ReactNode {
 
   const viewMode = useUIStore((state) => state.viewMode);
   const currentZSlice = useUIStore((state) => state.currentZSlice);
+  const ghostZRange = useUIStore((state) => state.ghostZRange);
 
   const isEdgeCreationMode = useEdgeCreationStore((state) => state.isEdgeCreationMode);
   const sourceNodeId = useEdgeCreationStore((state) => state.sourceNodeId);
@@ -142,15 +143,15 @@ function GraphCanvas2DInner(): React.ReactNode {
     return project.nodes.filter((node) => node.coordinate.z === currentZSlice);
   }, [project.nodes, viewMode, currentZSlice]);
 
-  // Get ghost nodes (only in 2d-slice mode, where |Z diff| < 1)
+  // Get ghost nodes (only in 2d-slice mode, where |Z diff| <= ghostZRange)
   const ghostNodesData = useMemo((): GhostNodeComputedData[] => {
     if (viewMode !== "2d-slice") return [];
 
-    const ghostCandidates = getGhostCandidateNodes(project.nodes, currentZSlice);
+    const ghostCandidates = getGhostCandidateNodes(project.nodes, currentZSlice, ghostZRange);
     const ghostNodes: GhostNodeComputedData[] = [];
 
     for (const node of ghostCandidates) {
-      const position = getGhostPosition(node, currentZSlice, project.nodes);
+      const position = getGhostPosition(node, currentZSlice, project.nodes, ghostZRange);
       if (position !== null) {
         const zOffset = node.coordinate.z - currentZSlice;
         ghostNodes.push({ node, position, zOffset });
@@ -158,7 +159,7 @@ function GraphCanvas2DInner(): React.ReactNode {
     }
 
     return ghostNodes;
-  }, [project.nodes, viewMode, currentZSlice]);
+  }, [project.nodes, viewMode, currentZSlice, ghostZRange]);
 
   // Set of visible node IDs for edge filtering
   const visibleNodeIds = useMemo(() => new Set(visibleNodes.map((n) => n.id)), [visibleNodes]);

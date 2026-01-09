@@ -36,6 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `NodeCreationToolbar` component for creating nodes with manual X, Y, Z coordinate input
   - Located next to Edge Creation button in toolbar
 
+- **Configurable Ghost Node Range**
+  - `GhostRangeSlider` component for adjusting ghost node visibility threshold
+  - Ghost nodes now visible when |Z diff| <= range (default: 1, previously < 1)
+  - User can adjust range from 0 to 5 via slider or direct input
+
 - Node/Edge list panel in the property panel sidebar
   - Collapsible panel with tab switching (Nodes/Edges)
   - Filtering by ID, role (nodes), source/target (edges)
