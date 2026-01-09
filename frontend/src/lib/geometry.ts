@@ -51,9 +51,22 @@ export function getAdjacentZNodes(
 }
 
 /**
- * Get the Z range (min and max) from all nodes
+ * Get the value of a specific axis from a node's coordinate
  */
-export function getZRange(nodes: readonly GraphNode[]): { min: number; max: number } {
+function getNodeAxisValue(node: GraphNode, axis: "x" | "y" | "z"): number {
+  if (axis === "z") {
+    return is3D(node.coordinate) ? node.coordinate.z : 0;
+  }
+  return node.coordinate[axis];
+}
+
+/**
+ * Get the range (min and max) of a specific axis from all nodes
+ */
+export function getAxisRange(
+  nodes: readonly GraphNode[],
+  axis: "x" | "y" | "z"
+): { min: number; max: number } {
   if (nodes.length === 0) {
     return { min: 0, max: 0 };
   }
@@ -62,12 +75,19 @@ export function getZRange(nodes: readonly GraphNode[]): { min: number; max: numb
   let max = Number.NEGATIVE_INFINITY;
 
   for (const node of nodes) {
-    const z = getNodeZ(node);
-    if (z < min) min = z;
-    if (z > max) max = z;
+    const value = getNodeAxisValue(node, axis);
+    if (value < min) min = value;
+    if (value > max) max = value;
   }
 
   return { min, max };
+}
+
+/**
+ * Get the Z range (min and max) from all nodes
+ */
+export function getZRange(nodes: readonly GraphNode[]): { min: number; max: number } {
+  return getAxisRange(nodes, "z");
 }
 
 /**

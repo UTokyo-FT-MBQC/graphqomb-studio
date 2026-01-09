@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `WorkingPlaneGrid.tsx`: Fixed XY/XZ plane rotation mapping - XY plane (Graph Z fixed) now correctly uses no rotation, and XZ plane (Graph Y fixed) correctly uses -90° X rotation
 - Z-flow auto-computation now works properly (useResolvedFlow hook was not being called)
 - Self-loop arrows in flow visualization now render as visible curved loops instead of invisible points
+- `WorkingPlaneControls`: Working plane offset slider now uses axis-specific ranges (X range for YZ plane, Y range for XZ plane, Z range for XY plane) instead of always using Z range. This fixes an issue where the slider was disabled for 2D-origin graphs with all Z=0 when using XZ or YZ planes.
 
 #### Changed
 - `GraphCanvas2D.tsx`: Updated `handleConnect` to verify nodes exist in project (supports ghost node connections)

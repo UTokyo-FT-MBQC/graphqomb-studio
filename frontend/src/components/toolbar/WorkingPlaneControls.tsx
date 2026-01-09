@@ -12,9 +12,17 @@
 
 import { type WorkingPlane, useUIStore } from "@/stores/uiStore";
 
+interface AxisRange {
+  min: number;
+  max: number;
+}
+
 interface WorkingPlaneControlsProps {
-  minOffset: number;
-  maxOffset: number;
+  axisRanges: {
+    x: AxisRange;
+    y: AxisRange;
+    z: AxisRange;
+  };
 }
 
 const planeLabels: Record<WorkingPlane, string> = {
@@ -23,10 +31,27 @@ const planeLabels: Record<WorkingPlane, string> = {
   YZ: "YZ (X fixed)",
 };
 
-export function WorkingPlaneControls({
-  minOffset,
-  maxOffset,
-}: WorkingPlaneControlsProps): React.ReactNode {
+/**
+ * Get the axis range for the fixed axis of a given plane.
+ * - XY plane fixes Z
+ * - XZ plane fixes Y
+ * - YZ plane fixes X
+ */
+function getPlaneAxisRange(
+  plane: WorkingPlane,
+  axisRanges: WorkingPlaneControlsProps["axisRanges"]
+): AxisRange {
+  switch (plane) {
+    case "XY":
+      return axisRanges.z;
+    case "XZ":
+      return axisRanges.y;
+    case "YZ":
+      return axisRanges.x;
+  }
+}
+
+export function WorkingPlaneControls({ axisRanges }: WorkingPlaneControlsProps): React.ReactNode {
   const is3DEditMode = useUIStore((state) => state.is3DEditMode);
   const toggle3DEditMode = useUIStore((state) => state.toggle3DEditMode);
   const workingPlane = useUIStore((state) => state.workingPlane);
@@ -35,6 +60,9 @@ export function WorkingPlaneControls({
   const setWorkingPlaneOffset = useUIStore((state) => state.setWorkingPlaneOffset);
   const showWorkingPlaneGrid = useUIStore((state) => state.showWorkingPlaneGrid);
   const toggleWorkingPlaneGrid = useUIStore((state) => state.toggleWorkingPlaneGrid);
+
+  // Get the axis range for the currently selected plane
+  const { min: minOffset, max: maxOffset } = getPlaneAxisRange(workingPlane, axisRanges);
 
   const handleOffsetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setWorkingPlaneOffset(Number(e.target.value));
