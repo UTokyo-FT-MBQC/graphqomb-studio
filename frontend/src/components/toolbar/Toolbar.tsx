@@ -12,6 +12,7 @@
 "use client";
 
 import { EdgeCreationToolbar } from "@/components/toolbar/EdgeCreationToolbar";
+import { NodeCreationToolbar } from "@/components/toolbar/NodeCreationToolbar";
 import { ViewControls } from "@/components/toolbar/ViewControls";
 import { WorkingPlaneControls } from "@/components/toolbar/WorkingPlaneControls";
 import { ZSliceSlider } from "@/components/toolbar/ZSliceSlider";
@@ -228,6 +229,9 @@ export function Toolbar(): React.ReactNode {
         <ViewControls />
 
         <div className="h-6 w-px bg-gray-300" />
+
+        {/* Node Creation */}
+        <NodeCreationToolbar />
 
         {/* Edge Creation Mode */}
         <EdgeCreationToolbar />
