@@ -454,6 +454,7 @@ function GraphCanvas2DInner(): React.ReactNode {
       onNodeClick={handleNodeClick}
       onPaneClick={handlePaneClick}
       onDoubleClick={handlePaneDoubleClick}
+      zoomOnDoubleClick={false}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
       fitView
