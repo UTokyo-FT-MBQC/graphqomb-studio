@@ -2,6 +2,7 @@
  * View Controls
  *
  * Provides toggle controls for:
+ * - Dimension (2D / 3D)
  * - View mode (2D Slice / 3D View) when dimension === 3
  * - Flow visualization (X-Flow, Z-Flow)
  */
@@ -13,6 +14,7 @@ import { useUIStore } from "@/stores/uiStore";
 
 export function ViewControls(): React.ReactNode {
   const dimension = useProjectStore((state) => state.project.dimension);
+  const setDimension = useProjectStore((state) => state.setDimension);
 
   const viewMode = useUIStore((state) => state.viewMode);
   const setViewMode = useUIStore((state) => state.setViewMode);
@@ -23,6 +25,32 @@ export function ViewControls(): React.ReactNode {
 
   return (
     <div className="flex items-center gap-3">
+      {/* Dimension Toggle */}
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => setDimension(2)}
+          className={`px-2 py-1 text-xs rounded transition-colors ${
+            dimension === 2
+              ? "bg-purple-500 text-white"
+              : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+          }`}
+        >
+          2D
+        </button>
+        <button
+          type="button"
+          onClick={() => setDimension(3)}
+          className={`px-2 py-1 text-xs rounded transition-colors ${
+            dimension === 3
+              ? "bg-purple-500 text-white"
+              : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+          }`}
+        >
+          3D
+        </button>
+      </div>
+
       {/* View Mode Toggle - only in 3D mode */}
       {dimension === 3 && (
         <>

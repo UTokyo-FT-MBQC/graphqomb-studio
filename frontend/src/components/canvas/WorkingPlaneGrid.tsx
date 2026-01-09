@@ -36,15 +36,17 @@ function WorkingPlaneGridComponent({
     switch (plane) {
       case "XY":
         // XY plane at fixed Z (Graph) = fixed Y (Three)
+        // Three.js Grid defaults to XZ plane (horizontal), so no rotation needed
         return {
           position: new THREE.Vector3(0, offset, 0),
-          rotation: new THREE.Euler(-Math.PI / 2, 0, 0),
+          rotation: new THREE.Euler(0, 0, 0),
         };
       case "XZ":
         // XZ plane at fixed Y (Graph) = fixed Z (Three)
+        // Rotate Grid from XZ plane to XY plane (rotate -90° around X axis)
         return {
           position: new THREE.Vector3(0, 0, offset),
-          rotation: new THREE.Euler(0, 0, 0),
+          rotation: new THREE.Euler(-Math.PI / 2, 0, 0),
         };
       case "YZ":
         // YZ plane at fixed X
