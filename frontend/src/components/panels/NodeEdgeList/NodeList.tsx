@@ -24,7 +24,6 @@ const NODE_SORT_OPTIONS: SortOption[] = [
 
 export function NodeList(): React.ReactNode {
   const nodes = useProjectStore((state) => state.project.nodes);
-  const dimension = useProjectStore((state) => state.project.dimension);
   const selectedNodeId = useSelectionStore((state) => state.selectedNodeId);
   const selectNode = useSelectionStore((state) => state.selectNode);
 
@@ -62,12 +61,9 @@ export function NodeList(): React.ReactNode {
         case "y":
           comparison = a.coordinate.y - b.coordinate.y;
           break;
-        case "z": {
-          const aZ = "z" in a.coordinate ? a.coordinate.z : 0;
-          const bZ = "z" in b.coordinate ? b.coordinate.z : 0;
-          comparison = aZ - bZ;
+        case "z":
+          comparison = a.coordinate.z - b.coordinate.z;
           break;
-        }
       }
       return sortAsc ? comparison : -comparison;
     });
@@ -75,9 +71,7 @@ export function NodeList(): React.ReactNode {
     return result;
   }, [nodes, filter, sortKey, sortAsc]);
 
-  // Show Z sort option only in 3D mode
-  const sortOptions =
-    dimension === 3 ? NODE_SORT_OPTIONS : NODE_SORT_OPTIONS.filter((opt) => opt.key !== "z");
+  const sortOptions = NODE_SORT_OPTIONS;
 
   return (
     <div className="space-y-2">

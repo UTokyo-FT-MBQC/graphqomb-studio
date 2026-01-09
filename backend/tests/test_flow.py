@@ -10,24 +10,23 @@ def create_project_with_xflow() -> dict[str, Any]:
     """Create a project with xflow for testing zflow computation."""
     return {
         "name": "Flow Test",
-        "dimension": 2,
         "nodes": [
             {
                 "id": "n0",
-                "coordinate": {"x": 0, "y": 0},
+                "coordinate": {"x": 0, "y": 0, "z": 0},
                 "role": "input",
                 "measBasis": {"type": "planner", "plane": "XY", "angleCoeff": 0},
                 "qubitIndex": 0,
             },
             {
                 "id": "n1",
-                "coordinate": {"x": 1, "y": 0},
+                "coordinate": {"x": 1, "y": 0, "z": 0},
                 "role": "intermediate",
                 "measBasis": {"type": "planner", "plane": "XY", "angleCoeff": 0},
             },
             {
                 "id": "n2",
-                "coordinate": {"x": 2, "y": 0},
+                "coordinate": {"x": 2, "y": 0, "z": 0},
                 "role": "output",
                 "qubitIndex": 0,
             },
@@ -67,18 +66,17 @@ async def test_compute_zflow_empty_xflow() -> None:
     """Test computing zflow with empty xflow."""
     project = {
         "name": "Empty Flow",
-        "dimension": 2,
         "nodes": [
             {
                 "id": "n0",
-                "coordinate": {"x": 0, "y": 0},
+                "coordinate": {"x": 0, "y": 0, "z": 0},
                 "role": "input",
                 "measBasis": {"type": "planner", "plane": "XY", "angleCoeff": 0},
                 "qubitIndex": 0,
             },
             {
                 "id": "n1",
-                "coordinate": {"x": 1, "y": 0},
+                "coordinate": {"x": 1, "y": 0, "z": 0},
                 "role": "output",
                 "qubitIndex": 0,
             },
@@ -104,7 +102,6 @@ async def test_compute_zflow_empty_project() -> None:
     """Test computing zflow for empty project."""
     project = {
         "name": "Empty",
-        "dimension": 2,
         "nodes": [],
         "edges": [],
         "flow": {"xflow": {}, "zflow": "auto"},
@@ -121,11 +118,10 @@ async def test_compute_zflow_empty_project() -> None:
     assert data == {}
 
 
-async def test_compute_zflow_3d_project() -> None:
-    """Test computing zflow for 3D project."""
+async def test_compute_zflow_multi_z_project() -> None:
+    """Test computing zflow for project with nodes at different Z levels."""
     project = {
-        "name": "3D Flow Test",
-        "dimension": 3,
+        "name": "Multi-Z Flow Test",
         "nodes": [
             {
                 "id": "n0",

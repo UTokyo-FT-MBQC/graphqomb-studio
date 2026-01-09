@@ -4,8 +4,7 @@ import pytest
 from pydantic import ValidationError
 from src.models.dto import (
     AxisMeasBasisDTO,
-    Coordinate2D,
-    Coordinate3D,
+    CoordinateDTO,
     FlowDefinitionDTO,
     GraphEdgeDTO,
     GraphNodeDTO,
@@ -34,23 +33,27 @@ class TestNormalizeEdgeId:
 class TestCoordinates:
     """Tests for coordinate DTOs."""
 
-    def test_coordinate_2d(self) -> None:
-        """Test 2D coordinate creation."""
-        coord = Coordinate2D(x=1.0, y=2.0)
-        assert coord.x == 1.0
-        assert coord.y == 2.0
-
     def test_coordinate_3d(self) -> None:
         """Test 3D coordinate creation."""
-        coord = Coordinate3D(x=1.0, y=2.0, z=3.0)
+        coord = CoordinateDTO(x=1.0, y=2.0, z=3.0)
         assert coord.x == 1.0
         assert coord.y == 2.0
         assert coord.z == 3.0
 
-    def test_coordinate_2d_rejects_extra_fields(self) -> None:
-        """Test 2D coordinate rejects extra fields."""
+    def test_coordinate_with_fractional_z(self) -> None:
+        """Test coordinate with fractional Z value."""
+        coord = CoordinateDTO(x=1.0, y=2.0, z=0.5)
+        assert coord.z == 0.5
+
+    def test_coordinate_rejects_extra_fields(self) -> None:
+        """Test coordinate rejects extra fields."""
         with pytest.raises(ValidationError):
-            Coordinate2D(x=1.0, y=2.0, z=3.0)  # type: ignore[call-arg]
+            CoordinateDTO(x=1.0, y=2.0, z=3.0, w=4.0)  # type: ignore[call-arg]
+
+    def test_coordinate_requires_z(self) -> None:
+        """Test coordinate requires z field."""
+        with pytest.raises(ValidationError):
+            CoordinateDTO(x=1.0, y=2.0)  # type: ignore[call-arg]
 
 
 class TestMeasBasis:
@@ -88,7 +91,7 @@ class TestGraphNode:
         """Test valid input node."""
         node = GraphNodeDTO(
             id="n0",
-            coordinate=Coordinate2D(x=0, y=0),
+            coordinate=CoordinateDTO(x=0, y=0, z=0),
             role="input",
             measBasis=PlannerMeasBasisDTO(type="planner", plane="XY", angleCoeff=0),
             qubitIndex=0,
@@ -100,7 +103,7 @@ class TestGraphNode:
         with pytest.raises(ValidationError, match="input node requires measBasis"):
             GraphNodeDTO(
                 id="n0",
-                coordinate=Coordinate2D(x=0, y=0),
+                coordinate=CoordinateDTO(x=0, y=0, z=0),
                 role="input",
                 qubitIndex=0,
             )
@@ -110,7 +113,7 @@ class TestGraphNode:
         with pytest.raises(ValidationError, match="input node requires qubitIndex"):
             GraphNodeDTO(
                 id="n0",
-                coordinate=Coordinate2D(x=0, y=0),
+                coordinate=CoordinateDTO(x=0, y=0, z=0),
                 role="input",
                 measBasis=PlannerMeasBasisDTO(type="planner", plane="XY", angleCoeff=0),
             )
@@ -119,7 +122,7 @@ class TestGraphNode:
         """Test valid output node."""
         node = GraphNodeDTO(
             id="n0",
-            coordinate=Coordinate2D(x=0, y=0),
+            coordinate=CoordinateDTO(x=0, y=0, z=0),
             role="output",
             qubitIndex=0,
         )
@@ -130,7 +133,7 @@ class TestGraphNode:
         with pytest.raises(ValidationError, match="output node must not have measBasis"):
             GraphNodeDTO(
                 id="n0",
-                coordinate=Coordinate2D(x=0, y=0),
+                coordinate=CoordinateDTO(x=0, y=0, z=0),
                 role="output",
                 measBasis=PlannerMeasBasisDTO(type="planner", plane="XY", angleCoeff=0),
                 qubitIndex=0,
@@ -140,7 +143,7 @@ class TestGraphNode:
         """Test valid intermediate node."""
         node = GraphNodeDTO(
             id="n0",
-            coordinate=Coordinate2D(x=0, y=0),
+            coordinate=CoordinateDTO(x=0, y=0, z=0),
             role="intermediate",
             measBasis=PlannerMeasBasisDTO(type="planner", plane="XY", angleCoeff=0),
         )
@@ -151,7 +154,7 @@ class TestGraphNode:
         with pytest.raises(ValidationError, match="intermediate node must not have qubitIndex"):
             GraphNodeDTO(
                 id="n0",
-                coordinate=Coordinate2D(x=0, y=0),
+                coordinate=CoordinateDTO(x=0, y=0, z=0),
                 role="intermediate",
                 measBasis=PlannerMeasBasisDTO(type="planner", plane="XY", angleCoeff=0),
                 qubitIndex=0,
@@ -204,18 +207,17 @@ class TestProjectPayload:
         """Test valid project payload."""
         project = ProjectPayloadDTO(
             name="Test",
-            dimension=2,
             nodes=[
                 GraphNodeDTO(
                     id="n0",
-                    coordinate=Coordinate2D(x=0, y=0),
+                    coordinate=CoordinateDTO(x=0, y=0, z=0),
                     role="input",
                     measBasis=PlannerMeasBasisDTO(type="planner", plane="XY", angleCoeff=0),
                     qubitIndex=0,
                 ),
                 GraphNodeDTO(
                     id="n1",
-                    coordinate=Coordinate2D(x=1, y=0),
+                    coordinate=CoordinateDTO(x=1, y=0, z=0),
                     role="output",
                     qubitIndex=0,
                 ),
@@ -228,14 +230,3 @@ class TestProjectPayload:
         assert project.name == "Test"
         assert len(project.nodes) == 2
         assert len(project.edges) == 1
-
-    def test_invalid_dimension(self) -> None:
-        """Test project with invalid dimension is rejected."""
-        with pytest.raises(ValidationError):
-            ProjectPayloadDTO(
-                name="Test",
-                dimension=4,  # type: ignore[arg-type]
-                nodes=[],
-                edges=[],
-                flow=FlowDefinitionDTO(xflow={}, zflow="auto"),
-            )

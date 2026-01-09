@@ -6,7 +6,6 @@
  */
 
 import type { Coordinate, GraphNode } from "@/types";
-import { is3D } from "@/types";
 
 // Micro-shift offset for overlapping XY coordinates
 export const GHOST_OFFSET = 0.15;
@@ -15,10 +14,10 @@ export const GHOST_OFFSET = 0.15;
 export const SCALE = 100;
 
 /**
- * Get the Z coordinate of a node, defaulting to 0 for 2D nodes
+ * Get the Z coordinate of a node
  */
 export function getNodeZ(node: GraphNode): number {
-  return is3D(node.coordinate) ? node.coordinate.z : 0;
+  return node.coordinate.z;
 }
 
 /**
@@ -29,34 +28,19 @@ export function getNodesAtZ(nodes: readonly GraphNode[], z: number): GraphNode[]
 }
 
 /**
- * Get nodes from adjacent Z levels (z-1 and z+1)
+ * Get nodes that should be shown as ghosts (Z distance < 1 from currentZ)
  */
-export function getAdjacentZNodes(
-  nodes: readonly GraphNode[],
-  currentZ: number
-): { above: GraphNode[]; below: GraphNode[] } {
-  const above: GraphNode[] = [];
-  const below: GraphNode[] = [];
-
-  for (const node of nodes) {
-    const nodeZ = getNodeZ(node);
-    if (nodeZ === currentZ + 1) {
-      above.push(node);
-    } else if (nodeZ === currentZ - 1) {
-      below.push(node);
-    }
-  }
-
-  return { above, below };
+export function getGhostCandidateNodes(nodes: readonly GraphNode[], currentZ: number): GraphNode[] {
+  return nodes.filter((node) => {
+    const diff = Math.abs(node.coordinate.z - currentZ);
+    return diff > 0 && diff < 1;
+  });
 }
 
 /**
  * Get the value of a specific axis from a node's coordinate
  */
 function getNodeAxisValue(node: GraphNode, axis: "x" | "y" | "z"): number {
-  if (axis === "z") {
-    return is3D(node.coordinate) ? node.coordinate.z : 0;
-  }
   return node.coordinate[axis];
 }
 
@@ -114,15 +98,11 @@ export function getGhostPosition(
   currentZ: number,
   allNodes: readonly GraphNode[]
 ): { x: number; y: number } | null {
-  const nodeZ = getNodeZ(node);
+  const nodeZ = node.coordinate.z;
+  const diff = Math.abs(nodeZ - currentZ);
 
-  // Not a ghost node if on current Z
-  if (nodeZ === currentZ) {
-    return null;
-  }
-
-  // Only show ghosts from adjacent Z levels
-  if (Math.abs(nodeZ - currentZ) !== 1) {
+  // Not a ghost if on current Z or outside threshold (|Z diff| >= 1)
+  if (diff === 0 || diff >= 1) {
     return null;
   }
 
@@ -154,20 +134,10 @@ export function toScreenPosition(coord: Coordinate): { x: number; y: number } {
 }
 
 /**
- * Convert screen position to graph coordinates
+ * Convert screen position to graph coordinates (always 3D)
  */
-export function toGraphCoordinate(
-  screenX: number,
-  screenY: number,
-  is3DMode: boolean,
-  z: number
-): Coordinate {
+export function toGraphCoordinate(screenX: number, screenY: number, z: number): Coordinate {
   const x = Math.round((screenX / SCALE) * 100) / 100;
   const y = Math.round((screenY / SCALE) * 100) / 100;
-
-  if (is3DMode) {
-    return { x, y, z };
-  }
-
-  return { x, y };
+  return { x, y, z };
 }

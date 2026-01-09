@@ -18,7 +18,7 @@ import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { GraphEdge, GraphNode, IntermediateNode, NodeRole } from "@/types";
-import { createEdge, is3D } from "@/types";
+import { createEdge } from "@/types";
 import { Line, OrbitControls, Text } from "@react-three/drei";
 import { Canvas, type ThreeElements } from "@react-three/fiber";
 import { memo, useCallback, useMemo } from "react";
@@ -52,8 +52,7 @@ const SELECTED_EMISSIVE = "#ffffff";
 
 // Get 3D position from graph node (graph Z -> Three.js Y for upward axis)
 function getPosition(node: GraphNode): [number, number, number] {
-  const { x, y } = node.coordinate;
-  const z = is3D(node.coordinate) ? node.coordinate.z : 0;
+  const { x, y, z } = node.coordinate;
   // Map: graph X -> Three X, graph Y -> Three Z, graph Z -> Three Y (up)
   return [x, z, y];
 }

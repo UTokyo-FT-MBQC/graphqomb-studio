@@ -13,7 +13,6 @@
 
 import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
 import type { GraphNode, NodeRole } from "@/types";
-import { is3D } from "@/types";
 import { Handle, Position } from "@xyflow/react";
 import { memo } from "react";
 
@@ -48,7 +47,7 @@ const ghostColors: Record<NodeRole, { bg: string; border: string; text: string }
 function GhostNodeComponent({ data }: GhostNodeProps): React.ReactNode {
   const { node } = data;
   const colors = ghostColors[node.role];
-  const nodeZ = is3D(node.coordinate) ? node.coordinate.z : 0;
+  const nodeZ = node.coordinate.z;
 
   const isEdgeCreationMode = useEdgeCreationStore((state) => state.isEdgeCreationMode);
   const sourceNodeId = useEdgeCreationStore((state) => state.sourceNodeId);

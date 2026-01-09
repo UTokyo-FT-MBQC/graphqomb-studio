@@ -10,24 +10,23 @@ def create_schedulable_project() -> dict[str, Any]:
     """Create a project that can be scheduled."""
     return {
         "name": "Schedulable Project",
-        "dimension": 2,
         "nodes": [
             {
                 "id": "n0",
-                "coordinate": {"x": 0, "y": 0},
+                "coordinate": {"x": 0, "y": 0, "z": 0},
                 "role": "input",
                 "measBasis": {"type": "planner", "plane": "XY", "angleCoeff": 0},
                 "qubitIndex": 0,
             },
             {
                 "id": "n1",
-                "coordinate": {"x": 1, "y": 0},
+                "coordinate": {"x": 1, "y": 0, "z": 0},
                 "role": "intermediate",
                 "measBasis": {"type": "planner", "plane": "XY", "angleCoeff": 0},
             },
             {
                 "id": "n2",
-                "coordinate": {"x": 2, "y": 0},
+                "coordinate": {"x": 2, "y": 0, "z": 0},
                 "role": "output",
                 "qubitIndex": 0,
             },
@@ -94,7 +93,6 @@ async def test_schedule_empty_project() -> None:
     """Test scheduling an empty project."""
     project = {
         "name": "Empty",
-        "dimension": 2,
         "nodes": [],
         "edges": [],
         "flow": {"xflow": {}, "zflow": "auto"},

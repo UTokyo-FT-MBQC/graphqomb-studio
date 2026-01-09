@@ -44,7 +44,6 @@ describe("API Client", () => {
   describe("validate", () => {
     const testPayload: ProjectPayload = {
       name: "Test",
-      dimension: 2,
       nodes: [],
       edges: [],
       flow: { xflow: {}, zflow: "auto" },
@@ -103,7 +102,6 @@ describe("API Client", () => {
   describe("schedule", () => {
     const testPayload: ProjectPayload = {
       name: "Test",
-      dimension: 2,
       nodes: [],
       edges: [],
       flow: { xflow: {}, zflow: "auto" },
@@ -172,7 +170,6 @@ describe("API Client", () => {
   describe("computeZFlow", () => {
     const testPayload: ProjectPayload = {
       name: "Test",
-      dimension: 2,
       nodes: [],
       edges: [],
       flow: { xflow: { n0: ["n1"] }, zflow: "auto" },

@@ -10,18 +10,17 @@ def create_simple_project() -> dict[str, Any]:
     """Create a simple valid project for testing."""
     return {
         "name": "Test Project",
-        "dimension": 2,
         "nodes": [
             {
                 "id": "n0",
-                "coordinate": {"x": 0, "y": 0},
+                "coordinate": {"x": 0, "y": 0, "z": 0},
                 "role": "input",
                 "measBasis": {"type": "planner", "plane": "XY", "angleCoeff": 0},
                 "qubitIndex": 0,
             },
             {
                 "id": "n1",
-                "coordinate": {"x": 1, "y": 0},
+                "coordinate": {"x": 1, "y": 0, "z": 0},
                 "role": "output",
                 "qubitIndex": 0,
             },
@@ -49,7 +48,6 @@ async def test_validate_empty_project() -> None:
     """Test validation of an empty project."""
     project = {
         "name": "Empty",
-        "dimension": 2,
         "nodes": [],
         "edges": [],
         "flow": {"xflow": {}, "zflow": "auto"},
@@ -72,11 +70,10 @@ async def test_validate_missing_meas_basis() -> None:
     # This should fail at the DTO level (Pydantic validation)
     project = {
         "name": "Test",
-        "dimension": 2,
         "nodes": [
             {
                 "id": "n0",
-                "coordinate": {"x": 0, "y": 0},
+                "coordinate": {"x": 0, "y": 0, "z": 0},
                 "role": "intermediate",
                 # Missing measBasis
             },
@@ -99,18 +96,17 @@ async def test_validate_invalid_edge_id() -> None:
     """Test validation fails with non-normalized edge ID."""
     project = {
         "name": "Test",
-        "dimension": 2,
         "nodes": [
             {
                 "id": "n0",
-                "coordinate": {"x": 0, "y": 0},
+                "coordinate": {"x": 0, "y": 0, "z": 0},
                 "role": "input",
                 "measBasis": {"type": "planner", "plane": "XY", "angleCoeff": 0},
                 "qubitIndex": 0,
             },
             {
                 "id": "n1",
-                "coordinate": {"x": 1, "y": 0},
+                "coordinate": {"x": 1, "y": 0, "z": 0},
                 "role": "output",
                 "qubitIndex": 0,
             },
@@ -129,11 +125,10 @@ async def test_validate_invalid_edge_id() -> None:
     assert response.status_code == 422
 
 
-async def test_validate_3d_project() -> None:
-    """Test validation of a 3D project."""
+async def test_validate_project_with_different_z() -> None:
+    """Test validation of a project with nodes at different Z levels."""
     project = {
-        "name": "3D Test",
-        "dimension": 3,
+        "name": "Multi-Z Test",
         "nodes": [
             {
                 "id": "n0",

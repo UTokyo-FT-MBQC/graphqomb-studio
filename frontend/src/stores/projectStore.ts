@@ -21,7 +21,6 @@ interface ProjectState {
   // Actions
   setProject: (project: GraphQOMBProject) => void;
   setProjectName: (name: string) => void;
-  setDimension: (dimension: 2 | 3) => void;
   addNode: (node: GraphNode) => void;
   updateNode: (id: string, updates: Partial<GraphNode>) => void;
   removeNode: (id: string) => void;
@@ -38,7 +37,6 @@ function createInitialProject(): GraphQOMBProject {
   return {
     $schema: "graphqomb-studio/v1",
     name: "Untitled",
-    dimension: 2,
     nodes: [],
     edges: [],
     flow: { xflow: {}, zflow: "auto" },
@@ -58,12 +56,6 @@ export const useProjectStore = create<ProjectState>()(
       setProjectName: (name: string): void => {
         set((state) => ({
           project: { ...state.project, name },
-        }));
-      },
-
-      setDimension: (dimension: 2 | 3): void => {
-        set((state) => ({
-          project: { ...state.project, dimension, schedule: undefined },
         }));
       },
 

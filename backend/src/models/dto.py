@@ -4,9 +4,9 @@ These models are designed to match the frontend types exactly,
 with strict validation (extra="forbid") to prevent schema drift.
 """
 
-from typing import Annotated, Literal, Self
+from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 
 # === Utility Functions ===
 
@@ -23,27 +23,14 @@ def normalize_edge_id(source: str, target: str) -> str:
 # === Coordinate DTOs ===
 
 
-class Coordinate2D(BaseModel):
-    """2D coordinate (x, y)."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    x: float
-    y: float
-
-
-class Coordinate3D(BaseModel):
-    """3D coordinate (x, y, z)."""
+class CoordinateDTO(BaseModel):
+    """3D coordinate (x, y, z). All coordinates are 3D."""
 
     model_config = ConfigDict(extra="forbid")
 
     x: float
     y: float
     z: float
-
-
-# Important: 3D must come first in the union to prevent 2D matching 3D coordinates
-CoordinateDTO = Annotated[Coordinate3D | Coordinate2D, Field()]
 
 
 # === Measurement Basis DTOs ===
@@ -157,7 +144,6 @@ class ProjectPayloadDTO(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str
-    dimension: Literal[2, 3]
     nodes: list[GraphNodeDTO]
     edges: list[GraphEdgeDTO]
     flow: FlowDefinitionDTO

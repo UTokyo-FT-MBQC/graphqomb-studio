@@ -7,7 +7,7 @@
 
 import { create } from "zustand";
 
-export type ViewMode = "2d-slice" | "3d-isometric";
+export type ViewMode = "2d-projection" | "2d-slice" | "3d-isometric";
 export type WorkingPlane = "XY" | "XZ" | "YZ";
 
 interface UIState {
@@ -41,7 +41,7 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  viewMode: "2d-slice",
+  viewMode: "2d-projection",
   currentZSlice: 0,
   showXFlow: false,
   showZFlow: false,

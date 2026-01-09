@@ -2,20 +2,15 @@
  * View Controls
  *
  * Provides toggle controls for:
- * - Dimension (2D / 3D)
- * - View mode (2D Slice / 3D View) when dimension === 3
+ * - View mode (XY Projection / Z Slice / 3D View)
  * - Flow visualization (X-Flow, Z-Flow)
  */
 
 "use client";
 
-import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
 
 export function ViewControls(): React.ReactNode {
-  const dimension = useProjectStore((state) => state.project.dimension);
-  const setDimension = useProjectStore((state) => state.setDimension);
-
   const viewMode = useUIStore((state) => state.viewMode);
   const setViewMode = useUIStore((state) => state.setViewMode);
   const showXFlow = useUIStore((state) => state.showXFlow);
@@ -25,62 +20,44 @@ export function ViewControls(): React.ReactNode {
 
   return (
     <div className="flex items-center gap-3">
-      {/* Dimension Toggle */}
+      {/* View Mode Toggle - 3 modes */}
       <div className="flex items-center gap-1">
         <button
           type="button"
-          onClick={() => setDimension(2)}
+          onClick={() => setViewMode("2d-projection")}
           className={`px-2 py-1 text-xs rounded transition-colors ${
-            dimension === 2
+            viewMode === "2d-projection"
               ? "bg-purple-500 text-white"
               : "bg-gray-100 hover:bg-gray-200 text-gray-700"
           }`}
         >
-          2D
+          XY Projection
         </button>
         <button
           type="button"
-          onClick={() => setDimension(3)}
+          onClick={() => setViewMode("2d-slice")}
           className={`px-2 py-1 text-xs rounded transition-colors ${
-            dimension === 3
-              ? "bg-purple-500 text-white"
+            viewMode === "2d-slice"
+              ? "bg-blue-500 text-white"
               : "bg-gray-100 hover:bg-gray-200 text-gray-700"
           }`}
         >
-          3D
+          Z Slice
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode("3d-isometric")}
+          className={`px-2 py-1 text-xs rounded transition-colors ${
+            viewMode === "3d-isometric"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+          }`}
+        >
+          3D View
         </button>
       </div>
 
-      {/* View Mode Toggle - only in 3D mode */}
-      {dimension === 3 && (
-        <>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setViewMode("2d-slice")}
-              className={`px-2 py-1 text-xs rounded transition-colors ${
-                viewMode === "2d-slice"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-              }`}
-            >
-              2D Slice
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("3d-isometric")}
-              className={`px-2 py-1 text-xs rounded transition-colors ${
-                viewMode === "3d-isometric"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-              }`}
-            >
-              3D View
-            </button>
-          </div>
-          <div className="h-4 w-px bg-gray-300" />
-        </>
-      )}
+      <div className="h-4 w-px bg-gray-300" />
 
       {/* Flow Toggles */}
       <label className="flex items-center gap-1.5 cursor-pointer">

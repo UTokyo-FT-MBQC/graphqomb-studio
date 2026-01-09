@@ -5,16 +5,14 @@ import { GraphCanvas3D } from "@/components/canvas/GraphCanvas3D";
 import { PropertyPanel } from "@/components/panels/PropertyPanel";
 import { TimelineView } from "@/components/timeline/TimelineView";
 import { Toolbar } from "@/components/toolbar/Toolbar";
-import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { ReactNode } from "react";
 
 export default function Home(): ReactNode {
-  const dimension = useProjectStore((state) => state.project.dimension);
   const viewMode = useUIStore((state) => state.viewMode);
 
-  // Use 3D canvas only when in 3D mode with 3D isometric view
-  const show3DCanvas = dimension === 3 && viewMode === "3d-isometric";
+  // Use 3D canvas only for 3D isometric view
+  const show3DCanvas = viewMode === "3d-isometric";
 
   return (
     <main className="flex h-screen flex-col overflow-hidden">

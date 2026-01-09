@@ -53,8 +53,8 @@ export function Toolbar(): React.ReactNode {
     [project.nodes, zRange]
   );
 
-  const is3DSliceMode = project.dimension === 3 && viewMode === "2d-slice";
-  const is3DIsometricMode = project.dimension === 3 && viewMode === "3d-isometric";
+  const is3DSliceMode = viewMode === "2d-slice";
+  const is3DIsometricMode = viewMode === "3d-isometric";
   const [error, setError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);

@@ -3,7 +3,9 @@
  *
  * Main canvas component using React Flow for 2D graph visualization.
  * Handles node/edge rendering, selection, and editing.
- * Supports Z-slice mode for 3D projects with ghost nodes.
+ * Supports multiple view modes:
+ * - 2d-projection: Show all nodes projected to XY plane
+ * - 2d-slice: Show nodes at current Z-slice with ghost nodes
  */
 
 "use client";
@@ -21,13 +23,13 @@ interface GhostNodeComputedData {
   zOffset: number;
 }
 import { type EdgeWithPosition, calculateEdgeOffsets } from "@/lib/edgeUtils";
-import { SCALE, getAdjacentZNodes, getGhostPosition, getNodeZ } from "@/lib/geometry";
+import { SCALE, getGhostCandidateNodes, getGhostPosition } from "@/lib/geometry";
 import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { Coordinate, GraphNode, IntermediateNode } from "@/types";
-import { createEdge, is3D } from "@/types";
+import { createEdge } from "@/types";
 import {
   Background,
   Controls,
@@ -82,16 +84,13 @@ function toGhostFlowNode(ghostData: GhostNodeComputedData): Node<GhostNodeData> 
   };
 }
 
-// Convert React Flow position to graph coordinate
-function toGraphCoordinate(x: number, y: number, is3DMode: boolean, z: number): Coordinate {
-  const baseCoord = {
+// Convert React Flow position to graph coordinate (always 3D)
+function toGraphCoordinate(x: number, y: number, z: number): Coordinate {
+  return {
     x: Math.round((x / SCALE) * 100) / 100,
     y: Math.round((y / SCALE) * 100) / 100,
+    z,
   };
-  if (is3DMode) {
-    return { ...baseCoord, z };
-  }
-  return baseCoord;
 }
 
 // Generate unique node ID
@@ -120,6 +119,7 @@ function GraphCanvas2DInner(): React.ReactNode {
   const selectEdge = useSelectionStore((state) => state.selectEdge);
   const clearSelection = useSelectionStore((state) => state.clearSelection);
 
+  const viewMode = useUIStore((state) => state.viewMode);
   const currentZSlice = useUIStore((state) => state.currentZSlice);
 
   const isEdgeCreationMode = useEdgeCreationStore((state) => state.isEdgeCreationMode);
@@ -129,40 +129,36 @@ function GraphCanvas2DInner(): React.ReactNode {
 
   const { screenToFlowPosition } = useReactFlow();
 
-  const is3DMode = project.dimension === 3;
-
   // Track if we're syncing from external state changes
   const isSyncing = useRef(false);
 
-  // Filter nodes by current Z-slice in 3D mode
+  // Filter nodes based on view mode
   const visibleNodes = useMemo(() => {
-    if (!is3DMode) return project.nodes;
-    return project.nodes.filter((node) => getNodeZ(node) === currentZSlice);
-  }, [project.nodes, is3DMode, currentZSlice]);
+    if (viewMode === "2d-projection") {
+      // Projection mode: show all nodes
+      return project.nodes;
+    }
+    // 2d-slice mode: filter by Z (exact match)
+    return project.nodes.filter((node) => node.coordinate.z === currentZSlice);
+  }, [project.nodes, viewMode, currentZSlice]);
 
-  // Get ghost nodes from adjacent Z levels
+  // Get ghost nodes (only in 2d-slice mode, where |Z diff| < 1)
   const ghostNodesData = useMemo((): GhostNodeComputedData[] => {
-    if (!is3DMode) return [];
+    if (viewMode !== "2d-slice") return [];
 
-    const { above, below } = getAdjacentZNodes(project.nodes, currentZSlice);
+    const ghostCandidates = getGhostCandidateNodes(project.nodes, currentZSlice);
     const ghostNodes: GhostNodeComputedData[] = [];
 
-    for (const node of above) {
+    for (const node of ghostCandidates) {
       const position = getGhostPosition(node, currentZSlice, project.nodes);
       if (position !== null) {
-        ghostNodes.push({ node, position, zOffset: 1 });
-      }
-    }
-
-    for (const node of below) {
-      const position = getGhostPosition(node, currentZSlice, project.nodes);
-      if (position !== null) {
-        ghostNodes.push({ node, position, zOffset: -1 });
+        const zOffset = node.coordinate.z - currentZSlice;
+        ghostNodes.push({ node, position, zOffset });
       }
     }
 
     return ghostNodes;
-  }, [project.nodes, is3DMode, currentZSlice]);
+  }, [project.nodes, viewMode, currentZSlice]);
 
   // Set of visible node IDs for edge filtering
   const visibleNodeIds = useMemo(() => new Set(visibleNodes.map((n) => n.id)), [visibleNodes]);
@@ -203,22 +199,26 @@ function GraphCanvas2DInner(): React.ReactNode {
     return positions;
   }, [visibleNodes, ghostNodesData]);
 
-  // Filter edges: show edges where both nodes are visible, or one is visible and one is ghost
+  // Filter edges based on view mode
   const flowEdges: Edge[] = useMemo(() => {
-    // First, filter visible edges
-    const filteredEdges = project.edges.filter((edge) => {
-      const sourceVisible = visibleNodeIds.has(edge.source);
-      const targetVisible = visibleNodeIds.has(edge.target);
-      const sourceGhost = ghostNodeIds.has(edge.source);
-      const targetGhost = ghostNodeIds.has(edge.target);
+    let filteredEdges = project.edges;
 
-      // Show edge if both visible, or one visible and one ghost
-      return (
-        (sourceVisible && targetVisible) ||
-        (sourceVisible && targetGhost) ||
-        (targetVisible && sourceGhost)
-      );
-    });
+    // In 2d-slice mode, filter edges by visible/ghost nodes
+    if (viewMode === "2d-slice") {
+      filteredEdges = project.edges.filter((edge) => {
+        const sourceVisible = visibleNodeIds.has(edge.source);
+        const targetVisible = visibleNodeIds.has(edge.target);
+        const sourceGhost = ghostNodeIds.has(edge.source);
+        const targetGhost = ghostNodeIds.has(edge.target);
+
+        // Show edge if both visible, or one visible and one ghost
+        return (
+          (sourceVisible && targetVisible) ||
+          (sourceVisible && targetGhost) ||
+          (targetVisible && sourceGhost)
+        );
+      });
+    }
 
     // Build edges with position info for offset calculation
     const edgesWithPositions: EdgeWithPosition[] = [];
@@ -258,7 +258,7 @@ function GraphCanvas2DInner(): React.ReactNode {
         ...(isCrossZ ? { style: { strokeDasharray: "5,5", opacity: 0.5 } } : {}),
       };
     });
-  }, [project.edges, visibleNodeIds, ghostNodeIds, nodePositions]);
+  }, [project.edges, viewMode, visibleNodeIds, ghostNodeIds, nodePositions]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges);
@@ -283,20 +283,11 @@ function GraphCanvas2DInner(): React.ReactNode {
         if (change.type === "position" && "position" in change && change.position !== undefined) {
           // Only update store when dragging ends
           if ("dragging" in change && change.dragging === false) {
-            const is3DMode = project.dimension === 3;
             const existingNode = project.nodes.find((n) => n.id === change.id);
-            const currentZ =
-              existingNode !== undefined && is3D(existingNode.coordinate)
-                ? existingNode.coordinate.z
-                : 0;
+            const currentZ = existingNode?.coordinate.z ?? 0;
 
             updateNode(change.id, {
-              coordinate: toGraphCoordinate(
-                change.position.x,
-                change.position.y,
-                is3DMode,
-                currentZ
-              ),
+              coordinate: toGraphCoordinate(change.position.x, change.position.y, currentZ),
             });
           }
         } else if (change.type === "select" && "selected" in change) {
@@ -308,7 +299,7 @@ function GraphCanvas2DInner(): React.ReactNode {
         }
       }
     },
-    [onNodesChange, project.dimension, project.nodes, updateNode, selectNode, removeNode]
+    [onNodesChange, project.nodes, updateNode, selectNode, removeNode]
   );
 
   // Handle edge changes (selection, removal)
@@ -406,8 +397,10 @@ function GraphCanvas2DInner(): React.ReactNode {
       const existingIds = project.nodes.map((n) => n.id);
       const newId = generateNodeId(existingIds);
 
-      // Use currentZSlice for new nodes in 3D mode
-      const coordinate = toGraphCoordinate(flowPosition.x, flowPosition.y, is3DMode, currentZSlice);
+      // In 2d-projection mode, new nodes get z=0
+      // In 2d-slice mode, new nodes get the current Z-slice value
+      const newZ = viewMode === "2d-projection" ? 0 : currentZSlice;
+      const coordinate = toGraphCoordinate(flowPosition.x, flowPosition.y, newZ);
 
       // Create new intermediate node with default measurement basis
       const newNode: IntermediateNode = {
@@ -424,7 +417,7 @@ function GraphCanvas2DInner(): React.ReactNode {
       addNode(newNode);
       selectNode(newId);
     },
-    [project.nodes, is3DMode, currentZSlice, addNode, selectNode, screenToFlowPosition]
+    [project.nodes, viewMode, currentZSlice, addNode, selectNode, screenToFlowPosition]
   );
 
   // Handle pane click to clear selection
