@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
+- **Manual Schedule Editor (Phase 1)** (#9)
+  - New `scheduleEditorStore` for managing draft schedule state with lock/unlock functionality
+  - Expandable `ScheduleEditor` panel between canvas and timeline footer
+  - `ScheduleToolbar` with mode selector (Manual/Auto/Hybrid), Auto-fill, Clear, and Apply buttons
+  - `ScheduleTable` and `ScheduleTableRow` for table-based time input (prepareTime, measureTime per node)
+  - `MiniTimelineBar` component for visual timeline representation in table rows
+  - Lock/unlock functionality to protect specific node schedules during Auto-fill
+  - Bidirectional selection sync: click node in canvas → select row in table, click row → select node
+  - Hover highlight: hover row in table → highlight node in canvas (2D Projection only)
+  - Apply button to commit draft schedule to project and update TimelineView
+  - Warning banner when editing in non-2D-projection view modes
+
 - **Unified 3D Coordinate System**
   - All coordinates are now 3D (x, y, z) regardless of view mode
   - Fractional Z values are now supported (e.g., z=0.5)
