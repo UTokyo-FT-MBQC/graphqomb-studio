@@ -23,6 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Apply button to commit draft schedule to project and update TimelineView
   - Warning banner when editing in non-2D-projection view modes
 
+- **Entangle Time Editing**
+  - Extended `scheduleEditorStore` with `DraftEdgeEntry` for edge-based entangle time management
+  - Tab-based UI in Schedule Editor: Nodes tab for prepareTime/measureTime, Edges tab for entangleTime
+  - `EdgeScheduleTable` and `EdgeScheduleTableRow` components for edge scheduling
+  - Lock/unlock functionality for individual edges
+  - "Auto-fill Edges" button to compute entangle times from node prepare times: `max(prep[source], prep[target])`
+  - Bidirectional edge selection sync: click edge in canvas → select row in table, click row → highlight edge
+  - Edge highlight in 2D Projection view when hovered/selected in schedule editor (orange color)
+  - `CustomEdge` component updated with schedule editor highlight integration
+
 - **Unified 3D Coordinate System**
   - All coordinates are now 3D (x, y, z) regardless of view mode
   - Fractional Z values are now supported (e.g., z=0.5)

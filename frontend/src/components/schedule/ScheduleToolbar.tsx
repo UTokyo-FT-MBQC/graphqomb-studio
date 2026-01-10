@@ -1,8 +1,9 @@
 /**
  * Schedule Toolbar
  *
- * Contains mode selector, action buttons (Auto-fill, Clear, Apply).
+ * Contains mode selector, action buttons (Auto-fill, Auto-fill Edges, Clear, Apply).
  * Auto-fill uses the existing schedule API and respects locked nodes on frontend.
+ * Auto-fill Edges computes entangle times from node prepare times.
  */
 
 "use client";
@@ -14,11 +15,16 @@ import { useProjectStore } from "@/stores/projectStore";
 import { type ScheduleMode, useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 import { toPayload } from "@/types";
 
-export function ScheduleToolbar(): React.ReactNode {
+interface ScheduleToolbarProps {
+  activeTab: "nodes" | "edges";
+}
+
+export function ScheduleToolbar({ activeTab }: ScheduleToolbarProps): React.ReactNode {
   const draftSchedule = useScheduleEditorStore((s) => s.draftSchedule);
   const setMode = useScheduleEditorStore((s) => s.setMode);
   const clearDraft = useScheduleEditorStore((s) => s.clearDraft);
   const autoFillUnlocked = useScheduleEditorStore((s) => s.autoFillUnlocked);
+  const autoFillEdges = useScheduleEditorStore((s) => s.autoFillEdges);
   const toScheduleResult = useScheduleEditorStore((s) => s.toScheduleResult);
   const isDirty = useScheduleEditorStore((s) => s.isDirty);
 
@@ -47,6 +53,11 @@ export function ScheduleToolbar(): React.ReactNode {
     }
   }, [project, autoFillUnlocked]);
 
+  const handleAutoFillEdges = useCallback(() => {
+    autoFillEdges();
+    setError(null);
+  }, [autoFillEdges]);
+
   const handleApply = useCallback(() => {
     const result = toScheduleResult();
     if (result) {
@@ -62,6 +73,18 @@ export function ScheduleToolbar(): React.ReactNode {
   const hasLockedNodes = draftSchedule
     ? Object.values(draftSchedule.entries).some((e) => e.locked)
     : false;
+
+  const hasLockedEdges = draftSchedule
+    ? Object.values(draftSchedule.edgeEntries).some((e) => e.locked)
+    : false;
+
+  const lockedNodeCount = draftSchedule
+    ? Object.values(draftSchedule.entries).filter((e) => e.locked).length
+    : 0;
+
+  const lockedEdgeCount = draftSchedule
+    ? Object.values(draftSchedule.edgeEntries).filter((e) => e.locked).length
+    : 0;
 
   return (
     <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -92,19 +115,31 @@ export function ScheduleToolbar(): React.ReactNode {
         disabled={isAutoFilling}
         className="px-3 py-1 text-sm font-medium text-white bg-blue-500 rounded hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
         title={
-          hasLockedNodes
-            ? "Auto-fill will update unlocked nodes only"
+          hasLockedNodes || hasLockedEdges
+            ? "Auto-fill will update unlocked items only"
             : "Compute schedule from backend"
         }
       >
-        {isAutoFilling ? "Computing..." : "Auto-fill"}
+        {isAutoFilling ? "Computing..." : "Auto-fill All"}
       </button>
+
+      {/* Auto-fill Edges button - shown when on Edges tab */}
+      {activeTab === "edges" && (
+        <button
+          type="button"
+          onClick={handleAutoFillEdges}
+          className="px-3 py-1 text-sm font-medium text-purple-700 bg-purple-100 rounded hover:bg-purple-200 transition-colors"
+          title="Compute entangle times from node prepare times: max(prep[source], prep[target])"
+        >
+          Auto-fill Edges
+        </button>
+      )}
 
       <button
         type="button"
         onClick={handleClear}
         className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-        title={hasLockedNodes ? "Clear unlocked nodes only" : "Clear all values"}
+        title={hasLockedNodes || hasLockedEdges ? "Clear unlocked items only" : "Clear all values"}
       >
         Clear
       </button>
@@ -124,10 +159,12 @@ export function ScheduleToolbar(): React.ReactNode {
 
       {/* Status Indicators */}
       <div className="ml-auto flex items-center gap-2 text-xs text-gray-500">
-        {hasLockedNodes && (
+        {(hasLockedNodes || hasLockedEdges) && (
           <span className="flex items-center gap-1">
             <span className="text-yellow-500">🔒</span>
-            {Object.values(draftSchedule?.entries ?? {}).filter((e) => e.locked).length} locked
+            {lockedNodeCount > 0 && `${lockedNodeCount} node${lockedNodeCount > 1 ? "s" : ""}`}
+            {lockedNodeCount > 0 && lockedEdgeCount > 0 && ", "}
+            {lockedEdgeCount > 0 && `${lockedEdgeCount} edge${lockedEdgeCount > 1 ? "s" : ""}`}
           </span>
         )}
         {isDirty && <span className="text-orange-500 font-medium">Unsaved changes</span>}

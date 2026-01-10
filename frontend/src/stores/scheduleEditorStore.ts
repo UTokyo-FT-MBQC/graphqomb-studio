@@ -2,13 +2,13 @@
  * Schedule Editor Store
  *
  * State store for manual schedule editing.
- * Manages draft schedule entries, edit mode, and locked nodes.
+ * Manages draft schedule entries for nodes and edges, edit mode, and locked items.
  * Provides hover/selection state for bidirectional canvas highlighting.
  */
 
 import { create } from "zustand";
 
-import type { ScheduleResult, TimeSlice } from "@/types";
+import type { GraphEdge, ScheduleResult, TimeSlice } from "@/types";
 
 export type ScheduleMode = "auto" | "manual" | "hybrid";
 
@@ -19,9 +19,18 @@ export interface DraftScheduleEntry {
   locked: boolean;
 }
 
+export interface DraftEdgeEntry {
+  edgeId: string;
+  source: string;
+  target: string;
+  entangleTime: number | null;
+  locked: boolean;
+}
+
 export interface DraftSchedule {
   mode: ScheduleMode;
   entries: Record<string, DraftScheduleEntry>;
+  edgeEntries: Record<string, DraftEdgeEntry>;
 }
 
 interface ScheduleEditorState {
@@ -30,18 +39,32 @@ interface ScheduleEditorState {
   draftSchedule: DraftSchedule | null;
   hoveredNodeId: string | null;
   selectedEntryId: string | null;
+  hoveredEdgeId: string | null;
+  selectedEdgeEntryId: string | null;
   isDirty: boolean;
 
   // Actions
   openEditor: () => void;
   closeEditor: () => void;
   toggleEditor: () => void;
-  initializeDraft: (nodeIds: string[], existingSchedule?: ScheduleResult) => void;
+  initializeDraft: (
+    nodeIds: string[],
+    edges: GraphEdge[],
+    existingSchedule?: ScheduleResult
+  ) => void;
   setMode: (mode: ScheduleMode) => void;
   updateEntry: (nodeId: string, updates: Partial<Omit<DraftScheduleEntry, "nodeId">>) => void;
   toggleLock: (nodeId: string) => void;
   setHoveredNode: (nodeId: string | null) => void;
   selectEntry: (nodeId: string | null) => void;
+  updateEdgeEntry: (
+    edgeId: string,
+    updates: Partial<Omit<DraftEdgeEntry, "edgeId" | "source" | "target">>
+  ) => void;
+  toggleEdgeLock: (edgeId: string) => void;
+  setHoveredEdge: (edgeId: string | null) => void;
+  selectEdgeEntry: (edgeId: string | null) => void;
+  autoFillEdges: () => void;
   clearDraft: () => void;
   autoFillUnlocked: (schedule: ScheduleResult) => void;
   toScheduleResult: () => ScheduleResult | null;
@@ -53,6 +76,8 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
   draftSchedule: null,
   hoveredNodeId: null,
   selectedEntryId: null,
+  hoveredEdgeId: null,
+  selectedEdgeEntryId: null,
   isDirty: false,
 
   openEditor: () => set({ isEditorOpen: true }),
@@ -61,7 +86,7 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
 
   toggleEditor: () => set((state) => ({ isEditorOpen: !state.isEditorOpen })),
 
-  initializeDraft: (nodeIds, existingSchedule) => {
+  initializeDraft: (nodeIds, edges, existingSchedule) => {
     const entries: Record<string, DraftScheduleEntry> = {};
     for (const nodeId of nodeIds) {
       entries[nodeId] = {
@@ -71,8 +96,20 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
         locked: false,
       };
     }
+
+    const edgeEntries: Record<string, DraftEdgeEntry> = {};
+    for (const edge of edges) {
+      edgeEntries[edge.id] = {
+        edgeId: edge.id,
+        source: edge.source,
+        target: edge.target,
+        entangleTime: existingSchedule?.entangleTime[edge.id] ?? null,
+        locked: false,
+      };
+    }
+
     set({
-      draftSchedule: { mode: "manual", entries },
+      draftSchedule: { mode: "manual", entries, edgeEntries },
       isDirty: false,
     });
   },
@@ -120,9 +157,88 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
 
   selectEntry: (nodeId) => set({ selectedEntryId: nodeId }),
 
+  updateEdgeEntry: (edgeId, updates) =>
+    set((state) => {
+      if (!state.draftSchedule) return state;
+      const entry = state.draftSchedule.edgeEntries[edgeId];
+      if (!entry) return state;
+      return {
+        draftSchedule: {
+          ...state.draftSchedule,
+          edgeEntries: {
+            ...state.draftSchedule.edgeEntries,
+            [edgeId]: { ...entry, ...updates },
+          },
+        },
+        isDirty: true,
+      };
+    }),
+
+  toggleEdgeLock: (edgeId) =>
+    set((state) => {
+      if (!state.draftSchedule) return state;
+      const entry = state.draftSchedule.edgeEntries[edgeId];
+      if (!entry) return state;
+      return {
+        draftSchedule: {
+          ...state.draftSchedule,
+          edgeEntries: {
+            ...state.draftSchedule.edgeEntries,
+            [edgeId]: { ...entry, locked: !entry.locked },
+          },
+        },
+      };
+    }),
+
+  setHoveredEdge: (edgeId) => set({ hoveredEdgeId: edgeId }),
+
+  selectEdgeEntry: (edgeId) => set({ selectedEdgeEntryId: edgeId }),
+
+  autoFillEdges: () =>
+    set((state) => {
+      if (!state.draftSchedule) return state;
+
+      const { entries, edgeEntries } = state.draftSchedule;
+      const newEdgeEntries = { ...edgeEntries };
+
+      for (const [edgeId, edgeEntry] of Object.entries(newEdgeEntries)) {
+        // Skip locked edges
+        if (edgeEntry.locked) continue;
+
+        // Get prepare times for source and target nodes
+        const sourceEntry = entries[edgeEntry.source];
+        const targetEntry = entries[edgeEntry.target];
+
+        // For input nodes (not in entries), treat as prepared at time -1
+        const sourcePrepare = sourceEntry?.prepareTime ?? -1;
+        const targetPrepare = targetEntry?.prepareTime ?? -1;
+
+        // If both are null (not scheduled), skip
+        if (sourcePrepare === null && targetPrepare === null) continue;
+
+        // entangleTime = max(prepareTime[source], prepareTime[target])
+        // Handle null as -1 (input nodes are prepared before time 0)
+        const effectiveSource = sourcePrepare === null ? -1 : sourcePrepare;
+        const effectiveTarget = targetPrepare === null ? -1 : targetPrepare;
+        const entangleTime = Math.max(effectiveSource, effectiveTarget);
+
+        // Only set if result is >= 0 (valid time)
+        newEdgeEntries[edgeId] = {
+          ...edgeEntry,
+          entangleTime: entangleTime >= 0 ? entangleTime : null,
+        };
+      }
+
+      return {
+        draftSchedule: { ...state.draftSchedule, edgeEntries: newEdgeEntries },
+        isDirty: true,
+      };
+    }),
+
   clearDraft: () =>
     set((state) => {
       if (!state.draftSchedule) return state;
+
       const entries: Record<string, DraftScheduleEntry> = {};
       for (const [nodeId, entry] of Object.entries(state.draftSchedule.entries)) {
         if (entry.locked) {
@@ -133,8 +249,20 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
           entries[nodeId] = { ...entry, prepareTime: null, measureTime: null };
         }
       }
+
+      const edgeEntries: Record<string, DraftEdgeEntry> = {};
+      for (const [edgeId, entry] of Object.entries(state.draftSchedule.edgeEntries)) {
+        if (entry.locked) {
+          // Preserve locked edge entries
+          edgeEntries[edgeId] = entry;
+        } else {
+          // Clear unlocked edge entries
+          edgeEntries[edgeId] = { ...entry, entangleTime: null };
+        }
+      }
+
       return {
-        draftSchedule: { ...state.draftSchedule, entries },
+        draftSchedule: { ...state.draftSchedule, entries, edgeEntries },
         isDirty: true,
       };
     }),
@@ -142,6 +270,7 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
   autoFillUnlocked: (schedule) =>
     set((state) => {
       if (!state.draftSchedule) return state;
+
       const entries = { ...state.draftSchedule.entries };
       for (const [nodeId, entry] of Object.entries(entries)) {
         if (!entry.locked) {
@@ -152,8 +281,19 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
           };
         }
       }
+
+      const edgeEntries = { ...state.draftSchedule.edgeEntries };
+      for (const [edgeId, entry] of Object.entries(edgeEntries)) {
+        if (!entry.locked) {
+          edgeEntries[edgeId] = {
+            ...entry,
+            entangleTime: schedule.entangleTime[edgeId] ?? null,
+          };
+        }
+      }
+
       return {
-        draftSchedule: { ...state.draftSchedule, entries },
+        draftSchedule: { ...state.draftSchedule, entries, edgeEntries },
         isDirty: true,
       };
     }),
@@ -164,10 +304,15 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
 
     const prepareTime: Record<string, number | null> = {};
     const measureTime: Record<string, number | null> = {};
+    const entangleTime: Record<string, number | null> = {};
 
     for (const entry of Object.values(draftSchedule.entries)) {
       prepareTime[entry.nodeId] = entry.prepareTime;
       measureTime[entry.nodeId] = entry.measureTime;
+    }
+
+    for (const entry of Object.values(draftSchedule.edgeEntries)) {
+      entangleTime[entry.edgeId] = entry.entangleTime;
     }
 
     // Build timeline from entries
@@ -199,12 +344,27 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
       }
     }
 
+    // Add entangle edges to timeline
+    for (const entry of Object.values(draftSchedule.edgeEntries)) {
+      if (entry.entangleTime !== null) {
+        if (!timeEvents.has(entry.entangleTime)) {
+          timeEvents.set(entry.entangleTime, {
+            time: entry.entangleTime,
+            prepareNodes: [],
+            entangleEdges: [],
+            measureNodes: [],
+          });
+        }
+        timeEvents.get(entry.entangleTime)?.entangleEdges.push(entry.edgeId);
+      }
+    }
+
     const timeline = Array.from(timeEvents.values()).sort((a, b) => a.time - b.time);
 
     return {
       prepareTime,
       measureTime,
-      entangleTime: {}, // Not editable in Phase 1
+      entangleTime,
       timeline,
     };
   },
@@ -215,6 +375,8 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
       draftSchedule: null,
       hoveredNodeId: null,
       selectedEntryId: null,
+      hoveredEdgeId: null,
+      selectedEdgeEntryId: null,
       isDirty: false,
     }),
 }));

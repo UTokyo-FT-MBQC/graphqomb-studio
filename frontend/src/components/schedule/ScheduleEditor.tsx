@@ -4,18 +4,22 @@
  * Expandable panel for manual schedule editing.
  * Positioned between canvas and TimelineView footer.
  * Shows warning banner for non-2D-projection modes.
+ * Contains tabs for Nodes and Edges scheduling.
  */
 
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useProjectStore } from "@/stores/projectStore";
 import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 import { useUIStore } from "@/stores/uiStore";
 
+import { EdgeScheduleTable } from "./EdgeScheduleTable";
 import { ScheduleTable } from "./ScheduleTable";
 import { ScheduleToolbar } from "./ScheduleToolbar";
+
+type ScheduleTab = "nodes" | "edges";
 
 export function ScheduleEditor(): React.ReactNode {
   const isEditorOpen = useScheduleEditorStore((s) => s.isEditorOpen);
@@ -26,7 +30,10 @@ export function ScheduleEditor(): React.ReactNode {
 
   const viewMode = useUIStore((s) => s.viewMode);
   const nodes = useProjectStore((s) => s.project.nodes);
+  const edges = useProjectStore((s) => s.project.edges);
   const schedule = useProjectStore((s) => s.project.schedule);
+
+  const [activeTab, setActiveTab] = useState<ScheduleTab>("nodes");
 
   // Filter to non-output nodes (output nodes are not measured)
   const schedulableNodeIds = useMemo(
@@ -37,26 +44,32 @@ export function ScheduleEditor(): React.ReactNode {
   // Initialize draft when editor opens (if not already initialized)
   useEffect(() => {
     if (isEditorOpen && !draftSchedule) {
-      initializeDraft(schedulableNodeIds, schedule);
+      initializeDraft(schedulableNodeIds, edges, schedule);
     }
-  }, [isEditorOpen, draftSchedule, schedulableNodeIds, schedule, initializeDraft]);
+  }, [isEditorOpen, draftSchedule, schedulableNodeIds, edges, schedule, initializeDraft]);
 
-  // Reset draft when nodes change significantly
+  // Reset draft when nodes or edges change significantly
   useEffect(() => {
     if (draftSchedule) {
       const draftNodeIds = new Set(Object.keys(draftSchedule.entries));
       const currentNodeIds = new Set(schedulableNodeIds);
+      const draftEdgeIds = new Set(Object.keys(draftSchedule.edgeEntries));
+      const currentEdgeIds = new Set(edges.map((e) => e.id));
 
       // Check if nodes have changed
       const hasNewNodes = schedulableNodeIds.some((id) => !draftNodeIds.has(id));
       const hasRemovedNodes = Array.from(draftNodeIds).some((id) => !currentNodeIds.has(id));
 
-      if (hasNewNodes || hasRemovedNodes) {
-        // Reinitialize with current nodes, preserving existing values where possible
-        initializeDraft(schedulableNodeIds, schedule);
+      // Check if edges have changed
+      const hasNewEdges = edges.some((e) => !draftEdgeIds.has(e.id));
+      const hasRemovedEdges = Array.from(draftEdgeIds).some((id) => !currentEdgeIds.has(id));
+
+      if (hasNewNodes || hasRemovedNodes || hasNewEdges || hasRemovedEdges) {
+        // Reinitialize with current nodes and edges
+        initializeDraft(schedulableNodeIds, edges, schedule);
       }
     }
-  }, [schedulableNodeIds, draftSchedule, schedule, initializeDraft]);
+  }, [schedulableNodeIds, edges, draftSchedule, schedule, initializeDraft]);
 
   // Clean up when component unmounts
   useEffect(() => {
@@ -67,6 +80,8 @@ export function ScheduleEditor(): React.ReactNode {
 
   const showWarningBanner = viewMode !== "2d-projection" && isEditorOpen;
   const hasSchedulableNodes = schedulableNodeIds.length > 0;
+  const nodeCount = draftSchedule ? Object.keys(draftSchedule.entries).length : 0;
+  const edgeCount = draftSchedule ? Object.keys(draftSchedule.edgeEntries).length : 0;
 
   return (
     <div className="border-t border-gray-200 bg-white">
@@ -80,7 +95,7 @@ export function ScheduleEditor(): React.ReactNode {
           Schedule Editor
           {isEditorOpen && draftSchedule && (
             <span className="ml-2 text-xs text-gray-400">
-              ({Object.keys(draftSchedule.entries).length} nodes)
+              ({nodeCount} nodes, {edgeCount} edges)
             </span>
           )}
         </span>
@@ -94,14 +109,42 @@ export function ScheduleEditor(): React.ReactNode {
               <span className="font-medium">Note:</span> Schedule editing in progress. Switch to{" "}
               <strong>XY Projection</strong> view for full canvas highlighting support.
             </div>
-          ) : !hasSchedulableNodes ? (
+          ) : !hasSchedulableNodes && edges.length === 0 ? (
             <div className="text-sm text-gray-500 text-center py-4">
-              No schedulable nodes. Add input or intermediate nodes to edit the schedule.
+              No schedulable items. Add nodes and edges to edit the schedule.
             </div>
           ) : (
             <>
-              <ScheduleToolbar />
-              <ScheduleTable />
+              <ScheduleToolbar activeTab={activeTab} />
+
+              {/* Tabs */}
+              <div className="flex border-b border-gray-200 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("nodes")}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === "nodes"
+                      ? "text-blue-600 border-b-2 border-blue-600"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Nodes ({nodeCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("edges")}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === "edges"
+                      ? "text-blue-600 border-b-2 border-blue-600"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Edges ({edgeCount})
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              {activeTab === "nodes" ? <ScheduleTable /> : <EdgeScheduleTable />}
             </>
           )}
         </div>
