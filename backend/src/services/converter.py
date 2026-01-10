@@ -181,6 +181,86 @@ def schedule_to_dto(
     )
 
 
+def dto_to_schedule(
+    schedule_dto: ScheduleResultDTO,
+    node_map: dict[str, int],
+) -> tuple[dict[int, int | None], dict[int, int | None], dict[tuple[int, int], int | None]]:
+    """Convert ScheduleResultDTO to graphqomb schedule format.
+
+    Args:
+        schedule_dto: The schedule DTO from frontend.
+        node_map: Mapping from frontend node IDs to graphqomb indices.
+
+    Returns:
+        Tuple of (prepare_time, measure_time, entangle_time) in graphqomb format.
+    """
+    prepare_time: dict[int, int | None] = {}
+    for node_id, time in schedule_dto.prepareTime.items():
+        if node_id in node_map:
+            prepare_time[node_map[node_id]] = time
+
+    measure_time: dict[int, int | None] = {}
+    for node_id, time in schedule_dto.measureTime.items():
+        if node_id in node_map:
+            measure_time[node_map[node_id]] = time
+
+    entangle_time: dict[tuple[int, int], int | None] = {}
+    for edge_id, time in schedule_dto.entangleTime.items():
+        # Parse normalized edge ID (e.g., "n0-n1")
+        parts = edge_id.split("-")
+        if len(parts) == 2 and parts[0] in node_map and parts[1] in node_map:
+            u, v = node_map[parts[0]], node_map[parts[1]]
+            # Use canonical order (smaller index first)
+            edge = (min(u, v), max(u, v))
+            entangle_time[edge] = time
+
+    return prepare_time, measure_time, entangle_time
+
+
+def translate_error_message(message: str, reverse_map: dict[int, str]) -> str:
+    """Translate graphqomb error message by replacing node indices with node IDs.
+
+    Args:
+        message: Error message from graphqomb containing node indices.
+        reverse_map: Mapping from graphqomb indices to frontend node IDs.
+
+    Returns:
+        Error message with node indices replaced by frontend node IDs.
+    """
+    import re
+
+    result = message
+
+    # Replace patterns like [0, 2, 5] (list of indices)
+    def replace_index_list(match: re.Match[str]) -> str:
+        indices_str = match.group(1)
+        indices = [int(i.strip()) for i in indices_str.split(",")]
+        node_ids = [reverse_map.get(i, f"?{i}") for i in indices]
+        return f"[{', '.join(node_ids)}]"
+
+    result = re.sub(r"\[(\d+(?:,\s*\d+)*)\]", replace_index_list, result)
+
+    # Replace patterns like "node 0" or "node 123"
+    def replace_single_node(match: re.Match[str]) -> str:
+        idx = int(match.group(1))
+        node_id = reverse_map.get(idx, f"?{idx}")
+        return f"node {node_id}"
+
+    result = re.sub(r"\bnode (\d+)", replace_single_node, result)
+
+    # Replace patterns like "Edge (0, 1)" or "edge (2, 3)"
+    def replace_edge(match: re.Match[str]) -> str:
+        prefix = match.group(1)  # "Edge" or "edge"
+        u, v = int(match.group(2)), int(match.group(3))
+        u_id = reverse_map.get(u, f"?{u}")
+        v_id = reverse_map.get(v, f"?{v}")
+        return f"{prefix} ({u_id}, {v_id})"
+
+    result = re.sub(r"\b(Edge|edge) \((\d+), (\d+)\)", replace_edge, result)
+
+    return result
+
+
 def compute_zflow_from_xflow(
     graph: GraphState,
     xflow: dict[int, set[int]],

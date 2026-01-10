@@ -10,7 +10,7 @@
 
 import { useCallback, useState } from "react";
 
-import { isApiError, schedule } from "@/lib/api";
+import { isApiError, schedule, validateSchedule } from "@/lib/api";
 import { useProjectStore } from "@/stores/projectStore";
 import { type ScheduleMode, useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 import { toPayload } from "@/types";
@@ -27,6 +27,10 @@ export function ScheduleToolbar({ activeTab }: ScheduleToolbarProps): React.Reac
   const autoFillEdges = useScheduleEditorStore((s) => s.autoFillEdges);
   const toScheduleResult = useScheduleEditorStore((s) => s.toScheduleResult);
   const isDirty = useScheduleEditorStore((s) => s.isDirty);
+  const validationResult = useScheduleEditorStore((s) => s.validationResult);
+  const isValidating = useScheduleEditorStore((s) => s.isValidating);
+  const setValidationResult = useScheduleEditorStore((s) => s.setValidationResult);
+  const setIsValidating = useScheduleEditorStore((s) => s.setIsValidating);
 
   const project = useProjectStore((s) => s.project);
   const setSchedule = useProjectStore((s) => s.setSchedule);
@@ -64,6 +68,37 @@ export function ScheduleToolbar({ activeTab }: ScheduleToolbarProps): React.Reac
       setSchedule(result);
     }
   }, [toScheduleResult, setSchedule]);
+
+  const handleValidate = useCallback(async () => {
+    setIsValidating(true);
+    setError(null);
+
+    try {
+      const payload = toPayload(project);
+      const scheduleResult = toScheduleResult();
+
+      if (!scheduleResult) {
+        setError("No schedule to validate");
+        return;
+      }
+
+      const result = await validateSchedule(payload, scheduleResult);
+      setValidationResult(result);
+
+      if (!result.valid) {
+        const errorMessages = result.errors.map((e) => e.message).join("; ");
+        setError(`Validation failed: ${errorMessages}`);
+      }
+    } catch (err) {
+      if (isApiError(err)) {
+        setError(`Validation error: ${err.detail}`);
+      } else {
+        setError(`Validation error: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    } finally {
+      setIsValidating(false);
+    }
+  }, [project, toScheduleResult, setValidationResult, setIsValidating]);
 
   const handleClear = useCallback(() => {
     clearDraft();
@@ -146,6 +181,20 @@ export function ScheduleToolbar({ activeTab }: ScheduleToolbarProps): React.Reac
 
       <button
         type="button"
+        onClick={handleValidate}
+        disabled={isValidating}
+        className={`px-3 py-1 text-sm font-medium rounded transition-colors ${
+          isValidating
+            ? "bg-amber-100 text-amber-400 cursor-not-allowed"
+            : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+        }`}
+        title="Validate schedule against graph constraints"
+      >
+        {isValidating ? "Validating..." : "Validate"}
+      </button>
+
+      <button
+        type="button"
         onClick={handleApply}
         disabled={!isDirty}
         className="px-3 py-1 text-sm font-medium text-white bg-green-500 rounded hover:bg-green-600 disabled:bg-green-300 disabled:cursor-not-allowed transition-colors"
@@ -153,6 +202,11 @@ export function ScheduleToolbar({ activeTab }: ScheduleToolbarProps): React.Reac
       >
         Apply
       </button>
+
+      {/* Validation Success Indicator */}
+      {validationResult?.valid === true && (
+        <span className="text-sm text-green-600 font-medium">Schedule Valid</span>
+      )}
 
       {/* Error Message */}
       {error && <div className="text-sm text-red-600 ml-auto">{error}</div>}

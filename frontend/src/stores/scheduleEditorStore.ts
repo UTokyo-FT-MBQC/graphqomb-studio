@@ -8,6 +8,7 @@
 
 import { create } from "zustand";
 
+import type { ValidationResult } from "@/lib/api";
 import type { GraphEdge, ScheduleResult, TimeSlice } from "@/types";
 
 export type ScheduleMode = "auto" | "manual" | "hybrid";
@@ -43,6 +44,10 @@ interface ScheduleEditorState {
   selectedEdgeEntryId: string | null;
   isDirty: boolean;
 
+  // Validation state
+  validationResult: ValidationResult | null;
+  isValidating: boolean;
+
   // Actions
   openEditor: () => void;
   closeEditor: () => void;
@@ -68,6 +73,9 @@ interface ScheduleEditorState {
   clearDraft: () => void;
   autoFillUnlocked: (schedule: ScheduleResult) => void;
   toScheduleResult: () => ScheduleResult | null;
+  setValidationResult: (result: ValidationResult | null) => void;
+  setIsValidating: (isValidating: boolean) => void;
+  clearValidation: () => void;
   reset: () => void;
 }
 
@@ -79,6 +87,8 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
   hoveredEdgeId: null,
   selectedEdgeEntryId: null,
   isDirty: false,
+  validationResult: null,
+  isValidating: false,
 
   openEditor: () => set({ isEditorOpen: true }),
 
@@ -134,6 +144,7 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
           },
         },
         isDirty: true,
+        validationResult: null, // Clear validation on change
       };
     }),
 
@@ -171,6 +182,7 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
           },
         },
         isDirty: true,
+        validationResult: null, // Clear validation on change
       };
     }),
 
@@ -209,18 +221,20 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
         const sourceEntry = entries[edgeEntry.source];
         const targetEntry = entries[edgeEntry.target];
 
-        // For input nodes (not in entries), treat as prepared at time -1
-        const sourcePrepare = sourceEntry?.prepareTime ?? -1;
-        const targetPrepare = targetEntry?.prepareTime ?? -1;
+        // Determine effective prepare times:
+        // - If entry doesn't exist (input node), treat as prepared at time -1
+        // - If entry exists but prepareTime is null, the node is not scheduled yet
+        const sourcePrepare = sourceEntry ? sourceEntry.prepareTime : -1;
+        const targetPrepare = targetEntry ? targetEntry.prepareTime : -1;
 
-        // If both are null (not scheduled), skip
-        if (sourcePrepare === null && targetPrepare === null) continue;
+        // Skip if either node is present in entries but has no prepareTime yet
+        // (null means "entry exists but not scheduled", -1 means "input node")
+        if (sourcePrepare === null || targetPrepare === null) {
+          continue;
+        }
 
         // entangleTime = max(prepareTime[source], prepareTime[target])
-        // Handle null as -1 (input nodes are prepared before time 0)
-        const effectiveSource = sourcePrepare === null ? -1 : sourcePrepare;
-        const effectiveTarget = targetPrepare === null ? -1 : targetPrepare;
-        const entangleTime = Math.max(effectiveSource, effectiveTarget);
+        const entangleTime = Math.max(sourcePrepare, targetPrepare);
 
         // Only set if result is >= 0 (valid time)
         newEdgeEntries[edgeId] = {
@@ -232,6 +246,7 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
       return {
         draftSchedule: { ...state.draftSchedule, edgeEntries: newEdgeEntries },
         isDirty: true,
+        validationResult: null, // Clear validation on change
       };
     }),
 
@@ -264,6 +279,7 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
       return {
         draftSchedule: { ...state.draftSchedule, entries, edgeEntries },
         isDirty: true,
+        validationResult: null, // Clear validation on change
       };
     }),
 
@@ -295,6 +311,7 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
       return {
         draftSchedule: { ...state.draftSchedule, entries, edgeEntries },
         isDirty: true,
+        validationResult: null, // Clear validation on change
       };
     }),
 
@@ -369,6 +386,12 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
     };
   },
 
+  setValidationResult: (result) => set({ validationResult: result }),
+
+  setIsValidating: (isValidating) => set({ isValidating }),
+
+  clearValidation: () => set({ validationResult: null }),
+
   reset: () =>
     set({
       isEditorOpen: false,
@@ -378,5 +401,7 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
       hoveredEdgeId: null,
       selectedEdgeEntryId: null,
       isDirty: false,
+      validationResult: null,
+      isValidating: false,
     }),
 }));
