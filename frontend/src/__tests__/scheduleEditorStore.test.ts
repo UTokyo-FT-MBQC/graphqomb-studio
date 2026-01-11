@@ -411,46 +411,33 @@ describe("scheduleEditorStore", () => {
       expect(getEdgeEntry("n0-n1").entangleTime).toBeNull();
     });
 
-    it("should treat input nodes in entries with null prepareTime as prepared at -1", () => {
-      // n0 is an input node (included in inputNodeIds), n1 is intermediate
-      useScheduleEditorStore
-        .getState()
-        // biome-ignore lint/style/noNonNullAssertion: Test data is known to exist
-        .initializeDraft(["n0", "n1"], [testEdges[0]!], undefined, ["n0"]);
+    it("should treat input nodes (not in entries) as prepared at -1", () => {
+      // n0 is an input node (not in entries), n1 is intermediate/output
+      // biome-ignore lint/style/noNonNullAssertion: Test data is known to exist
+      useScheduleEditorStore.getState().initializeDraft(["n1"], [testEdges[0]!]);
 
-      // Set only intermediate node's prepareTime
+      // Set only scheduled node's prepareTime
       useScheduleEditorStore.getState().updateEntry("n1", { prepareTime: 1 });
 
       useScheduleEditorStore.getState().autoFillEdges();
 
-      // n0 is input node (prepareTime null but in inputNodeIds), treated as -1
+      // n0 is not in entries (input node), treated as -1
       // n0-n1: max(-1, 1) = 1
       expect(getEdgeEntry("n0-n1").entangleTime).toBe(1);
     });
 
-    it("should skip edges with unscheduled intermediate nodes", () => {
-      // n0 is an intermediate node (not in inputNodeIds) with null prepareTime
-      useScheduleEditorStore
-        .getState()
-        // biome-ignore lint/style/noNonNullAssertion: Test data is known to exist
-        .initializeDraft(["n0", "n1"], [testEdges[0]!], undefined, []);
+    it("should skip edges with unscheduled non-input nodes", () => {
+      // n0 and n1 are both in entries (intermediate/output), but n0 has no prepareTime
+      // biome-ignore lint/style/noNonNullAssertion: Test data is known to exist
+      useScheduleEditorStore.getState().initializeDraft(["n0", "n1"], [testEdges[0]!]);
 
       // Only set n1's prepareTime, leave n0 unscheduled
       useScheduleEditorStore.getState().updateEntry("n1", { prepareTime: 1 });
 
       useScheduleEditorStore.getState().autoFillEdges();
 
-      // n0 is intermediate with null prepareTime, should skip this edge
+      // n0 is in entries but has null prepareTime, should skip this edge
       expect(getEdgeEntry("n0-n1").entangleTime).toBeNull();
-    });
-
-    it("should correctly initialize inputNodeIds in draft", () => {
-      useScheduleEditorStore.getState().initializeDraft(["n0", "n1"], testEdges, undefined, ["n0"]);
-
-      const { draftSchedule } = useScheduleEditorStore.getState();
-      expect(draftSchedule?.inputNodeIds).toBeDefined();
-      expect(draftSchedule?.inputNodeIds.has("n0")).toBe(true);
-      expect(draftSchedule?.inputNodeIds.has("n1")).toBe(false);
     });
   });
 

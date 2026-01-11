@@ -35,32 +35,21 @@ export function ScheduleEditor(): React.ReactNode {
 
   const [activeTab, setActiveTab] = useState<ScheduleTab>("nodes");
 
-  // Filter to non-output nodes (output nodes are not measured)
+  // Get non-input nodes (intermediate + output) for schedule entries
+  // - Input nodes are assumed prepared before time 0, not included in draft
+  // - Output nodes need prepareTime but not measureTime
+  // - Intermediate nodes need both prepareTime and measureTime
   const schedulableNodeIds = useMemo(
-    () => nodes.filter((n) => n.role !== "output").map((n) => n.id),
-    [nodes]
-  );
-
-  // Get input node IDs for autoFillEdges logic
-  const inputNodeIds = useMemo(
-    () => nodes.filter((n) => n.role === "input").map((n) => n.id),
+    () => nodes.filter((n) => n.role !== "input").map((n) => n.id),
     [nodes]
   );
 
   // Initialize draft when editor opens (if not already initialized)
   useEffect(() => {
     if (isEditorOpen && !draftSchedule) {
-      initializeDraft(schedulableNodeIds, edges, schedule, inputNodeIds);
+      initializeDraft(schedulableNodeIds, edges, schedule);
     }
-  }, [
-    isEditorOpen,
-    draftSchedule,
-    schedulableNodeIds,
-    edges,
-    schedule,
-    inputNodeIds,
-    initializeDraft,
-  ]);
+  }, [isEditorOpen, draftSchedule, schedulableNodeIds, edges, schedule, initializeDraft]);
 
   // Reset draft when nodes or edges change significantly
   useEffect(() => {
@@ -80,10 +69,10 @@ export function ScheduleEditor(): React.ReactNode {
 
       if (hasNewNodes || hasRemovedNodes || hasNewEdges || hasRemovedEdges) {
         // Reinitialize with current nodes and edges
-        initializeDraft(schedulableNodeIds, edges, schedule, inputNodeIds);
+        initializeDraft(schedulableNodeIds, edges, schedule);
       }
     }
-  }, [schedulableNodeIds, edges, draftSchedule, schedule, inputNodeIds, initializeDraft]);
+  }, [schedulableNodeIds, edges, draftSchedule, schedule, initializeDraft]);
 
   // Clean up when component unmounts
   useEffect(() => {

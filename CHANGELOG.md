@@ -80,7 +80,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Edge utility module (`edgeUtils.ts`) with overlap detection and offset calculation
 
 #### Fixed
-- `scheduleEditorStore.ts`: Fixed `autoFillEdges` incorrectly handling input nodes. Added `inputNodeIds` to `DraftSchedule` to properly distinguish input nodes (always ready at time -1) from unscheduled intermediate nodes (skipped until scheduled). Previously, input nodes with null `prepareTime` in entries were incorrectly skipped by Auto-fill Edges.
+- `ScheduleEditor.tsx`: Fixed schedule validation failing for projects with output nodes. Changed `schedulableNodeIds` filter from excluding output nodes to excluding input nodes. Now draft schedule includes intermediate + output nodes (non-input), matching backend validation requirements. Output nodes' measureTime field is disabled in UI since they are not measured.
+- `scheduleEditorStore.ts`: Simplified `autoFillEdges` logic. Input nodes are now identified by not being in entries (rather than a separate `inputNodeIds` set), while output/intermediate nodes with null prepareTime are skipped until scheduled.
 - `GraphCanvas2D.tsx`: Fixed double-click node creation not working by adding `zoomOnDoubleClick={false}` to ReactFlow component (React Flow v12 captures double-click for zoom by default)
 - `WorkingPlaneGrid.tsx`: Fixed XY/XZ plane rotation mapping - XY plane (Graph Z fixed) now correctly uses no rotation, and XZ plane (Graph Y fixed) correctly uses -90° X rotation
 - Z-flow auto-computation now works properly (useResolvedFlow hook was not being called)

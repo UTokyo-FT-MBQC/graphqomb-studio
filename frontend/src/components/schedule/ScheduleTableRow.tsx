@@ -154,17 +154,18 @@ function ScheduleTableRowComponent({
         />
       </td>
 
-      {/* Measure Time Input */}
+      {/* Measure Time Input (disabled for output nodes) */}
       <td className="px-2 py-1.5">
         <input
           type="number"
           min="0"
           value={entry.measureTime ?? ""}
           onChange={handleMeasureTimeChange}
-          disabled={entry.locked}
+          disabled={entry.locked || role === "output"}
           className="w-16 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-gray-100 disabled:text-gray-500"
           onClick={handleInputClick}
-          placeholder="-"
+          placeholder={role === "output" ? "N/A" : "-"}
+          title={role === "output" ? "Output nodes are not measured" : undefined}
         />
       </td>
 
