@@ -41,12 +41,26 @@ export function ScheduleEditor(): React.ReactNode {
     [nodes]
   );
 
+  // Get input node IDs for autoFillEdges logic
+  const inputNodeIds = useMemo(
+    () => nodes.filter((n) => n.role === "input").map((n) => n.id),
+    [nodes]
+  );
+
   // Initialize draft when editor opens (if not already initialized)
   useEffect(() => {
     if (isEditorOpen && !draftSchedule) {
-      initializeDraft(schedulableNodeIds, edges, schedule);
+      initializeDraft(schedulableNodeIds, edges, schedule, inputNodeIds);
     }
-  }, [isEditorOpen, draftSchedule, schedulableNodeIds, edges, schedule, initializeDraft]);
+  }, [
+    isEditorOpen,
+    draftSchedule,
+    schedulableNodeIds,
+    edges,
+    schedule,
+    inputNodeIds,
+    initializeDraft,
+  ]);
 
   // Reset draft when nodes or edges change significantly
   useEffect(() => {
@@ -66,10 +80,10 @@ export function ScheduleEditor(): React.ReactNode {
 
       if (hasNewNodes || hasRemovedNodes || hasNewEdges || hasRemovedEdges) {
         // Reinitialize with current nodes and edges
-        initializeDraft(schedulableNodeIds, edges, schedule);
+        initializeDraft(schedulableNodeIds, edges, schedule, inputNodeIds);
       }
     }
-  }, [schedulableNodeIds, edges, draftSchedule, schedule, initializeDraft]);
+  }, [schedulableNodeIds, edges, draftSchedule, schedule, inputNodeIds, initializeDraft]);
 
   // Clean up when component unmounts
   useEffect(() => {

@@ -32,6 +32,7 @@ export interface DraftSchedule {
   mode: ScheduleMode;
   entries: Record<string, DraftScheduleEntry>;
   edgeEntries: Record<string, DraftEdgeEntry>;
+  inputNodeIds: Set<string>;
 }
 
 interface ScheduleEditorState {
@@ -55,7 +56,8 @@ interface ScheduleEditorState {
   initializeDraft: (
     nodeIds: string[],
     edges: GraphEdge[],
-    existingSchedule?: ScheduleResult
+    existingSchedule?: ScheduleResult,
+    inputNodeIds?: string[]
   ) => void;
   setMode: (mode: ScheduleMode) => void;
   updateEntry: (nodeId: string, updates: Partial<Omit<DraftScheduleEntry, "nodeId">>) => void;
@@ -96,7 +98,7 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
 
   toggleEditor: () => set((state) => ({ isEditorOpen: !state.isEditorOpen })),
 
-  initializeDraft: (nodeIds, edges, existingSchedule) => {
+  initializeDraft: (nodeIds, edges, existingSchedule, inputNodeIds) => {
     const entries: Record<string, DraftScheduleEntry> = {};
     for (const nodeId of nodeIds) {
       entries[nodeId] = {
@@ -119,7 +121,12 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
     }
 
     set({
-      draftSchedule: { mode: "manual", entries, edgeEntries },
+      draftSchedule: {
+        mode: "manual",
+        entries,
+        edgeEntries,
+        inputNodeIds: new Set(inputNodeIds ?? []),
+      },
       isDirty: false,
     });
   },
@@ -210,25 +217,33 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
     set((state) => {
       if (!state.draftSchedule) return state;
 
-      const { entries, edgeEntries } = state.draftSchedule;
+      const { entries, edgeEntries, inputNodeIds } = state.draftSchedule;
       const newEdgeEntries = { ...edgeEntries };
+
+      // Helper to get effective prepare time for a node:
+      // - Input nodes: always ready at time -1
+      // - Output nodes (not in entries): always ready at time -1
+      // - Intermediate nodes with prepareTime set: use that value
+      // - Intermediate nodes with prepareTime null: return null (not scheduled)
+      const getEffectivePrepareTime = (nodeId: string): number | null => {
+        if (inputNodeIds.has(nodeId)) {
+          return -1; // Input nodes are always ready
+        }
+        const entry = entries[nodeId];
+        if (!entry) {
+          return -1; // Node not in entries (output node), treat as ready
+        }
+        return entry.prepareTime; // null if not scheduled, otherwise the time
+      };
 
       for (const [edgeId, edgeEntry] of Object.entries(newEdgeEntries)) {
         // Skip locked edges
         if (edgeEntry.locked) continue;
 
-        // Get prepare times for source and target nodes
-        const sourceEntry = entries[edgeEntry.source];
-        const targetEntry = entries[edgeEntry.target];
+        const sourcePrepare = getEffectivePrepareTime(edgeEntry.source);
+        const targetPrepare = getEffectivePrepareTime(edgeEntry.target);
 
-        // Determine effective prepare times:
-        // - If entry doesn't exist (input node), treat as prepared at time -1
-        // - If entry exists but prepareTime is null, the node is not scheduled yet
-        const sourcePrepare = sourceEntry ? sourceEntry.prepareTime : -1;
-        const targetPrepare = targetEntry ? targetEntry.prepareTime : -1;
-
-        // Skip if either node is present in entries but has no prepareTime yet
-        // (null means "entry exists but not scheduled", -1 means "input node")
+        // Skip if either node is an intermediate node that hasn't been scheduled yet
         if (sourcePrepare === null || targetPrepare === null) {
           continue;
         }
