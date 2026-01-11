@@ -14,6 +14,7 @@
 import { EdgeCreationToolbar } from "@/components/toolbar/EdgeCreationToolbar";
 import { GhostRangeSlider } from "@/components/toolbar/GhostRangeSlider";
 import { NodeCreationToolbar } from "@/components/toolbar/NodeCreationToolbar";
+import { TilingToolbar } from "@/components/toolbar/TilingToolbar";
 import { ViewControls } from "@/components/toolbar/ViewControls";
 import { WorkingPlaneControls } from "@/components/toolbar/WorkingPlaneControls";
 import { ZSliceSlider } from "@/components/toolbar/ZSliceSlider";
@@ -236,6 +237,11 @@ export function Toolbar(): React.ReactNode {
 
         {/* Edge Creation Mode */}
         <EdgeCreationToolbar />
+
+        <div className="h-6 w-px bg-gray-300" />
+
+        {/* Tiling Mode */}
+        <TilingToolbar />
 
         {/* Z-Slice Slider and Ghost Range - only in 2D-slice view */}
         {is3DSliceMode && (

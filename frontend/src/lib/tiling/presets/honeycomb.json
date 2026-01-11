@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "honeycomb",
+  "name": "Honeycomb",
+  "description": "2D honeycomb lattice (2-site basis)",
+  "dimension": 2,
+  "latticeVectors": {
+    "a1": [2, 0, 0],
+    "a2": [1, 1, 0]
+  },
+  "unitCell": {
+    "nodes": [{ "id": "a", "offset": [0, 0, 0] }, { "id": "b", "offset": [1, 0, 0] }],
+    "edges": [
+      { "source": "a", "target": "b", "cellOffset": [0, 0, 0] },
+      { "source": "a", "target": "b", "cellOffset": [-1, 0, 0] },
+      { "source": "a", "target": "b", "cellOffset": [0, -1, 0] }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "square-lattice",
+  "name": "Square Lattice",
+  "description": "Simple 2D square grid",
+  "dimension": 2,
+  "latticeVectors": {
+    "a1": [1, 0, 0],
+    "a2": [0, 1, 0]
+  },
+  "unitCell": {
+    "nodes": [{ "id": "a", "offset": [0, 0, 0] }],
+    "edges": [
+      { "source": "a", "target": "a", "cellOffset": [1, 0, 0] },
+      { "source": "a", "target": "a", "cellOffset": [0, 1, 0] }
+    ]
+  }
+}

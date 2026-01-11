@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
+- **Tiling Feature (2D Canvas)**
+  - New `types/tiling.ts` with TypeScript types and Zod schema for pattern validation
+  - JSON-based pattern definition with 6 presets: square-lattice, brickwork, triangular, honeycomb (2D), cubic, rhg (3D)
+  - `lib/tiling/generator.ts` for node/edge generation with unique global IDs (`pattern:cx,cy,cz:localId`)
+  - `lib/tiling/validation.ts` with validation helpers for pattern dimension and node count limits
+  - `tilingStore` for tiling state management (pattern selection, drag state, preview graph)
+  - `TilingToolbar` component with pattern dropdown, Apply/Cancel buttons, and preview info display
+  - `useTilingDrag` hook for 2D canvas drag-to-select range interaction
+  - `TilingPreview2D` component for semi-transparent SVG overlay showing preview nodes/edges
+  - Integrated tiling mode into `GraphCanvas2D` with real-time preview during drag
+  - Added `isTilingMode` state to `uiStore` for mode switching
+  - Edge generation with duplicate elimination and boundary clipping
+  - Performance protection with max 1000 nodes limit and real-time count estimation
+
 - **Manual Schedule Editor (Phase 1)** (#9)
   - New `scheduleEditorStore` for managing draft schedule state with lock/unlock functionality
   - Expandable `ScheduleEditor` panel between canvas and timeline footer

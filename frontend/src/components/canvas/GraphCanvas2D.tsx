@@ -15,6 +15,8 @@ import type { CustomNodeData } from "@/components/canvas/CustomNode";
 import { CustomNode } from "@/components/canvas/CustomNode";
 import { FlowOverlay } from "@/components/canvas/FlowOverlay";
 import { GhostNode, type GhostNodeData } from "@/components/canvas/GhostNode";
+import { TilingPreview2D } from "@/components/canvas/TilingPreview2D";
+import { useTilingDrag } from "@/hooks/useTilingDrag";
 
 // Internal type for ghost node computation (includes position before converting to React Flow node)
 interface GhostNodeComputedData {
@@ -134,7 +136,13 @@ function GraphCanvas2DInner(): React.ReactNode {
   const selectScheduleEntry = useScheduleEditorStore((state) => state.selectEntry);
   const selectScheduleEdgeEntry = useScheduleEditorStore((state) => state.selectEdgeEntry);
 
+  // Tiling mode
+  const isTilingMode = useUIStore((state) => state.isTilingMode);
+
   const { screenToFlowPosition } = useReactFlow();
+
+  // Tiling drag handlers
+  const tilingDrag = useTilingDrag(currentZSlice, viewMode);
 
   // Track if we're syncing from external state changes
   const isSyncing = useRef(false);
@@ -403,8 +411,12 @@ function GraphCanvas2DInner(): React.ReactNode {
   );
 
   // Handle double-click to add new node (using screenToFlowPosition for correct pan/zoom handling)
+  // Disabled in tiling mode
   const handlePaneDoubleClick = useCallback(
     (event: React.MouseEvent) => {
+      // Disable node creation in tiling mode
+      if (isTilingMode) return;
+
       // Use screenToFlowPosition to correctly convert screen coordinates
       // accounting for pan and zoom
       const flowPosition = screenToFlowPosition({
@@ -435,7 +447,15 @@ function GraphCanvas2DInner(): React.ReactNode {
       addNode(newNode);
       selectNode(newId);
     },
-    [project.nodes, viewMode, currentZSlice, addNode, selectNode, screenToFlowPosition]
+    [
+      project.nodes,
+      viewMode,
+      currentZSlice,
+      addNode,
+      selectNode,
+      screenToFlowPosition,
+      isTilingMode,
+    ]
   );
 
   // Handle pane click to clear selection
@@ -463,28 +483,39 @@ function GraphCanvas2DInner(): React.ReactNode {
   );
 
   return (
-    <ReactFlow
-      nodes={nodesWithSelection}
-      edges={edgesWithSelection}
-      onNodesChange={handleNodesChange}
-      onEdgesChange={handleEdgesChange}
-      onConnect={handleConnect}
-      onNodeClick={handleNodeClick}
-      onPaneClick={handlePaneClick}
-      onDoubleClick={handlePaneDoubleClick}
-      zoomOnDoubleClick={false}
-      nodeTypes={nodeTypes}
-      edgeTypes={edgeTypes}
-      fitView
-      snapToGrid
-      snapGrid={[10, 10]}
-      deleteKeyCode={["Backspace", "Delete"]}
-      proOptions={{ hideAttribution: true }}
+    <div
+      className="w-full h-full relative"
+      onMouseDown={tilingDrag.isActive ? tilingDrag.handleMouseDown : undefined}
+      onMouseMove={tilingDrag.isActive ? tilingDrag.handleMouseMove : undefined}
+      onMouseUp={tilingDrag.isActive ? tilingDrag.handleMouseUp : undefined}
+      onMouseLeave={tilingDrag.isActive ? tilingDrag.handleMouseLeave : undefined}
     >
-      <Background gap={20} size={1} />
-      <Controls />
-      <FlowOverlay />
-    </ReactFlow>
+      <ReactFlow
+        nodes={nodesWithSelection}
+        edges={edgesWithSelection}
+        onNodesChange={handleNodesChange}
+        onEdgesChange={handleEdgesChange}
+        onConnect={handleConnect}
+        onNodeClick={handleNodeClick}
+        onPaneClick={handlePaneClick}
+        onDoubleClick={handlePaneDoubleClick}
+        zoomOnDoubleClick={false}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        fitView
+        snapToGrid
+        snapGrid={[10, 10]}
+        deleteKeyCode={["Backspace", "Delete"]}
+        proOptions={{ hideAttribution: true }}
+        panOnDrag={!tilingDrag.isActive}
+        selectionOnDrag={!tilingDrag.isActive}
+      >
+        <Background gap={20} size={1} />
+        <Controls />
+        <FlowOverlay />
+        {isTilingMode && <TilingPreview2D />}
+      </ReactFlow>
+    </div>
   );
 }
 
