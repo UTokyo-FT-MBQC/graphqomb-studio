@@ -11,6 +11,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
+- **Manual Schedule Editor (Phase 1)** (#9)
+  - New `scheduleEditorStore` for managing draft schedule state with lock/unlock functionality
+  - Expandable `ScheduleEditor` panel between canvas and timeline footer
+  - `ScheduleToolbar` with mode selector (Manual/Auto/Hybrid), Auto-fill, Clear, and Apply buttons
+  - `ScheduleTable` and `ScheduleTableRow` for table-based time input (prepareTime, measureTime per node)
+  - `MiniTimelineBar` component for visual timeline representation in table rows
+  - Lock/unlock functionality to protect specific node schedules during Auto-fill
+  - Bidirectional selection sync: click node in canvas → select row in table, click row → select node
+  - Hover highlight: hover row in table → highlight node in canvas (2D Projection only)
+  - Apply button to commit draft schedule to project and update TimelineView
+  - Warning banner when editing in non-2D-projection view modes
+
+- **Entangle Time Editing**
+  - Extended `scheduleEditorStore` with `DraftEdgeEntry` for edge-based entangle time management
+  - Tab-based UI in Schedule Editor: Nodes tab for prepareTime/measureTime, Edges tab for entangleTime
+  - `EdgeScheduleTable` and `EdgeScheduleTableRow` components for edge scheduling
+  - Lock/unlock functionality for individual edges
+  - "Auto-fill Edges" button to compute entangle times from node prepare times: `max(prep[source], prep[target])`
+  - Bidirectional edge selection sync: click edge in canvas → select row in table, click row → highlight edge
+  - Edge highlight in 2D Projection view when hovered/selected in schedule editor (orange color)
+  - `CustomEdge` component updated with schedule editor highlight integration
+
+- **Schedule Validation**
+  - New `/api/validate-schedule` endpoint validates manual schedules against MBQC constraints
+  - Validates: node set correctness, schedule completeness, DAG dependencies, entanglement causality, time ordering
+  - Error messages translated from graphqomb indices to frontend node IDs for clarity
+  - "Validate" button in Schedule Editor toolbar
+  - Validation state in `scheduleEditorStore` with auto-clear on schedule changes
+  - Green "Schedule Valid" indicator on successful validation
+
 - **Unified 3D Coordinate System**
   - All coordinates are now 3D (x, y, z) regardless of view mode
   - Fractional Z values are now supported (e.g., z=0.5)
@@ -50,6 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Edge utility module (`edgeUtils.ts`) with overlap detection and offset calculation
 
 #### Fixed
+- `scheduleEditorStore.ts`: Fixed `autoFillEdges` incorrectly handling input nodes. Added `inputNodeIds` to `DraftSchedule` to properly distinguish input nodes (always ready at time -1) from unscheduled intermediate nodes (skipped until scheduled). Previously, input nodes with null `prepareTime` in entries were incorrectly skipped by Auto-fill Edges.
 - `GraphCanvas2D.tsx`: Fixed double-click node creation not working by adding `zoomOnDoubleClick={false}` to ReactFlow component (React Flow v12 captures double-click for zoom by default)
 - `WorkingPlaneGrid.tsx`: Fixed XY/XZ plane rotation mapping - XY plane (Graph Z fixed) now correctly uses no rotation, and XZ plane (Graph Y fixed) correctly uses -90° X rotation
 - Z-flow auto-computation now works properly (useResolvedFlow hook was not being called)

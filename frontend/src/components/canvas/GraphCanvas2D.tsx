@@ -26,6 +26,7 @@ import { type EdgeWithPosition, calculateEdgeOffsets } from "@/lib/edgeUtils";
 import { SCALE, getGhostCandidateNodes, getGhostPosition } from "@/lib/geometry";
 import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
 import { useProjectStore } from "@/stores/projectStore";
+import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { Coordinate, GraphNode, IntermediateNode } from "@/types";
@@ -127,6 +128,11 @@ function GraphCanvas2DInner(): React.ReactNode {
   const sourceNodeId = useEdgeCreationStore((state) => state.sourceNodeId);
   const setSourceNode = useEdgeCreationStore((state) => state.setSourceNode);
   const clearSourceNode = useEdgeCreationStore((state) => state.clearSourceNode);
+
+  // Schedule editor integration
+  const isScheduleEditorOpen = useScheduleEditorStore((state) => state.isEditorOpen);
+  const selectScheduleEntry = useScheduleEditorStore((state) => state.selectEntry);
+  const selectScheduleEdgeEntry = useScheduleEditorStore((state) => state.selectEdgeEntry);
 
   const { screenToFlowPosition } = useReactFlow();
 
@@ -315,13 +321,17 @@ function GraphCanvas2DInner(): React.ReactNode {
         if (change.type === "select" && "selected" in change) {
           if (change.selected === true) {
             selectEdge(change.id);
+            // Sync with schedule editor if open
+            if (isScheduleEditorOpen) {
+              selectScheduleEdgeEntry(change.id);
+            }
           }
         } else if (change.type === "remove") {
           removeEdge(change.id);
         }
       }
     },
-    [onEdgesChange, selectEdge, removeEdge]
+    [onEdgesChange, selectEdge, removeEdge, isScheduleEditorOpen, selectScheduleEdgeEntry]
   );
 
   // Handle new edge connection (supports cross-Z edges via ghost nodes)
@@ -345,12 +355,17 @@ function GraphCanvas2DInner(): React.ReactNode {
     [addEdgeToStore, project.nodes]
   );
 
-  // Handle node click for edge creation mode
+  // Handle node click for edge creation mode and schedule editor sync
   const handleNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
       if (!isEdgeCreationMode) {
         // Normal mode: just select the node
         selectNode(node.id);
+
+        // Sync with schedule editor if open
+        if (isScheduleEditorOpen) {
+          selectScheduleEntry(node.id);
+        }
         return;
       }
 
@@ -382,6 +397,8 @@ function GraphCanvas2DInner(): React.ReactNode {
       setSourceNode,
       clearSourceNode,
       addEdgeToStore,
+      isScheduleEditorOpen,
+      selectScheduleEntry,
     ]
   );
 

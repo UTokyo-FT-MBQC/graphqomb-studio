@@ -5,10 +5,14 @@
  * - input: green
  * - output: blue
  * - intermediate: gray
+ *
+ * Also supports schedule editor highlighting:
+ * - orange ring when hovered or selected in schedule editor
  */
 
 "use client";
 
+import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 import type { GraphNode, NodeRole } from "@/types";
 import { Handle, Position } from "@xyflow/react";
 import { memo } from "react";
@@ -45,6 +49,15 @@ function CustomNodeComponent({ data, selected }: CustomNodeProps): React.ReactNo
   const { node } = data;
   const colors = roleColors[node.role];
 
+  // Schedule editor highlight state
+  const hoveredNodeId = useScheduleEditorStore((s) => s.hoveredNodeId);
+  const selectedEntryId = useScheduleEditorStore((s) => s.selectedEntryId);
+  const isEditorOpen = useScheduleEditorStore((s) => s.isEditorOpen);
+
+  // Show orange highlight when hovered or selected in schedule editor
+  const isScheduleHighlighted =
+    isEditorOpen && (hoveredNodeId === node.id || selectedEntryId === node.id);
+
   return (
     <>
       <Handle type="target" position={Position.Top} className="!bg-gray-400 !w-2 !h-2" />
@@ -53,6 +66,7 @@ function CustomNodeComponent({ data, selected }: CustomNodeProps): React.ReactNo
           px-3 py-2 rounded-full border-2 min-w-[60px] text-center
           ${colors.bg} ${colors.border} ${colors.text}
           ${selected === true ? "ring-2 ring-offset-1 ring-blue-400" : ""}
+          ${isScheduleHighlighted ? "ring-2 ring-offset-1 ring-orange-400 shadow-lg" : ""}
           transition-all duration-150
         `}
       >
