@@ -132,6 +132,7 @@ function GraphCanvas2DInner(): React.ReactNode {
   // Schedule editor integration
   const isScheduleEditorOpen = useScheduleEditorStore((state) => state.isEditorOpen);
   const selectScheduleEntry = useScheduleEditorStore((state) => state.selectEntry);
+  const selectScheduleEdgeEntry = useScheduleEditorStore((state) => state.selectEdgeEntry);
 
   const { screenToFlowPosition } = useReactFlow();
 
@@ -320,13 +321,17 @@ function GraphCanvas2DInner(): React.ReactNode {
         if (change.type === "select" && "selected" in change) {
           if (change.selected === true) {
             selectEdge(change.id);
+            // Sync with schedule editor if open
+            if (isScheduleEditorOpen) {
+              selectScheduleEdgeEntry(change.id);
+            }
           }
         } else if (change.type === "remove") {
           removeEdge(change.id);
         }
       }
     },
-    [onEdgesChange, selectEdge, removeEdge]
+    [onEdgesChange, selectEdge, removeEdge, isScheduleEditorOpen, selectScheduleEdgeEntry]
   );
 
   // Handle new edge connection (supports cross-Z edges via ghost nodes)

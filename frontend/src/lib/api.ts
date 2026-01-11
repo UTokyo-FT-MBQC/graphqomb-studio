@@ -107,6 +107,23 @@ export async function computeZFlow(payload: ProjectPayload): Promise<Record<stri
 }
 
 /**
+ * Validate a schedule against graph and flow constraints.
+ *
+ * @param payload - The project payload (graph and flow).
+ * @param schedule - The schedule to validate.
+ * @returns Validation result with valid flag and any errors.
+ */
+export async function validateSchedule(
+  payload: ProjectPayload,
+  schedule: ScheduleResult
+): Promise<ValidationResult> {
+  return apiRequest<ValidationResult>("/api/validate-schedule", {
+    method: "POST",
+    body: JSON.stringify({ project: payload, schedule }),
+  });
+}
+
+/**
  * Check if the backend is healthy.
  *
  * @returns True if the backend is responding.
