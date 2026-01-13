@@ -5,7 +5,12 @@
  * Handles pattern selection, cell range, preview generation, and applying to project.
  */
 
-import { MAX_RECOMMENDED_NODES, estimateNodeCount, generateTiling } from "@/lib/tiling/generator";
+import {
+  type GenerateTilingOptions,
+  MAX_RECOMMENDED_NODES,
+  estimateNodeCount,
+  generateTiling,
+} from "@/lib/tiling/generator";
 import { TILING_PRESETS_2D, getPresetById } from "@/lib/tiling/presets";
 import { validateTilingGeneration } from "@/lib/tiling/validation";
 import type { Coordinate, GraphEdge, GraphNode, IntermediateNode } from "@/types";
@@ -35,6 +40,9 @@ interface TilingState {
   dragStart: Coordinate | null;
   dragEnd: Coordinate | null;
 
+  // Base Z position for 2D patterns (current Z slice)
+  baseZ: number;
+
   // Generated preview
   cellRange: CellRange | null;
   previewGraph: GeneratedGraph | null;
@@ -45,6 +53,7 @@ interface TilingState {
   // Actions
   selectPattern: (id: string) => void;
   clearPattern: () => void;
+  setBaseZ: (z: number) => void;
   startDrag: (coord: Coordinate) => void;
   updateDrag: (coord: Coordinate) => void;
   endDrag: () => void;
@@ -156,6 +165,7 @@ export const useTilingStore = create<TilingState>((set, get) => ({
   isDragging: false,
   dragStart: null,
   dragEnd: null,
+  baseZ: 0,
   cellRange: null,
   previewGraph: null,
   error: null,
@@ -194,6 +204,10 @@ export const useTilingStore = create<TilingState>((set, get) => ({
     });
   },
 
+  setBaseZ: (z: number): void => {
+    set({ baseZ: z });
+  },
+
   startDrag: (coord: Coordinate): void => {
     const { pattern } = get();
     if (pattern === null) {
@@ -213,7 +227,7 @@ export const useTilingStore = create<TilingState>((set, get) => ({
   },
 
   updateDrag: (coord: Coordinate): void => {
-    const { isDragging, dragStart, pattern } = get();
+    const { isDragging, dragStart, pattern, baseZ } = get();
     if (!isDragging || dragStart === null || pattern === null) {
       return;
     }
@@ -236,9 +250,10 @@ export const useTilingStore = create<TilingState>((set, get) => ({
       return;
     }
 
-    // Generate preview
+    // Generate preview with baseZ for 2D patterns
     try {
-      const previewGraph = generateTiling(pattern, cellRange);
+      const options: GenerateTilingOptions = pattern.dimension === 2 ? { baseZ } : {};
+      const previewGraph = generateTiling(pattern, cellRange, options);
       set({
         dragEnd: coord,
         cellRange,
@@ -303,19 +318,36 @@ export const useTilingStore = create<TilingState>((set, get) => ({
       return;
     }
 
-    // Get project store actions
-    const { addNode, addEdge } = useProjectStore.getState();
+    // Get project store state and actions
+    const projectState = useProjectStore.getState();
+    const { addNode, addEdge } = projectState;
 
-    // Add all nodes
+    // Build a set of existing node IDs to prevent duplicates
+    const existingNodeIds = new Set(projectState.project.nodes.map((n) => n.id));
+    const existingEdgeIds = new Set(projectState.project.edges.map((e) => e.id));
+
+    // Add nodes, skipping duplicates
+    let addedNodes = 0;
+    let skippedNodes = 0;
     for (const node of previewGraph.nodes) {
+      if (existingNodeIds.has(node.id)) {
+        skippedNodes++;
+        continue;
+      }
       const graphNode = toGraphNode(node.id, node.position, node.role);
       addNode(graphNode);
+      addedNodes++;
     }
 
-    // Add all edges
+    // Add edges, skipping duplicates
+    let addedEdges = 0;
     for (const edge of previewGraph.edges) {
       const graphEdge = toGraphEdge(edge.source, edge.target);
+      if (existingEdgeIds.has(graphEdge.id)) {
+        continue;
+      }
       addEdge(graphEdge);
+      addedEdges++;
     }
 
     // Clear tiling state
@@ -325,7 +357,14 @@ export const useTilingStore = create<TilingState>((set, get) => ({
       dragEnd: null,
       cellRange: null,
       previewGraph: null,
-      error: null,
+      // Show warning if some nodes were skipped
+      error:
+        skippedNodes > 0
+          ? {
+              code: "PARTIAL_APPLY",
+              message: `Added ${addedNodes} nodes, ${addedEdges} edges. Skipped ${skippedNodes} duplicate nodes.`,
+            }
+          : null,
     });
   },
 

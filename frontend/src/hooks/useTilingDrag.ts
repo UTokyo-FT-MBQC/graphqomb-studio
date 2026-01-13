@@ -39,6 +39,7 @@ export function useTilingDrag(
   const updateDrag = useTilingStore((state) => state.updateDrag);
   const endDrag = useTilingStore((state) => state.endDrag);
   const cancelDrag = useTilingStore((state) => state.cancelDrag);
+  const setBaseZ = useTilingStore((state) => state.setBaseZ);
 
   const isActive = isTilingMode && pattern !== null;
 
@@ -73,11 +74,14 @@ export function useTilingDrag(
       // Convert to graph coordinates
       const coord = screenToGraphCoord(event.clientX, event.clientY);
 
+      // Set base Z for 2D patterns (use coordinate's Z which is the current slice)
+      setBaseZ(coord.z);
+
       // Start drag
       startDrag(coord);
       isDraggingRef.current = true;
     },
-    [isActive, screenToGraphCoord, startDrag]
+    [isActive, screenToGraphCoord, startDrag, setBaseZ]
   );
 
   const handleMouseMove = useCallback(

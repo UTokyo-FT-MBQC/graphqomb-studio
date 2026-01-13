@@ -7,17 +7,22 @@ import type {
 } from "@/types/tiling";
 
 /**
- * Generate a global node ID from pattern, cell coordinates, and local node ID.
- * Format: `${pattern.id}:${cx},${cy},${cz}:${localNodeId}`
+ * Generate a global node ID from cell coordinates and local node ID.
+ * Format for 2D: `${cx}_${cy}_${localNodeId}` (e.g., "0_0_a")
+ * Format for 3D: `${cx}_${cy}_${cz}_${localNodeId}` (e.g., "0_0_0_a")
  */
 export function generateGlobalNodeId(
-  patternId: string,
+  _patternId: string,
   cx: number,
   cy: number,
   cz: number,
-  localNodeId: string
+  localNodeId: string,
+  is3D = false
 ): string {
-  return `${patternId}:${cx},${cy},${cz}:${localNodeId}`;
+  if (is3D) {
+    return `${cx}_${cy}_${cz}_${localNodeId}`;
+  }
+  return `${cx}_${cy}_${localNodeId}`;
 }
 
 /**
@@ -79,14 +84,37 @@ function computeNodePosition(
 }
 
 /**
- * Generate nodes and edges from a tiling pattern within the given cell range.
+ * Options for tiling generation.
  */
-export function generateTiling(pattern: TilingPattern, cellRange: CellRange): GeneratedGraph {
+export interface GenerateTilingOptions {
+  /**
+   * Base Z position for 2D patterns.
+   * When placing a 2D pattern at a specific Z slice, this value is added to all node Z coordinates.
+   * Default: 0
+   */
+  baseZ?: number;
+}
+
+/**
+ * Generate nodes and edges from a tiling pattern within the given cell range.
+ *
+ * @param pattern - The tiling pattern to generate
+ * @param cellRange - The cell range to generate within
+ * @param options - Optional generation options (e.g., baseZ for 2D patterns)
+ */
+export function generateTiling(
+  pattern: TilingPattern,
+  cellRange: CellRange,
+  options: GenerateTilingOptions = {}
+): GeneratedGraph {
   const nodes: GeneratedNode[] = [];
   const edges: GeneratedEdge[] = [];
   const edgeSet = new Set<string>();
 
   const is3D = pattern.dimension === 3;
+  const baseZ = options.baseZ ?? 0;
+
+  // For 3D patterns, use cellRange.z; for 2D patterns, use baseZ for all nodes
   const zMin = is3D && cellRange.z !== undefined ? cellRange.z[0] : 0;
   const zMax = is3D && cellRange.z !== undefined ? cellRange.z[1] : 0;
 
@@ -95,8 +123,14 @@ export function generateTiling(pattern: TilingPattern, cellRange: CellRange): Ge
     for (let cy = cellRange.y[0]; cy <= cellRange.y[1]; cy++) {
       for (let cz = zMin; cz <= zMax; cz++) {
         for (const unitNode of pattern.unitCell.nodes) {
-          const globalId = generateGlobalNodeId(pattern.id, cx, cy, cz, unitNode.id);
+          const globalId = generateGlobalNodeId(pattern.id, cx, cy, cz, unitNode.id, is3D);
           const position = computeNodePosition(pattern, cx, cy, cz, unitNode.offset);
+
+          // For 2D patterns, set Z to baseZ
+          if (!is3D) {
+            position[2] = baseZ;
+          }
+
           const role = unitNode.role ?? "intermediate";
 
           nodes.push({
@@ -124,13 +158,14 @@ export function generateTiling(pattern: TilingPattern, cellRange: CellRange): Ge
             continue;
           }
 
-          const sourceId = generateGlobalNodeId(pattern.id, cx, cy, cz, unitEdge.source);
+          const sourceId = generateGlobalNodeId(pattern.id, cx, cy, cz, unitEdge.source, is3D);
           const targetId = generateGlobalNodeId(
             pattern.id,
             targetCx,
             targetCy,
             targetCz,
-            unitEdge.target
+            unitEdge.target,
+            is3D
           );
 
           // Skip self-loops (should not happen with valid patterns, but safety check)
