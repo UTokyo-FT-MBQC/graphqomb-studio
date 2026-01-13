@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
+- **Toolbar Two-Row Layout Reorganization**
+  - Reorganized toolbar into two-row layout for better organization
+  - Top row: Project info (title, name), File menu, Validate/Schedule actions, node/edge count
+  - Bottom row: View controls, edit tools (Add Node, Edge, Tiling), view-specific controls (Z-Slice, 3D Edit)
+  - New `DropdownMenu` component (`components/ui/DropdownMenu.tsx`) with accessibility support (keyboard navigation, ARIA attributes)
+  - New `FileMenu` component consolidating New/Import/Export into dropdown menu
+  - New `ToolbarRow`, `ToolbarDivider`, `ToolbarSpacer` utility components
+
 - **Node Label Display Toggle**
   - Added `showNodeLabels` state to `uiStore` with toggle action
   - "Labels" checkbox in ViewControls toolbar to show/hide node labels
