@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tiling Feature (2D Canvas)**
   - New `types/tiling.ts` with TypeScript types and Zod schema for pattern validation
   - JSON-based pattern definition with 6 presets: square-lattice, brickwork, triangular, honeycomb (2D), cubic, rhg (3D)
-  - `lib/tiling/generator.ts` for node/edge generation with coordinate-based IDs (`x.y.z` format, e.g., "0.0.0", "1.5.0")
+  - `lib/tiling/generator.ts` for node/edge generation with coordinate-based IDs (`x_y_z` format, e.g., "0_0_0", "1.5_0_0")
   - `lib/tiling/validation.ts` with validation helpers for pattern dimension and node count limits
   - `tilingStore` for tiling state management (pattern selection, drag state, preview graph)
   - `TilingToolbar` component with pattern dropdown, Apply/Cancel buttons, and preview info display

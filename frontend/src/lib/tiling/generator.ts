@@ -8,13 +8,13 @@ import type {
 
 /**
  * Generate a global node ID from world position coordinates.
- * Format: `${x}.${y}.${z}` (e.g., "0.0.0", "1.5.0")
+ * Format: `${x}_${y}_${z}` (e.g., "0_0_0", "1.5_0_0")
  *
  * The position is the computed world coordinate of the node,
  * which is unique for each node in the graph.
  */
 export function generateGlobalNodeId(position: [number, number, number]): string {
-  return `${position[0]}.${position[1]}.${position[2]}`;
+  return `${position[0]}_${position[1]}_${position[2]}`;
 }
 
 /**
