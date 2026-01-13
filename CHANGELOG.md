@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
+- **3D Viewer Editing Enhancements**
+  - Node drag movement in 3D edit mode (drag nodes on the working plane)
+  - Keyboard deletion support (Backspace/Delete keys) for selected nodes/edges
+  - Visual feedback during drag (orange emissive glow, larger node size)
+  - OrbitControls automatically disabled during node dragging
+  - Grid snapping for moved nodes (integer coordinates)
+
 - **Toolbar Two-Row Layout Reorganization**
   - Reorganized toolbar into two-row layout for better organization
   - Top row: Project info (title, name), File menu, Validate/Schedule actions, node/edge count

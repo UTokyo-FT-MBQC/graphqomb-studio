@@ -22,6 +22,9 @@
       },
       "complexity": {
         "noForEach": "off"
+      },
+      "a11y": {
+        "noNoninteractiveTabindex": "off"
       }
     }
   },

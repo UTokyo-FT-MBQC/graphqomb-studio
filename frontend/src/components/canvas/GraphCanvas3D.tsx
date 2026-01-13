@@ -20,8 +20,8 @@ import { useUIStore } from "@/stores/uiStore";
 import type { GraphEdge, GraphNode, IntermediateNode, NodeRole } from "@/types";
 import { createEdge } from "@/types";
 import { Line, OrbitControls, Text } from "@react-three/drei";
-import { Canvas, type ThreeElements } from "@react-three/fiber";
-import { memo, useCallback, useMemo } from "react";
+import { Canvas, type ThreeElements, type ThreeEvent } from "@react-three/fiber";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 // Extend JSX.IntrinsicElements for React Three Fiber
@@ -62,7 +62,9 @@ interface Node3DProps {
   isSelected: boolean;
   isSourceNode: boolean;
   isEdgeCreationMode: boolean;
+  isDragging: boolean;
   onClick: () => void;
+  onDragStart: ((nodeId: string, event: ThreeEvent<PointerEvent>) => void) | undefined;
 }
 
 function Node3DComponent({
@@ -70,7 +72,9 @@ function Node3DComponent({
   isSelected,
   isSourceNode,
   isEdgeCreationMode,
+  isDragging,
   onClick,
+  onDragStart,
 }: Node3DProps): React.ReactNode {
   const position = useMemo(() => getPosition(node), [node]);
   const color = ROLE_COLORS[node.role];
@@ -79,14 +83,31 @@ function Node3DComponent({
   const showNodeLabels = useUIStore((s) => s.showNodeLabels);
 
   // Determine emissive effect based on selection state
-  const emissiveColor = isSourceNode ? "#a855f7" : isSelected ? SELECTED_EMISSIVE : undefined;
-  const emissiveIntensity = isSourceNode ? 0.5 : isSelected ? 0.3 : 0;
+  const emissiveColor = isDragging
+    ? "#f97316" // orange for dragging
+    : isSourceNode
+      ? "#a855f7"
+      : isSelected
+        ? SELECTED_EMISSIVE
+        : undefined;
+  const emissiveIntensity = isDragging ? 0.5 : isSourceNode ? 0.5 : isSelected ? 0.3 : 0;
+
+  // Handle pointer down for drag initiation
+  const handlePointerDown = useCallback(
+    (event: ThreeEvent<PointerEvent>) => {
+      if (onDragStart) {
+        event.stopPropagation();
+        onDragStart(node.id, event);
+      }
+    },
+    [node.id, onDragStart]
+  );
 
   return (
     <group position={position}>
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: Three.js mesh elements don't support keyboard events */}
-      <mesh onClick={onClick}>
-        <sphereGeometry args={[isEdgeCreationMode ? 0.18 : 0.15, 32, 32]} />
+      <mesh onClick={onClick} onPointerDown={handlePointerDown}>
+        <sphereGeometry args={[isDragging ? 0.18 : isEdgeCreationMode ? 0.18 : 0.15, 32, 32]} />
         <meshStandardMaterial
           color={color}
           {...(emissiveColor !== undefined ? { emissive: emissiveColor, emissiveIntensity } : {})}
@@ -154,6 +175,7 @@ function generateNodeId(existingIds: string[]): string {
 function Scene(): React.ReactNode {
   const project = useProjectStore((state) => state.project);
   const addNode = useProjectStore((state) => state.addNode);
+  const updateNode = useProjectStore((state) => state.updateNode);
   const addEdgeToStore = useProjectStore((state) => state.addEdge);
   const selectedNodeId = useSelectionStore((state) => state.selectedNodeId);
   const selectedEdgeId = useSelectionStore((state) => state.selectedEdgeId);
@@ -173,7 +195,79 @@ function Scene(): React.ReactNode {
   const clearSourceNode = useEdgeCreationStore((state) => state.clearSourceNode);
 
   // Working plane utilities
-  const { threeToGraph } = useWorkingPlane(workingPlane, workingPlaneOffset);
+  const { threeToGraph, threePlane } = useWorkingPlane(workingPlane, workingPlaneOffset);
+
+  // OrbitControls ref for drag control
+  // biome-ignore lint/suspicious/noExplicitAny: OrbitControls type from three-stdlib is not available
+  const controlsRef = useRef<any>(null);
+
+  // Drag state
+  const [dragState, setDragState] = useState<{
+    isDragging: boolean;
+    draggedNodeId: string | null;
+  }>({
+    isDragging: false,
+    draggedNodeId: null,
+  });
+
+  // Handle drag start
+  const handleDragStart = useCallback(
+    (nodeId: string, event: ThreeEvent<PointerEvent>) => {
+      if (!is3DEditMode) return;
+
+      event.stopPropagation();
+
+      // Disable OrbitControls during drag
+      if (controlsRef.current) {
+        controlsRef.current.enabled = false;
+      }
+
+      setDragState({
+        isDragging: true,
+        draggedNodeId: nodeId,
+      });
+      selectNode(nodeId);
+    },
+    [is3DEditMode, selectNode]
+  );
+
+  // Handle drag move
+  const handleDragMove = useCallback(
+    (event: ThreeEvent<PointerEvent>) => {
+      if (!dragState.isDragging || dragState.draggedNodeId === null) return;
+
+      // Raycast to working plane
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(event.pointer, event.camera);
+
+      const intersectPoint = new THREE.Vector3();
+      const result = raycaster.ray.intersectPlane(threePlane, intersectPoint);
+
+      if (result) {
+        // Snap to grid (integer coordinates)
+        intersectPoint.x = Math.round(intersectPoint.x);
+        intersectPoint.y = Math.round(intersectPoint.y);
+        intersectPoint.z = Math.round(intersectPoint.z);
+
+        const newCoord = threeToGraph(intersectPoint);
+        updateNode(dragState.draggedNodeId, { coordinate: newCoord });
+      }
+    },
+    [dragState, threePlane, threeToGraph, updateNode]
+  );
+
+  // Handle drag end
+  const handleDragEnd = useCallback(() => {
+    // Re-enable OrbitControls
+    if (controlsRef.current) {
+      controlsRef.current.enabled = true;
+    }
+
+    setDragState({
+      isDragging: false,
+      draggedNodeId: null,
+    });
+  }, []);
 
   // Handle node click for edge creation mode
   const handleNodeClick = useCallback(
@@ -272,7 +366,9 @@ function Scene(): React.ReactNode {
           isSelected={node.id === selectedNodeId}
           isSourceNode={node.id === sourceNodeId}
           isEdgeCreationMode={isEdgeCreationMode}
+          isDragging={dragState.draggedNodeId === node.id}
           onClick={() => handleNodeClick(node.id)}
+          onDragStart={is3DEditMode ? handleDragStart : undefined}
         />
       ))}
 
@@ -287,8 +383,17 @@ function Scene(): React.ReactNode {
         />
       ))}
 
+      {/* Invisible plane for drag detection */}
+      {dragState.isDragging && (
+        <mesh visible={false} onPointerMove={handleDragMove} onPointerUp={handleDragEnd}>
+          <planeGeometry args={[100, 100]} />
+          <meshBasicMaterial transparent opacity={0} />
+        </mesh>
+      )}
+
       {/* Camera Controls */}
       <OrbitControls
+        ref={controlsRef}
         makeDefault
         target={center}
         enableDamping
@@ -302,9 +407,50 @@ function Scene(): React.ReactNode {
 
 export function GraphCanvas3D(): React.ReactNode {
   const clearSelection = useSelectionStore((state) => state.clearSelection);
+  const selectedNodeId = useSelectionStore((state) => state.selectedNodeId);
+  const selectedEdgeId = useSelectionStore((state) => state.selectedEdgeId);
+  const removeNode = useProjectStore((state) => state.removeNode);
+  const removeEdge = useProjectStore((state) => state.removeEdge);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Keyboard handler for deletion
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      // Ignore if target is input element
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if (event.key === "Backspace" || event.key === "Delete") {
+        event.preventDefault();
+
+        if (selectedNodeId !== null) {
+          removeNode(selectedNodeId);
+          clearSelection();
+        } else if (selectedEdgeId !== null) {
+          removeEdge(selectedEdgeId);
+          clearSelection();
+        }
+      }
+    },
+    [selectedNodeId, selectedEdgeId, removeNode, removeEdge, clearSelection]
+  );
+
+  // Focus container on click for keyboard events
+  const handleContainerClick = useCallback(() => {
+    containerRef.current?.focus();
+  }, []);
 
   return (
-    <div className="w-full h-full bg-gray-50">
+    <div
+      ref={containerRef}
+      className="w-full h-full bg-gray-50 focus:outline-none"
+      role="application"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      onClick={handleContainerClick}
+    >
       <Canvas
         camera={{
           position: [5, 5, 5],
