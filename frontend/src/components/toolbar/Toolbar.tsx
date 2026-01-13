@@ -1,32 +1,29 @@
 /**
  * Toolbar Component
  *
- * Main toolbar with:
- * - New: Reset project
- * - Import: Load JSON file
- * - Export: Download JSON file
- * - Validate: Validate graph and flow (API call)
- * - Schedule: Compute measurement schedule (API call)
+ * Two-row toolbar layout:
+ * - Top row: Project info (logo, name, file menu) and actions (validate, schedule)
+ * - Bottom row: View controls and editing tools
  */
 
 "use client";
 
 import { EdgeCreationToolbar } from "@/components/toolbar/EdgeCreationToolbar";
+import { FileMenu } from "@/components/toolbar/FileMenu";
 import { GhostRangeSlider } from "@/components/toolbar/GhostRangeSlider";
 import { NodeCreationToolbar } from "@/components/toolbar/NodeCreationToolbar";
 import { TilingToolbar } from "@/components/toolbar/TilingToolbar";
+import { ToolbarDivider, ToolbarRow, ToolbarSpacer } from "@/components/toolbar/ToolbarRow";
 import { ViewControls } from "@/components/toolbar/ViewControls";
 import { WorkingPlaneControls } from "@/components/toolbar/WorkingPlaneControls";
 import { ZSliceSlider } from "@/components/toolbar/ZSliceSlider";
 import { isApiError, schedule, validate } from "@/lib/api";
 import { getAxisRange, getZRange } from "@/lib/geometry";
-import { downloadProject, safeParseProject } from "@/lib/validation";
 import { useProjectStore } from "@/stores/projectStore";
-import { useSelectionStore } from "@/stores/selectionStore";
 import { useUIStore } from "@/stores/uiStore";
 import { toPayload } from "@/types";
 import type { ChangeEvent } from "react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 interface ValidationState {
   valid: boolean;
@@ -35,15 +32,10 @@ interface ValidationState {
 
 export function Toolbar(): React.ReactNode {
   const project = useProjectStore((state) => state.project);
-  const setProject = useProjectStore((state) => state.setProject);
-  const reset = useProjectStore((state) => state.reset);
   const setProjectName = useProjectStore((state) => state.setProjectName);
   const setSchedule = useProjectStore((state) => state.setSchedule);
-  const clearSelection = useSelectionStore((state) => state.clearSelection);
 
   const viewMode = useUIStore((state) => state.viewMode);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Calculate axis ranges from nodes
   const zRange = useMemo(() => getZRange(project.nodes), [project.nodes]);
@@ -56,66 +48,12 @@ export function Toolbar(): React.ReactNode {
     [project.nodes, zRange]
   );
 
-  const is3DSliceMode = viewMode === "2d-slice";
+  const is2DSliceMode = viewMode === "2d-slice";
   const is3DIsometricMode = viewMode === "3d-isometric";
   const [error, setError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidationState | null>(null);
-
-  // Handle new project
-  const handleNew = useCallback(() => {
-    if (project.nodes.length > 0) {
-      const confirmed = window.confirm(
-        "Are you sure you want to create a new project? All unsaved changes will be lost."
-      );
-      if (!confirmed) return;
-    }
-    reset();
-    clearSelection();
-    setError(null);
-    setValidationResult(null);
-  }, [project.nodes.length, reset, clearSelection]);
-
-  // Handle import
-  const handleImportClick = useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
-
-  const handleFileChange = useCallback(
-    async (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file === undefined) return;
-
-      try {
-        const text = await file.text();
-        const result = safeParseProject(text);
-
-        if (result.success) {
-          setProject(result.data);
-          clearSelection();
-          setError(null);
-          setValidationResult(null);
-        } else {
-          setError(`Invalid project file: ${result.error.message}`);
-        }
-      } catch (err) {
-        setError(`Failed to read file: ${err instanceof Error ? err.message : String(err)}`);
-      }
-
-      // Reset file input
-      if (fileInputRef.current !== null) {
-        fileInputRef.current.value = "";
-      }
-    },
-    [setProject, clearSelection]
-  );
-
-  // Handle export
-  const handleExport = useCallback(() => {
-    downloadProject(project);
-    setError(null);
-  }, [project]);
 
   // Handle project name change
   const handleNameChange = useCallback(
@@ -173,96 +111,44 @@ export function Toolbar(): React.ReactNode {
 
   const hasNodes = project.nodes.length > 0;
 
+  const handleClearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  const handleClearValidation = useCallback(() => {
+    setValidationResult(null);
+  }, []);
+
   return (
-    <div className="flex items-center gap-4 px-4 py-2 border-b border-gray-200 bg-white">
-      {/* Logo/Title */}
-      <h1 className="text-lg font-semibold text-gray-800">GraphQOMB Studio</h1>
+    <div className="border-b border-gray-200 bg-white">
+      {/* Top Row: Project info and actions */}
+      <ToolbarRow className="border-b border-gray-100">
+        {/* Logo/Title */}
+        <h1 className="text-lg font-semibold text-gray-800">GraphQOMB Studio</h1>
 
-      {/* Project Name */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-500">Project:</span>
-        <input
-          type="text"
-          value={project.name}
-          onChange={handleNameChange}
-          className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-        />
-      </div>
+        {/* Project Name */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500">Project:</span>
+          <input
+            type="text"
+            value={project.name}
+            onChange={handleNameChange}
+            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        </div>
 
-      {/* Divider */}
-      <div className="h-6 w-px bg-gray-300" />
+        <ToolbarDivider />
 
-      {/* Action Buttons */}
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={handleNew}
-          className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded transition-colors"
-        >
-          New
-        </button>
-
-        <button
-          type="button"
-          onClick={handleImportClick}
-          className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded transition-colors"
-        >
-          Import
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          onChange={handleFileChange}
-          className="hidden"
+        {/* File Menu */}
+        <FileMenu
+          onError={setError}
+          onClearError={handleClearError}
+          onClearValidation={handleClearValidation}
         />
 
-        <button
-          type="button"
-          onClick={handleExport}
-          className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded transition-colors"
-        >
-          Export
-        </button>
+        <ToolbarSpacer />
 
-        <div className="h-6 w-px bg-gray-300" />
-
-        {/* Flow View Controls */}
-        <ViewControls />
-
-        <div className="h-6 w-px bg-gray-300" />
-
-        {/* Node Creation */}
-        <NodeCreationToolbar />
-
-        {/* Edge Creation Mode */}
-        <EdgeCreationToolbar />
-
-        <div className="h-6 w-px bg-gray-300" />
-
-        {/* Tiling Mode */}
-        <TilingToolbar />
-
-        {/* Z-Slice Slider and Ghost Range - only in 2D-slice view */}
-        {is3DSliceMode && (
-          <>
-            <div className="h-6 w-px bg-gray-300" />
-            <ZSliceSlider minZ={zRange.min} maxZ={zRange.max} />
-            <GhostRangeSlider />
-          </>
-        )}
-
-        {/* Working Plane Controls - only in 3D isometric view */}
-        {is3DIsometricMode && (
-          <>
-            <div className="h-6 w-px bg-gray-300" />
-            <WorkingPlaneControls axisRanges={axisRanges} />
-          </>
-        )}
-
-        <div className="h-6 w-px bg-gray-300" />
-
-        {/* Validate Button */}
+        {/* Validate and Schedule Buttons */}
         <button
           type="button"
           onClick={handleValidate}
@@ -276,7 +162,6 @@ export function Toolbar(): React.ReactNode {
           {isValidating ? "Validating..." : "Validate"}
         </button>
 
-        {/* Schedule Button */}
         <button
           type="button"
           onClick={handleSchedule}
@@ -294,26 +179,62 @@ export function Toolbar(): React.ReactNode {
         {validationResult?.valid === true && (
           <span className="text-sm text-green-600 font-medium">Valid</span>
         )}
-      </div>
 
-      {/* Error Message */}
-      {error !== null && (
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-sm text-red-600">{error}</span>
-          <button
-            type="button"
-            onClick={() => setError(null)}
-            className="text-red-600 hover:text-red-800"
-          >
-            ×
-          </button>
+        {/* Error Message */}
+        {error !== null && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-red-600">{error}</span>
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="text-red-600 hover:text-red-800"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        <ToolbarDivider />
+
+        {/* Project Info */}
+        <div className="text-xs text-gray-400">
+          {project.nodes.length} nodes, {project.edges.length} edges
         </div>
-      )}
+      </ToolbarRow>
 
-      {/* Project Info */}
-      <div className="ml-auto text-xs text-gray-400">
-        {project.nodes.length} nodes, {project.edges.length} edges
-      </div>
+      {/* Bottom Row: View controls and editing tools */}
+      <ToolbarRow>
+        {/* View Mode and Display Toggles */}
+        <ViewControls />
+
+        <ToolbarDivider />
+
+        {/* Node and Edge Creation */}
+        <NodeCreationToolbar />
+        <EdgeCreationToolbar />
+
+        <ToolbarDivider />
+
+        {/* Tiling Mode */}
+        <TilingToolbar />
+
+        {/* Z-Slice Slider and Ghost Range - only in 2D-slice view */}
+        {is2DSliceMode && (
+          <>
+            <ToolbarDivider />
+            <ZSliceSlider minZ={zRange.min} maxZ={zRange.max} />
+            <GhostRangeSlider />
+          </>
+        )}
+
+        {/* Working Plane Controls - only in 3D isometric view */}
+        {is3DIsometricMode && (
+          <>
+            <ToolbarDivider />
+            <WorkingPlaneControls axisRanges={axisRanges} />
+          </>
+        )}
+      </ToolbarRow>
     </div>
   );
 }
