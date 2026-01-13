@@ -12,6 +12,7 @@
 "use client";
 
 import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
+import { useUIStore } from "@/stores/uiStore";
 import type { GraphNode, NodeRole } from "@/types";
 import { Handle, Position } from "@xyflow/react";
 import { memo } from "react";
@@ -49,6 +50,9 @@ function GhostNodeComponent({ data }: GhostNodeProps): React.ReactNode {
   const colors = ghostColors[node.role];
   const nodeZ = node.coordinate.z;
 
+  // Node label visibility
+  const showNodeLabels = useUIStore((s) => s.showNodeLabels);
+
   const isEdgeCreationMode = useEdgeCreationStore((state) => state.isEdgeCreationMode);
   const sourceNodeId = useEdgeCreationStore((state) => state.sourceNodeId);
 
@@ -75,8 +79,12 @@ function GhostNodeComponent({ data }: GhostNodeProps): React.ReactNode {
         `}
         title={`${node.id} (z=${nodeZ})${isEdgeCreationMode ? " - Click to connect" : ""}`}
       >
-        <div className="text-sm font-medium">{node.id}</div>
-        <div className="text-xs opacity-75">z={nodeZ}</div>
+        {showNodeLabels && (
+          <>
+            <div className="text-sm font-medium">{node.id}</div>
+            <div className="text-xs opacity-75">z={nodeZ}</div>
+          </>
+        )}
       </div>
       <Handle
         type="source"

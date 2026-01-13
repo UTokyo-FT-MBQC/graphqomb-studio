@@ -7,22 +7,14 @@ import type {
 } from "@/types/tiling";
 
 /**
- * Generate a global node ID from cell coordinates and local node ID.
- * Format for 2D: `${cx}_${cy}_${localNodeId}` (e.g., "0_0_a")
- * Format for 3D: `${cx}_${cy}_${cz}_${localNodeId}` (e.g., "0_0_0_a")
+ * Generate a global node ID from world position coordinates.
+ * Format: `${x}_${y}_${z}` (e.g., "0_0_0", "1.5_0_0")
+ *
+ * The position is the computed world coordinate of the node,
+ * which is unique for each node in the graph.
  */
-export function generateGlobalNodeId(
-  _patternId: string,
-  cx: number,
-  cy: number,
-  cz: number,
-  localNodeId: string,
-  is3D = false
-): string {
-  if (is3D) {
-    return `${cx}_${cy}_${cz}_${localNodeId}`;
-  }
-  return `${cx}_${cy}_${localNodeId}`;
+export function generateGlobalNodeId(position: [number, number, number]): string {
+  return `${position[0]}_${position[1]}_${position[2]}`;
 }
 
 /**
@@ -123,7 +115,6 @@ export function generateTiling(
     for (let cy = cellRange.y[0]; cy <= cellRange.y[1]; cy++) {
       for (let cz = zMin; cz <= zMax; cz++) {
         for (const unitNode of pattern.unitCell.nodes) {
-          const globalId = generateGlobalNodeId(pattern.id, cx, cy, cz, unitNode.id, is3D);
           const position = computeNodePosition(pattern, cx, cy, cz, unitNode.offset);
 
           // For 2D patterns, set Z to baseZ
@@ -131,6 +122,7 @@ export function generateTiling(
             position[2] = baseZ;
           }
 
+          const globalId = generateGlobalNodeId(position);
           const role = unitNode.role ?? "intermediate";
 
           nodes.push({
@@ -158,15 +150,31 @@ export function generateTiling(
             continue;
           }
 
-          const sourceId = generateGlobalNodeId(pattern.id, cx, cy, cz, unitEdge.source, is3D);
-          const targetId = generateGlobalNodeId(
-            pattern.id,
+          // Find the source node offset from unit cell
+          const sourceUnitNode = pattern.unitCell.nodes.find((n) => n.id === unitEdge.source);
+          const targetUnitNode = pattern.unitCell.nodes.find((n) => n.id === unitEdge.target);
+          if (sourceUnitNode === undefined || targetUnitNode === undefined) {
+            continue;
+          }
+
+          // Compute source and target positions
+          const sourcePos = computeNodePosition(pattern, cx, cy, cz, sourceUnitNode.offset);
+          const targetPos = computeNodePosition(
+            pattern,
             targetCx,
             targetCy,
             targetCz,
-            unitEdge.target,
-            is3D
+            targetUnitNode.offset
           );
+
+          // For 2D patterns, set Z to baseZ
+          if (!is3D) {
+            sourcePos[2] = baseZ;
+            targetPos[2] = baseZ;
+          }
+
+          const sourceId = generateGlobalNodeId(sourcePos);
+          const targetId = generateGlobalNodeId(targetPos);
 
           // Skip self-loops (should not happen with valid patterns, but safety check)
           if (sourceId === targetId) {

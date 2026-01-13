@@ -17,6 +17,8 @@ export function ViewControls(): React.ReactNode {
   const showZFlow = useUIStore((state) => state.showZFlow);
   const toggleXFlow = useUIStore((state) => state.toggleXFlow);
   const toggleZFlow = useUIStore((state) => state.toggleZFlow);
+  const showNodeLabels = useUIStore((state) => state.showNodeLabels);
+  const toggleNodeLabels = useUIStore((state) => state.toggleNodeLabels);
 
   return (
     <div className="flex items-center gap-3">
@@ -56,6 +58,19 @@ export function ViewControls(): React.ReactNode {
           3D View
         </button>
       </div>
+
+      <div className="h-4 w-px bg-gray-300" />
+
+      {/* Node Labels Toggle */}
+      <label className="flex items-center gap-1.5 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={showNodeLabels}
+          onChange={toggleNodeLabels}
+          className="w-4 h-4 accent-gray-500"
+        />
+        <span className="text-sm text-gray-600">Labels</span>
+      </label>
 
       <div className="h-4 w-px bg-gray-300" />
 

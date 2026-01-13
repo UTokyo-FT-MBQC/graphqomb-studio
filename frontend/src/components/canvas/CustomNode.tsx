@@ -13,6 +13,7 @@
 "use client";
 
 import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
+import { useUIStore } from "@/stores/uiStore";
 import type { GraphNode, NodeRole } from "@/types";
 import { Handle, Position } from "@xyflow/react";
 import { memo } from "react";
@@ -49,6 +50,9 @@ function CustomNodeComponent({ data, selected }: CustomNodeProps): React.ReactNo
   const { node } = data;
   const colors = roleColors[node.role];
 
+  // Node label visibility
+  const showNodeLabels = useUIStore((s) => s.showNodeLabels);
+
   // Schedule editor highlight state
   const hoveredNodeId = useScheduleEditorStore((s) => s.hoveredNodeId);
   const selectedEntryId = useScheduleEditorStore((s) => s.selectedEntryId);
@@ -69,8 +73,9 @@ function CustomNodeComponent({ data, selected }: CustomNodeProps): React.ReactNo
           ${isScheduleHighlighted ? "ring-2 ring-offset-1 ring-orange-400 shadow-lg" : ""}
           transition-all duration-150
         `}
+        title={showNodeLabels ? undefined : node.id}
       >
-        <div className="text-sm font-medium">{node.id}</div>
+        {showNodeLabels && <div className="text-sm font-medium">{node.id}</div>}
       </div>
       <Handle type="source" position={Position.Bottom} className="!bg-gray-400 !w-2 !h-2" />
     </>
