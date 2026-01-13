@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "rhg",
+  "name": "RHG Lattice",
+  "description": "Raussendorf-Harrington-Goyal 3D cluster state for fault-tolerant MBQC",
+  "dimension": 3,
+  "latticeVectors": {
+    "a1": [2, 0, 0],
+    "a2": [0, 2, 0],
+    "a3": [0, 0, 2]
+  },
+  "unitCell": {
+    "nodes": [
+      { "id": "face_xy", "offset": [0, 0, 0] },
+      { "id": "face_xz", "offset": [0, 1, 1] },
+      { "id": "face_yz", "offset": [1, 0, 1] },
+      { "id": "edge_x", "offset": [1, 0, 0] },
+      { "id": "edge_y", "offset": [0, 1, 0] },
+      { "id": "edge_z", "offset": [0, 0, 1] }
+    ],
+    "edges": [
+      { "source": "face_xy", "target": "edge_x", "cellOffset": [0, 0, 0] },
+      { "source": "face_xy", "target": "edge_y", "cellOffset": [0, 0, 0] },
+      { "source": "face_xy", "target": "edge_x", "cellOffset": [-1, 0, 0] },
+      { "source": "face_xy", "target": "edge_y", "cellOffset": [0, -1, 0] },
+      { "source": "face_xz", "target": "edge_x", "cellOffset": [0, 0, 0] },
+      { "source": "face_xz", "target": "edge_z", "cellOffset": [0, 0, 0] },
+      { "source": "face_yz", "target": "edge_y", "cellOffset": [0, 0, 0] },
+      { "source": "face_yz", "target": "edge_z", "cellOffset": [0, 0, 0] }
+    ]
+  }
+}

@@ -25,6 +25,9 @@ interface UIState {
   is3DEditMode: boolean;
   showWorkingPlaneGrid: boolean;
 
+  // Tiling mode
+  isTilingMode: boolean;
+
   // Actions
   setViewMode: (mode: ViewMode) => void;
   setZSlice: (z: number) => void;
@@ -42,6 +45,10 @@ interface UIState {
   set3DEditMode: (enabled: boolean) => void;
   toggle3DEditMode: () => void;
   toggleWorkingPlaneGrid: () => void;
+
+  // Tiling mode actions
+  setTilingMode: (enabled: boolean) => void;
+  toggleTilingMode: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -58,6 +65,9 @@ export const useUIStore = create<UIState>((set) => ({
   workingPlaneOffset: 0,
   is3DEditMode: false,
   showWorkingPlaneGrid: true,
+
+  // Tiling mode default
+  isTilingMode: false,
 
   setViewMode: (mode) => set({ viewMode: mode }),
 
@@ -88,4 +98,9 @@ export const useUIStore = create<UIState>((set) => ({
 
   toggleWorkingPlaneGrid: () =>
     set((state) => ({ showWorkingPlaneGrid: !state.showWorkingPlaneGrid })),
+
+  // Tiling mode actions
+  setTilingMode: (enabled) => set({ isTilingMode: enabled }),
+
+  toggleTilingMode: () => set((state) => ({ isTilingMode: !state.isTilingMode })),
 }));

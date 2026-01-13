@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "brickwork",
+  "name": "Brickwork",
+  "description": "Standard MBQC brickwork pattern for universal quantum computation",
+  "dimension": 2,
+  "latticeVectors": {
+    "a1": [2, 0, 0],
+    "a2": [0, 1, 0]
+  },
+  "unitCell": {
+    "nodes": [{ "id": "a", "offset": [0, 0, 0] }, { "id": "b", "offset": [1, 0, 0] }],
+    "edges": [
+      { "source": "a", "target": "b", "cellOffset": [0, 0, 0] },
+      { "source": "b", "target": "a", "cellOffset": [1, 0, 0] },
+      { "source": "a", "target": "b", "cellOffset": [0, -1, 0] }
+    ]
+  }
+}
