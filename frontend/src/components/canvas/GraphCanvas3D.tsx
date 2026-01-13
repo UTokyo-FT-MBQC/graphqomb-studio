@@ -75,6 +75,9 @@ function Node3DComponent({
   const position = useMemo(() => getPosition(node), [node]);
   const color = ROLE_COLORS[node.role];
 
+  // Node label visibility
+  const showNodeLabels = useUIStore((s) => s.showNodeLabels);
+
   // Determine emissive effect based on selection state
   const emissiveColor = isSourceNode ? "#a855f7" : isSelected ? SELECTED_EMISSIVE : undefined;
   const emissiveIntensity = isSourceNode ? 0.5 : isSelected ? 0.3 : 0;
@@ -90,15 +93,17 @@ function Node3DComponent({
         />
       </mesh>
       {/* Node label */}
-      <Text
-        position={[0, 0.25, 0]}
-        fontSize={0.12}
-        color="#374151"
-        anchorX="center"
-        anchorY="bottom"
-      >
-        {node.id}
-      </Text>
+      {showNodeLabels && (
+        <Text
+          position={[0, 0.25, 0]}
+          fontSize={0.12}
+          color="#374151"
+          anchorX="center"
+          anchorY="bottom"
+        >
+          {node.id}
+        </Text>
+      )}
     </group>
   );
 }

@@ -11,10 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
+- **Node Label Display Toggle**
+  - Added `showNodeLabels` state to `uiStore` with toggle action
+  - "Labels" checkbox in ViewControls toolbar to show/hide node labels
+  - `CustomNode`, `GhostNode`, and `GraphCanvas3D` components respect the toggle
+  - Tooltip (title attribute) shows node ID on hover when labels are hidden
+
 - **Tiling Feature (2D Canvas)**
   - New `types/tiling.ts` with TypeScript types and Zod schema for pattern validation
   - JSON-based pattern definition with 6 presets: square-lattice, brickwork, triangular, honeycomb (2D), cubic, rhg (3D)
-  - `lib/tiling/generator.ts` for node/edge generation with unique global IDs (`cx_cy_localId` for 2D, `cx_cy_cz_localId` for 3D)
+  - `lib/tiling/generator.ts` for node/edge generation with coordinate-based IDs (`x.y.z` format, e.g., "0.0.0", "1.5.0")
   - `lib/tiling/validation.ts` with validation helpers for pattern dimension and node count limits
   - `tilingStore` for tiling state management (pattern selection, drag state, preview graph)
   - `TilingToolbar` component with pattern dropdown, Apply/Cancel buttons, and preview info display

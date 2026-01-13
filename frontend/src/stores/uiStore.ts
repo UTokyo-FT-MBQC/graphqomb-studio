@@ -28,6 +28,9 @@ interface UIState {
   // Tiling mode
   isTilingMode: boolean;
 
+  // Node label display
+  showNodeLabels: boolean;
+
   // Actions
   setViewMode: (mode: ViewMode) => void;
   setZSlice: (z: number) => void;
@@ -49,6 +52,10 @@ interface UIState {
   // Tiling mode actions
   setTilingMode: (enabled: boolean) => void;
   toggleTilingMode: () => void;
+
+  // Node label display actions
+  setShowNodeLabels: (show: boolean) => void;
+  toggleNodeLabels: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -68,6 +75,9 @@ export const useUIStore = create<UIState>((set) => ({
 
   // Tiling mode default
   isTilingMode: false,
+
+  // Node label display (default: show labels)
+  showNodeLabels: true,
 
   setViewMode: (mode) => set({ viewMode: mode }),
 
@@ -103,4 +113,9 @@ export const useUIStore = create<UIState>((set) => ({
   setTilingMode: (enabled) => set({ isTilingMode: enabled }),
 
   toggleTilingMode: () => set((state) => ({ isTilingMode: !state.isTilingMode })),
+
+  // Node label display actions
+  setShowNodeLabels: (show) => set({ showNodeLabels: show }),
+
+  toggleNodeLabels: () => set((state) => ({ showNodeLabels: !state.showNodeLabels })),
 }));
