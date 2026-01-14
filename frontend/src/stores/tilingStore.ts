@@ -12,9 +12,19 @@ import {
   generateTiling,
 } from "@/lib/tiling/generator";
 import { TILING_PRESETS_2D, getPresetById } from "@/lib/tiling/presets";
+import {
+  estimateCubicEdgeCount,
+  estimateCubicNodeCount,
+  estimateRHGEdgeCount,
+  estimateRHGNodeCount,
+  generateCubicGrid,
+  generateRHGLattice,
+  rhgToGeneratedGraph,
+} from "@/lib/tiling/rhg-generator";
 import { validateTilingGeneration } from "@/lib/tiling/validation";
 import type { Coordinate, GraphEdge, GraphNode, IntermediateNode } from "@/types";
 import { normalizeEdgeId } from "@/types";
+import { DEFAULT_TILING_3D_PARAMS, type Tiling3DParams } from "@/types/rhg";
 import type { CellRange, GeneratedGraph, TilingPattern } from "@/types/tiling";
 import { create } from "zustand";
 import { useProjectStore } from "./projectStore";
@@ -31,6 +41,10 @@ interface TilingError {
  * Tiling store state.
  */
 interface TilingState {
+  // =========================================================================
+  // 2D Tiling (drag-based workflow)
+  // =========================================================================
+
   // Selected pattern
   selectedPatternId: string | null;
   pattern: TilingPattern | null;
@@ -50,7 +64,7 @@ interface TilingState {
   // Error state
   error: TilingError | null;
 
-  // Actions
+  // 2D Actions
   selectPattern: (id: string) => void;
   clearPattern: () => void;
   setBaseZ: (z: number) => void;
@@ -61,6 +75,29 @@ interface TilingState {
   applyTiling: () => void;
   clearPreview: () => void;
   reset: () => void;
+
+  // =========================================================================
+  // 3D Tiling (dialog-based workflow)
+  // =========================================================================
+
+  // 3D tiling parameters
+  params3D: Tiling3DParams;
+
+  // 3D preview (separate from 2D preview)
+  preview3D: GeneratedGraph | null;
+
+  // 3D error state
+  error3D: TilingError | null;
+
+  // Estimated counts for preview display
+  estimatedNodeCount3D: number;
+  estimatedEdgeCount3D: number;
+
+  // 3D Actions
+  setParams3D: (params: Partial<Tiling3DParams>) => void;
+  generatePreview3D: () => void;
+  applyTiling3D: () => void;
+  clearTiling3D: () => void;
 }
 
 /**
@@ -159,7 +196,28 @@ function computeCellRange(start: Coordinate, end: Coordinate, pattern: TilingPat
   return range;
 }
 
+/**
+ * Calculate estimated node and edge counts for 3D tiling.
+ */
+function calculateEstimates3D(params: Tiling3DParams): { nodes: number; edges: number } {
+  const { patternId, Lx, Ly, Lz } = params;
+  if (patternId === "rhg") {
+    return {
+      nodes: estimateRHGNodeCount(Lx, Ly, Lz),
+      edges: estimateRHGEdgeCount(Lx, Ly, Lz),
+    };
+  }
+  // cubic
+  return {
+    nodes: estimateCubicNodeCount(Lx, Ly, Lz),
+    edges: estimateCubicEdgeCount(Lx, Ly, Lz),
+  };
+}
+
 export const useTilingStore = create<TilingState>((set, get) => ({
+  // =========================================================================
+  // 2D Tiling initial state
+  // =========================================================================
   selectedPatternId: null,
   pattern: null,
   isDragging: false,
@@ -169,6 +227,15 @@ export const useTilingStore = create<TilingState>((set, get) => ({
   cellRange: null,
   previewGraph: null,
   error: null,
+
+  // =========================================================================
+  // 3D Tiling initial state
+  // =========================================================================
+  params3D: { ...DEFAULT_TILING_3D_PARAMS },
+  preview3D: null,
+  error3D: null,
+  estimatedNodeCount3D: calculateEstimates3D(DEFAULT_TILING_3D_PARAMS).nodes,
+  estimatedEdgeCount3D: calculateEstimates3D(DEFAULT_TILING_3D_PARAMS).edges,
 
   selectPattern: (id: string): void => {
     const pattern = getPresetById(id);
@@ -389,6 +456,154 @@ export const useTilingStore = create<TilingState>((set, get) => ({
       cellRange: null,
       previewGraph: null,
       error: null,
+    });
+  },
+
+  // =========================================================================
+  // 3D Tiling Actions
+  // =========================================================================
+
+  setParams3D: (params: Partial<Tiling3DParams>): void => {
+    const currentParams = get().params3D;
+    const newParams = { ...currentParams, ...params };
+    const estimates = calculateEstimates3D(newParams);
+    set({
+      params3D: newParams,
+      estimatedNodeCount3D: estimates.nodes,
+      estimatedEdgeCount3D: estimates.edges,
+      // Clear preview when params change
+      preview3D: null,
+      error3D: null,
+    });
+  },
+
+  generatePreview3D: (): void => {
+    const { params3D } = get();
+    const { patternId, Lx, Ly, Lz, originX, originY, originZ } = params3D;
+    const origin = { x: originX, y: originY, z: originZ };
+
+    // Validate dimensions
+    if (Lx < 1 || Ly < 1 || Lz < 1) {
+      set({
+        error3D: { code: "INVALID_DIMENSIONS", message: "Dimensions must be at least 1" },
+        preview3D: null,
+      });
+      return;
+    }
+
+    // Check node count
+    const estimates = calculateEstimates3D(params3D);
+    if (estimates.nodes > MAX_RECOMMENDED_NODES) {
+      set({
+        error3D: {
+          code: "TOO_MANY_NODES",
+          message: `Too many nodes: ${estimates.nodes} (max ${MAX_RECOMMENDED_NODES})`,
+        },
+        preview3D: null,
+      });
+      return;
+    }
+
+    try {
+      let preview: GeneratedGraph;
+
+      if (patternId === "rhg") {
+        const lattice = generateRHGLattice({ Lx, Ly, Lz, origin });
+        preview = rhgToGeneratedGraph(lattice, origin);
+      } else {
+        // cubic
+        preview = generateCubicGrid(Lx, Ly, Lz, origin);
+      }
+
+      set({
+        preview3D: preview,
+        error3D: null,
+      });
+    } catch (err) {
+      set({
+        preview3D: null,
+        error3D: {
+          code: "GENERATION_ERROR",
+          message: err instanceof Error ? err.message : "Unknown error",
+        },
+      });
+    }
+  },
+
+  applyTiling3D: (): void => {
+    const { preview3D, params3D } = get();
+
+    if (preview3D === null) {
+      set({
+        error3D: { code: "NO_PREVIEW", message: "No preview to apply. Generate preview first." },
+      });
+      return;
+    }
+
+    // Check node count one more time
+    const estimates = calculateEstimates3D(params3D);
+    if (estimates.nodes > MAX_RECOMMENDED_NODES) {
+      set({
+        error3D: {
+          code: "TOO_MANY_NODES",
+          message: `Too many nodes: ${estimates.nodes} (max ${MAX_RECOMMENDED_NODES})`,
+        },
+      });
+      return;
+    }
+
+    // Get project store state and actions
+    const projectState = useProjectStore.getState();
+    const { addNode, addEdge } = projectState;
+
+    // Build a set of existing node IDs to prevent duplicates
+    const existingNodeIds = new Set(projectState.project.nodes.map((n) => n.id));
+    const existingEdgeIds = new Set(projectState.project.edges.map((e) => e.id));
+
+    // Add nodes, skipping duplicates
+    let addedNodes = 0;
+    let skippedNodes = 0;
+    for (const node of preview3D.nodes) {
+      if (existingNodeIds.has(node.id)) {
+        skippedNodes++;
+        continue;
+      }
+      const graphNode = toGraphNode(node.id, node.position, node.role);
+      addNode(graphNode);
+      addedNodes++;
+    }
+
+    // Add edges, skipping duplicates
+    let addedEdges = 0;
+    for (const edge of preview3D.edges) {
+      const graphEdge = toGraphEdge(edge.source, edge.target);
+      if (existingEdgeIds.has(graphEdge.id)) {
+        continue;
+      }
+      addEdge(graphEdge);
+      addedEdges++;
+    }
+
+    // Clear 3D tiling state
+    set({
+      preview3D: null,
+      error3D:
+        skippedNodes > 0
+          ? {
+              code: "PARTIAL_APPLY",
+              message: `Added ${addedNodes} nodes, ${addedEdges} edges. Skipped ${skippedNodes} duplicate nodes.`,
+            }
+          : null,
+    });
+  },
+
+  clearTiling3D: (): void => {
+    set({
+      params3D: { ...DEFAULT_TILING_3D_PARAMS },
+      preview3D: null,
+      error3D: null,
+      estimatedNodeCount3D: calculateEstimates3D(DEFAULT_TILING_3D_PARAMS).nodes,
+      estimatedEdgeCount3D: calculateEstimates3D(DEFAULT_TILING_3D_PARAMS).edges,
     });
   },
 }));
