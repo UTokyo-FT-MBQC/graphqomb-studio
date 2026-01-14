@@ -132,6 +132,22 @@ class FlowDefinitionDTO(BaseModel):
     zflow: dict[str, list[str]] | Literal["auto"]
 
 
+# === FTQC DTOs ===
+
+
+class FTQCDefinitionDTO(BaseModel):
+    """FTQC (Fault-Tolerant Quantum Computing) configuration.
+
+    - parityCheckGroup: List of node ID groups for parity check (error detection)
+    - logicalObservableGroup: Mapping of observable index to target node IDs
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    parityCheckGroup: list[list[str]]
+    logicalObservableGroup: dict[str, list[str]]
+
+
 # === Project DTO ===
 
 
@@ -147,6 +163,7 @@ class ProjectPayloadDTO(BaseModel):
     nodes: list[GraphNodeDTO]
     edges: list[GraphEdgeDTO]
     flow: FlowDefinitionDTO
+    ftqc: FTQCDefinitionDTO | None = None
 
 
 # === Response DTOs ===

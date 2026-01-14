@@ -117,6 +117,13 @@ export interface FlowDefinition {
   zflow: Record<string, string[]> | "auto"; // "auto" = odd_neighbors auto-calculation
 }
 
+// === FTQC (Fault-Tolerant Quantum Computing) ===
+
+export interface FTQCDefinition {
+  parityCheckGroup: string[][]; // list of node ID groups for parity check
+  logicalObservableGroup: Record<string, string[]>; // observable index -> target node IDs
+}
+
 export interface ResolvedFlow {
   xflow: Record<string, string[]>;
   zflow: Record<string, string[]>; // Always concrete values (auto is resolved)
@@ -146,6 +153,7 @@ export interface GraphQOMBProject {
   nodes: GraphNode[];
   edges: GraphEdge[];
   flow: FlowDefinition;
+  ftqc?: FTQCDefinition | undefined; // Optional FTQC configuration for fault-tolerant QC
   schedule?: ScheduleResult | undefined; // Added after backend computation (optional)
 }
 

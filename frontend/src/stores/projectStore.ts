@@ -6,6 +6,7 @@
  */
 
 import type {
+  FTQCDefinition,
   FlowDefinition,
   GraphEdge,
   GraphNode,
@@ -31,6 +32,14 @@ interface ProjectState {
   setSchedule: (schedule: ScheduleResult) => void;
   clearSchedule: () => void;
   reset: () => void;
+
+  // FTQC Actions
+  updateFTQC: (ftqc: FTQCDefinition | undefined) => void;
+  addParityCheckGroup: (group: string[]) => void;
+  removeParityCheckGroup: (index: number) => void;
+  updateParityCheckGroup: (index: number, group: string[]) => void;
+  setLogicalObservable: (key: string, targets: string[]) => void;
+  removeLogicalObservable: (key: string) => void;
 }
 
 function createInitialProject(): GraphQOMBProject {
@@ -40,6 +49,7 @@ function createInitialProject(): GraphQOMBProject {
     nodes: [],
     edges: [],
     flow: { xflow: {}, zflow: "auto" },
+    ftqc: undefined,
     schedule: undefined,
   };
 }
@@ -104,12 +114,42 @@ export const useProjectStore = create<ProjectState>()(
             newZflow = zf;
           }
 
+          // Remove node from FTQC entries
+          let newFtqc: FTQCDefinition | undefined = undefined;
+          if (state.project.ftqc !== undefined) {
+            const newParityCheckGroup = state.project.ftqc.parityCheckGroup
+              .map((group) => group.filter((nodeId) => nodeId !== id))
+              .filter((group) => group.length > 0);
+
+            const newLogicalObservableGroup: Record<string, string[]> = {};
+            for (const [key, targets] of Object.entries(
+              state.project.ftqc.logicalObservableGroup
+            )) {
+              const filtered = targets.filter((nodeId) => nodeId !== id);
+              if (filtered.length > 0) {
+                newLogicalObservableGroup[key] = filtered;
+              }
+            }
+
+            // Only keep ftqc if there's still data
+            if (
+              newParityCheckGroup.length > 0 ||
+              Object.keys(newLogicalObservableGroup).length > 0
+            ) {
+              newFtqc = {
+                parityCheckGroup: newParityCheckGroup,
+                logicalObservableGroup: newLogicalObservableGroup,
+              };
+            }
+          }
+
           return {
             project: {
               ...state.project,
               nodes: state.project.nodes.filter((n) => n.id !== id),
               edges: state.project.edges.filter((e) => e.source !== id && e.target !== id),
               flow: { xflow: newXflow, zflow: newZflow },
+              ftqc: newFtqc,
               schedule: undefined,
             },
           };
@@ -179,6 +219,103 @@ export const useProjectStore = create<ProjectState>()(
         set((state) => ({
           project: { ...state.project, schedule: undefined },
         }));
+      },
+
+      // FTQC Actions
+      updateFTQC: (ftqc: FTQCDefinition | undefined): void => {
+        set((state) => ({
+          project: { ...state.project, ftqc },
+        }));
+      },
+
+      addParityCheckGroup: (group: string[]): void => {
+        set((state) => {
+          const currentFtqc = state.project.ftqc ?? {
+            parityCheckGroup: [],
+            logicalObservableGroup: {},
+          };
+          return {
+            project: {
+              ...state.project,
+              ftqc: {
+                ...currentFtqc,
+                parityCheckGroup: [...currentFtqc.parityCheckGroup, group],
+              },
+            },
+          };
+        });
+      },
+
+      removeParityCheckGroup: (index: number): void => {
+        set((state) => {
+          if (state.project.ftqc === undefined) return state;
+          const newGroups = state.project.ftqc.parityCheckGroup.filter((_, i) => i !== index);
+          // If no more data, set ftqc to undefined
+          if (
+            newGroups.length === 0 &&
+            Object.keys(state.project.ftqc.logicalObservableGroup).length === 0
+          ) {
+            return { project: { ...state.project, ftqc: undefined } };
+          }
+          return {
+            project: {
+              ...state.project,
+              ftqc: { ...state.project.ftqc, parityCheckGroup: newGroups },
+            },
+          };
+        });
+      },
+
+      updateParityCheckGroup: (index: number, group: string[]): void => {
+        set((state) => {
+          if (state.project.ftqc === undefined) return state;
+          const newGroups = [...state.project.ftqc.parityCheckGroup];
+          newGroups[index] = group;
+          return {
+            project: {
+              ...state.project,
+              ftqc: { ...state.project.ftqc, parityCheckGroup: newGroups },
+            },
+          };
+        });
+      },
+
+      setLogicalObservable: (key: string, targets: string[]): void => {
+        set((state) => {
+          const currentFtqc = state.project.ftqc ?? {
+            parityCheckGroup: [],
+            logicalObservableGroup: {},
+          };
+          return {
+            project: {
+              ...state.project,
+              ftqc: {
+                ...currentFtqc,
+                logicalObservableGroup: {
+                  ...currentFtqc.logicalObservableGroup,
+                  [key]: targets,
+                },
+              },
+            },
+          };
+        });
+      },
+
+      removeLogicalObservable: (key: string): void => {
+        set((state) => {
+          if (state.project.ftqc === undefined) return state;
+          const { [key]: _, ...rest } = state.project.ftqc.logicalObservableGroup;
+          // If no more data, set ftqc to undefined
+          if (state.project.ftqc.parityCheckGroup.length === 0 && Object.keys(rest).length === 0) {
+            return { project: { ...state.project, ftqc: undefined } };
+          }
+          return {
+            project: {
+              ...state.project,
+              ftqc: { ...state.project.ftqc, logicalObservableGroup: rest },
+            },
+          };
+        });
       },
 
       reset: (): void => {

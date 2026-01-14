@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
+- **FTQC Configuration Editor**
+  - New `FTQCDefinition` type for fault-tolerant quantum computing configuration
+  - `parityCheckGroup`: List of node ID groups for parity check (error detection)
+  - `logicalObservableGroup`: Mapping of observable index to target node IDs
+  - FTQC button in toolbar opens modal dialog for editing FTQC configuration
+  - `FTQCModal` component with full CRUD operations for parity check groups and logical observables
+  - `useFTQCOperations` hook encapsulating FTQC editing logic
+  - FTQC data included in JSON export/import
+  - Node deletion automatically removes node references from FTQC configuration
+  - UI state management for modal in `uiStore`
+
 - **3D Viewer Editing Enhancements**
   - Node drag movement in 3D edit mode (drag nodes on the working plane)
   - Keyboard deletion support (Backspace/Delete keys) for selected nodes/edges
@@ -142,6 +153,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2D/3D dimension toggle (replaced with view mode selector)
 
 ### Backend
+
+#### Added
+- `FTQCDefinitionDTO` for FTQC configuration (parity check groups and logical observables)
+- Optional `ftqc` field in `ProjectPayloadDTO` for FTQC data
 
 #### Changed
 - `dto.py`: Removed `Coordinate2D` class and `dimension` field from `ProjectPayloadDTO`
