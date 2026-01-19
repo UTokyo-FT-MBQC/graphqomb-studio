@@ -45,12 +45,12 @@ export function Tiling3DDialog(): React.ReactNode {
   const isOverLimit = estimatedNodeCount3D > MAX_RECOMMENDED_NODES;
   const hasPreview = preview3D !== null && preview3D.nodes.length > 0;
 
-  // Auto-generate preview when dialog opens or estimate changes
+  // Auto-generate preview when dialog opens or params change
   useEffect(() => {
     if (isOpen && !isOverLimit) {
       generatePreview3D();
     }
-  }, [isOpen, isOverLimit, generatePreview3D]);
+  }, [isOpen, isOverLimit, generatePreview3D, params3D]);
 
   const handlePatternChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
