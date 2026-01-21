@@ -91,7 +91,7 @@ async def test_schedule_with_strategy() -> None:
 
 async def test_schedule_empty_project() -> None:
     """Test scheduling an empty project."""
-    project = {
+    project: dict[str, Any] = {
         "name": "Empty",
         "nodes": [],
         "edges": [],
