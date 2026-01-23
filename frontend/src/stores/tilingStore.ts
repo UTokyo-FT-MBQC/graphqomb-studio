@@ -24,7 +24,7 @@ import {
 import { validateTilingGeneration } from "@/lib/tiling/validation";
 import type { Coordinate, GraphEdge, GraphNode, IntermediateNode } from "@/types";
 import { normalizeEdgeId } from "@/types";
-import { DEFAULT_TILING_3D_PARAMS, type Tiling3DParams } from "@/types/rhg";
+import { DEFAULT_TILING_3D_PARAMS, RHG_BOUNDARY_PRESETS, type Tiling3DParams } from "@/types/rhg";
 import type { CellRange, GeneratedGraph, TilingPattern } from "@/types/tiling";
 import { create } from "zustand";
 import { useProjectStore } from "./projectStore";
@@ -198,13 +198,15 @@ function computeCellRange(start: Coordinate, end: Coordinate, pattern: TilingPat
 
 /**
  * Calculate estimated node and edge counts for 3D tiling.
+ * Both patterns use Lx, Ly, Lz directly as physical dimensions.
  */
 function calculateEstimates3D(params: Tiling3DParams): { nodes: number; edges: number } {
-  const { patternId, Lx, Ly, Lz } = params;
+  const { patternId, Lx, Ly, Lz, boundaryPreset } = params;
   if (patternId === "rhg") {
+    const boundary = RHG_BOUNDARY_PRESETS[boundaryPreset];
     return {
-      nodes: estimateRHGNodeCount(Lx, Ly, Lz),
-      edges: estimateRHGEdgeCount(Lx, Ly, Lz),
+      nodes: estimateRHGNodeCount(Lx, Ly, Lz, boundary),
+      edges: estimateRHGEdgeCount(Lx, Ly, Lz, boundary),
     };
   }
   // cubic
@@ -479,10 +481,11 @@ export const useTilingStore = create<TilingState>((set, get) => ({
 
   generatePreview3D: (): void => {
     const { params3D } = get();
-    const { patternId, Lx, Ly, Lz, originX, originY, originZ } = params3D;
+    const { patternId, Lx, Ly, Lz, originX, originY, originZ, boundaryPreset } = params3D;
     const origin = { x: originX, y: originY, z: originZ };
+    const boundary = RHG_BOUNDARY_PRESETS[boundaryPreset];
 
-    // Validate dimensions
+    // Validate dimensions (same for both patterns)
     if (Lx < 1 || Ly < 1 || Lz < 1) {
       set({
         error3D: { code: "INVALID_DIMENSIONS", message: "Dimensions must be at least 1" },
@@ -508,7 +511,7 @@ export const useTilingStore = create<TilingState>((set, get) => ({
       let preview: GeneratedGraph;
 
       if (patternId === "rhg") {
-        const lattice = generateRHGLattice({ Lx, Ly, Lz, origin });
+        const lattice = generateRHGLattice({ Lx, Ly, Lz, boundary, origin });
         preview = rhgToGeneratedGraph(lattice, origin);
       } else {
         // cubic

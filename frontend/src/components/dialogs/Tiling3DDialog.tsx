@@ -2,7 +2,9 @@
  * 3D Tiling Dialog Component
  *
  * Dialog for configuring and applying 3D tiling patterns (Cubic Grid, RHG Lattice).
- * Uses dialog-based input for Lx, Ly, Lz dimensions instead of drag-based interaction.
+ * Uses dialog-based input for dimensions instead of drag-based interaction.
+ *
+ * Both patterns use Lx, Ly, Lz to specify physical dimensions directly.
  */
 
 "use client";
@@ -10,7 +12,7 @@
 import { MAX_RECOMMENDED_NODES } from "@/lib/tiling/generator";
 import { useTilingStore } from "@/stores/tilingStore";
 import { useUIStore } from "@/stores/uiStore";
-import type { Tiling3DPatternId } from "@/types/rhg";
+import type { RHGBoundaryPresetId, Tiling3DPatternId } from "@/types/rhg";
 import { useCallback, useEffect } from "react";
 
 /**
@@ -24,7 +26,21 @@ const PATTERN_INFO: Record<Tiling3DPatternId, { name: string; description: strin
   rhg: {
     name: "RHG Lattice",
     description:
-      "Raussendorf-Harrington-Goyal lattice for fault-tolerant MBQC. Qubits on faces and edges of cubic cells.",
+      "Raussendorf-Harrington-Goyal lattice for fault-tolerant MBQC. Rotated surface code layout.",
+  },
+};
+
+/**
+ * Boundary preset information.
+ */
+const BOUNDARY_PRESETS: Record<RHGBoundaryPresetId, { name: string; description: string }> = {
+  XXZZ: {
+    name: "XXZZ",
+    description: "X boundaries on top/bottom, Z boundaries on left/right",
+  },
+  ZZXX: {
+    name: "ZZXX",
+    description: "Z boundaries on top/bottom, X boundaries on left/right",
   },
 };
 
@@ -46,6 +62,7 @@ export function Tiling3DDialog(): React.ReactNode {
   const hasPreview = preview3D !== null && preview3D.nodes.length > 0;
 
   // Auto-generate preview when dialog opens or params change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: params3D triggers regeneration intentionally
   useEffect(() => {
     if (isOpen && !isOverLimit) {
       generatePreview3D();
@@ -61,7 +78,7 @@ export function Tiling3DDialog(): React.ReactNode {
 
   const handleDimensionChange = useCallback(
     (dimension: "Lx" | "Ly" | "Lz", value: string) => {
-      const numValue = Math.max(1, Math.min(10, Number.parseInt(value, 10) || 1));
+      const numValue = Math.max(1, Math.min(20, Number.parseInt(value, 10) || 1));
       setParams3D({ [dimension]: numValue });
     },
     [setParams3D]
@@ -71,6 +88,13 @@ export function Tiling3DDialog(): React.ReactNode {
     (axis: "originX" | "originY" | "originZ", value: string) => {
       const numValue = Number.parseInt(value, 10) || 0;
       setParams3D({ [axis]: numValue });
+    },
+    [setParams3D]
+  );
+
+  const handleBoundaryChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setParams3D({ boundaryPreset: e.target.value as RHGBoundaryPresetId });
     },
     [setParams3D]
   );
@@ -118,16 +142,38 @@ export function Tiling3DDialog(): React.ReactNode {
             <p className="text-xs text-gray-500 mt-1">{patternInfo.description}</p>
           </div>
 
-          {/* Dimensions */}
+          {/* Boundary Selection (only for RHG) */}
+          {params3D.patternId === "rhg" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Boundary Conditions
+                <select
+                  value={params3D.boundaryPreset}
+                  onChange={handleBoundaryChange}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="XXZZ">{BOUNDARY_PRESETS.XXZZ.name}</option>
+                  <option value="ZZXX">{BOUNDARY_PRESETS.ZZXX.name}</option>
+                </select>
+              </label>
+              <p className="text-xs text-gray-500 mt-1">
+                {BOUNDARY_PRESETS[params3D.boundaryPreset].description}
+              </p>
+            </div>
+          )}
+
+          {/* Dimensions (same for both patterns) */}
           <div>
-            <span className="block text-sm font-medium text-gray-700 mb-1">Dimensions (cells)</span>
+            <span className="block text-sm font-medium text-gray-700 mb-1">
+              Dimensions (number of data qubits for RHG, grid size for cubic)
+            </span>
             <div className="grid grid-cols-3 gap-2">
               <label className="block">
                 <span className="block text-xs text-gray-500 mb-1">Lx</span>
                 <input
                   type="number"
                   min={1}
-                  max={10}
+                  max={20}
                   value={params3D.Lx}
                   onChange={(e) => handleDimensionChange("Lx", e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -138,7 +184,7 @@ export function Tiling3DDialog(): React.ReactNode {
                 <input
                   type="number"
                   min={1}
-                  max={10}
+                  max={20}
                   value={params3D.Ly}
                   onChange={(e) => handleDimensionChange("Ly", e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -149,7 +195,7 @@ export function Tiling3DDialog(): React.ReactNode {
                 <input
                   type="number"
                   min={1}
-                  max={10}
+                  max={20}
                   value={params3D.Lz}
                   onChange={(e) => handleDimensionChange("Lz", e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"

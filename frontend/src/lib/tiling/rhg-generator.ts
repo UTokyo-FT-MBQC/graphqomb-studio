@@ -1,224 +1,331 @@
 /**
  * RHG (Raussendorf-Harrington-Goyal) Lattice Generator
  *
- * Generates RHG lattice following the specification exactly.
- * RHG lattice places qubits on faces and edges of a 3D cubic lattice,
- * with each face qubit connecting to exactly 4 edge qubits (bipartite).
+ * Generates RHG lattice for fault-tolerant MBQC using rotated surface code.
+ * Supports configurable boundary conditions (XXZZ, ZZXX).
+ *
+ * Parameters:
+ * - Lx, Ly: Number of data qubits in x and y directions
+ * - Lz: Number of z-layers
+ * - boundary: Boundary specification for four sides
+ *
+ * 2D Layout:
+ * - Data qubits: (2i, 2j) for i ∈ [0, Lx-1], j ∈ [0, Ly-1]
+ * - Bulk ancillas at (odd, odd) within data bounds:
+ *   - X-ancilla: (x+y) % 4 == 0
+ *   - Z-ancilla: (x+y) % 4 == 2
+ * - Boundary ancillas outside data region based on boundary conditions
+ *
+ * 3D Layer structure:
+ * - Even z layers: data qubits + Z-ancillas
+ * - Odd z layers: data qubits + X-ancillas
+ *
+ * Edges:
+ * - Temporal: data at same (x,y) between consecutive z
+ * - Spatial: ancilla to neighboring data qubits at (±1, ±1)
  *
  * Reference: Raussendorf, Harrington, Goyal - PhysRevA.82.032332
- *
- * Index ranges (for Lx × Ly × Lz cells, open boundary):
- * - Ex(i,j,k): i=0..Lx-1, j=0..Ly, k=0..Lz
- * - Ey(i,j,k): i=0..Lx, j=0..Ly-1, k=0..Lz
- * - Ez(i,j,k): i=0..Lx, j=0..Ly, k=0..Lz-1
- * - Fz(i,j,k): i=0..Lx-1, j=0..Ly-1, k=0..Lz
- * - Fy(i,j,k): i=0..Lx-1, j=0..Ly, k=0..Lz-1
- * - Fx(i,j,k): i=0..Lx, j=0..Ly-1, k=0..Lz-1
- *
- * Position (2x integer coords to avoid floating point):
- * - Ex: (2i+1, 2j, 2k)
- * - Ey: (2i, 2j+1, 2k)
- * - Ez: (2i, 2j, 2k+1)
- * - Fz: (2i+1, 2j+1, 2k)
- * - Fy: (2i+1, 2j, 2k+1)
- * - Fx: (2i, 2j+1, 2k+1)
- *
- * Edge connectivity (Face → 4 Edges):
- * - Fz(i,j,k): Ex(i,j,k), Ex(i,j+1,k), Ey(i,j,k), Ey(i+1,j,k)
- * - Fy(i,j,k): Ex(i,j,k), Ex(i,j,k+1), Ez(i,j,k), Ez(i+1,j,k)
- * - Fx(i,j,k): Ey(i,j,k), Ey(i,j,k+1), Ez(i,j,k), Ez(i,j+1,k)
  */
 
-import type { RHGEdge, RHGLattice, RHGNode, RHGParams } from "@/types/rhg";
+import {
+  DEFAULT_RHG_BOUNDARY,
+  type RHGBoundary,
+  type RHGEdge,
+  type RHGLattice,
+  type RHGNode,
+  type RHGNodeRole,
+  type RHGParams,
+} from "@/types/rhg";
 import type { GeneratedEdge, GeneratedGraph, GeneratedNode } from "@/types/tiling";
 
 // =============================================================================
-// Node ID Generators
+// 2D Coordinate Classification
 // =============================================================================
 
 /**
- * Generate Ex node ID
+ * Check if (x, y) is a data qubit position.
+ * Data qubits are at (even x, even y).
  */
-function exId(i: number, j: number, k: number): string {
-  return `Ex(${i},${j},${k})`;
+export function isDataPosition(x: number, y: number): boolean {
+  return x % 2 === 0 && y % 2 === 0;
 }
 
 /**
- * Generate Ey node ID
+ * Check if (x, y) is an X-ancilla position.
+ * X ancillas are at (odd x, odd y) where (x + y) % 4 == 0.
  */
-function eyId(i: number, j: number, k: number): string {
-  return `Ey(${i},${j},${k})`;
+export function isXAncillaPosition(x: number, y: number): boolean {
+  return x % 2 === 1 && y % 2 === 1 && (x + y) % 4 === 0;
 }
 
 /**
- * Generate Ez node ID
+ * Check if (x, y) is a Z-ancilla position.
+ * Z ancillas are at (odd x, odd y) where (x + y) % 4 == 2.
  */
-function ezId(i: number, j: number, k: number): string {
-  return `Ez(${i},${j},${k})`;
+export function isZAncillaPosition(x: number, y: number): boolean {
+  return x % 2 === 1 && y % 2 === 1 && (x + y) % 4 === 2;
 }
 
 /**
- * Generate Fx node ID
+ * Determine the node role based on 2D position and z-layer.
+ * - Even z: data + Z-ancillas
+ * - Odd z: data + X-ancillas
  */
-function fxId(i: number, j: number, k: number): string {
-  return `Fx(${i},${j},${k})`;
+export function getNodeRole(x: number, y: number, z: number): RHGNodeRole | null {
+  if (isDataPosition(x, y)) {
+    return "data";
+  }
+  if (z % 2 === 0 && isZAncillaPosition(x, y)) {
+    return "ancilla_z";
+  }
+  if (z % 2 === 1 && isXAncillaPosition(x, y)) {
+    return "ancilla_x";
+  }
+  return null;
+}
+
+// =============================================================================
+// Node ID Generation
+// =============================================================================
+
+/**
+ * Generate a node ID from coordinates.
+ */
+function nodeId(x: number, y: number, z: number): string {
+  return `${x}_${y}_${z}`;
 }
 
 /**
- * Generate Fy node ID
+ * Normalize edge key for deduplication (alphabetically ordered).
  */
-function fyId(i: number, j: number, k: number): string {
-  return `Fy(${i},${j},${k})`;
+function normalizeEdgeKey(a: string, b: string): string {
+  return a < b ? `${a}--${b}` : `${b}--${a}`;
 }
 
+// =============================================================================
+// Ancilla Edge Offsets
+// =============================================================================
+
 /**
- * Generate Fz node ID
+ * Offsets from ancilla to neighboring data qubits.
+ * Ancillas connect to 4 data qubits at (±1, ±1) positions.
  */
-function fzId(i: number, j: number, k: number): string {
-  return `Fz(${i},${j},${k})`;
-}
+const ANCILLA_EDGES: [number, number][] = [
+  [1, 1],
+  [-1, 1],
+  [1, -1],
+  [-1, -1],
+];
 
 // =============================================================================
 // RHG Lattice Generator
 // =============================================================================
 
 /**
- * Generate RHG lattice following the specification exactly.
+ * Generate 2D coordinates for data qubits and ancillas with boundary conditions.
  *
- * @param params - RHG generation parameters (Lx, Ly, Lz, origin)
+ * The layout consists of:
+ * 1. Data qubits at (2i, 2j) for i ∈ [0, Lx-1], j ∈ [0, Ly-1]
+ * 2. Bulk ancillas: (odd, odd) positions within the data region
+ * 3. Boundary ancillas: Outside the data region based on boundary conditions
+ *
+ * @param Lx - Number of data qubits in x direction
+ * @param Ly - Number of data qubits in y direction
+ * @param boundary - Boundary specification for four sides
+ * @returns Sets of data, X-ancilla, and Z-ancilla 2D positions
+ */
+function generate2DLayout(
+  Lx: number,
+  Ly: number,
+  boundary: RHGBoundary
+): {
+  dataPositions: Set<string>;
+  xAncillaPositions: Set<string>;
+  zAncillaPositions: Set<string>;
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+} {
+  const dataPositions = new Set<string>();
+  const xAncillaPositions = new Set<string>();
+  const zAncillaPositions = new Set<string>();
+
+  // Data bounds (inclusive): x ∈ [0, 2*(Lx-1)], y ∈ [0, 2*(Ly-1)]
+  const minX = 0;
+  const minY = 0;
+  const maxX = 2 * (Lx - 1);
+  const maxY = 2 * (Ly - 1);
+
+  // Data qubits at (2i, 2j) for i ∈ [0, Lx-1], j ∈ [0, Ly-1]
+  for (let i = 0; i < Lx; i++) {
+    for (let j = 0; j < Ly; j++) {
+      dataPositions.add(`${2 * i}_${2 * j}`);
+    }
+  }
+
+  // Bulk ancillas: (odd, odd) positions strictly inside the data region
+  for (let x = minX + 1; x < maxX; x += 2) {
+    for (let y = minY + 1; y < maxY; y += 2) {
+      if (isXAncillaPosition(x, y)) {
+        xAncillaPositions.add(`${x}_${y}`);
+      } else if (isZAncillaPosition(x, y)) {
+        zAncillaPositions.add(`${x}_${y}`);
+      }
+    }
+  }
+
+  // Boundary ancillas: Outside the data region based on boundary conditions
+  // TOP boundary (y = minY - 1)
+  for (let x = minX + 1; x < maxX; x += 2) {
+    const relX = x - minX;
+    const relXMod4 = relX % 4;
+    const y = minY - 1;
+    if (boundary.top === "X" && relXMod4 === 1) {
+      xAncillaPositions.add(`${x}_${y}`);
+    } else if (boundary.top === "Z" && relXMod4 === 3) {
+      zAncillaPositions.add(`${x}_${y}`);
+    }
+  }
+
+  // BOTTOM boundary (y = maxY + 1)
+  for (let x = minX + 1; x < maxX; x += 2) {
+    const relX = x - minX;
+    const relXMod4 = relX % 4;
+    const y = maxY + 1;
+    if (boundary.bottom === "X" && relXMod4 === 3) {
+      xAncillaPositions.add(`${x}_${y}`);
+    } else if (boundary.bottom === "Z" && relXMod4 === 1) {
+      zAncillaPositions.add(`${x}_${y}`);
+    }
+  }
+
+  // LEFT boundary (x = minX - 1)
+  for (let y = minY + 1; y < maxY; y += 2) {
+    const relY = y - minY;
+    const relYMod4 = relY % 4;
+    const x = minX - 1;
+    if (boundary.left === "X" && relYMod4 === 1) {
+      xAncillaPositions.add(`${x}_${y}`);
+    } else if (boundary.left === "Z" && relYMod4 === 3) {
+      zAncillaPositions.add(`${x}_${y}`);
+    }
+  }
+
+  // RIGHT boundary (x = maxX + 1)
+  for (let y = minY + 1; y < maxY; y += 2) {
+    const relY = y - minY;
+    const relYMod4 = relY % 4;
+    const x = maxX + 1;
+    if (boundary.right === "X" && relYMod4 === 3) {
+      xAncillaPositions.add(`${x}_${y}`);
+    } else if (boundary.right === "Z" && relYMod4 === 1) {
+      zAncillaPositions.add(`${x}_${y}`);
+    }
+  }
+
+  return { dataPositions, xAncillaPositions, zAncillaPositions, minX, minY, maxX, maxY };
+}
+
+/**
+ * Parse position string to coordinates.
+ */
+function parsePosition(pos: string): [number, number] {
+  const parts = pos.split("_");
+  const x = parts[0];
+  const y = parts[1];
+  if (x === undefined || y === undefined) {
+    throw new Error(`Invalid position string: ${pos}`);
+  }
+  return [Number.parseInt(x, 10), Number.parseInt(y, 10)];
+}
+
+/**
+ * Generate RHG lattice for rotated surface code with configurable boundaries.
+ *
+ * @param params - RHG generation parameters
+ *   - Lx: Number of data qubits in x direction
+ *   - Ly: Number of data qubits in y direction
+ *   - Lz: Number of z-layers
+ *   - boundary: Boundary specification (defaults to XXZZ)
  * @returns RHG lattice with nodes and edges
  */
 export function generateRHGLattice(params: RHGParams): RHGLattice {
-  const { Lx, Ly, Lz } = params;
+  const { Lx, Ly, Lz, boundary = DEFAULT_RHG_BOUNDARY } = params;
 
   // Validate parameters
   if (Lx < 1 || Ly < 1 || Lz < 1) {
-    throw new Error("RHG lattice dimensions must be at least 1");
+    throw new Error("RHG lattice dimensions (Lx, Ly, Lz) must be at least 1");
   }
 
   const nodes: RHGNode[] = [];
   const edges: RHGEdge[] = [];
   const nodeMap = new Map<string, RHGNode>();
+  const edgeSet = new Set<string>();
 
-  // Helper to add a node
-  const addNode = (
-    id: string,
-    kind: "FACE" | "EDGE",
-    orientation: RHGNode["orientation"],
-    indices: [number, number, number],
-    pos2: [number, number, number]
-  ): void => {
-    const node: RHGNode = {
-      id,
-      kind,
-      orientation,
-      indices,
-      pos2,
-      position: [pos2[0] / 2, pos2[1] / 2, pos2[2] / 2],
-    };
-    nodes.push(node);
-    nodeMap.set(id, node);
-  };
+  // Generate 2D layout with boundary conditions
+  const { dataPositions, xAncillaPositions, zAncillaPositions } = generate2DLayout(
+    Lx,
+    Ly,
+    boundary
+  );
 
-  // Helper to add an edge (face-edge connection)
-  const addEdge = (faceId: string, edgeId: string): void => {
-    if (nodeMap.has(faceId) && nodeMap.has(edgeId)) {
-      edges.push({
-        id: `${faceId}--${edgeId}`,
-        faceId,
-        edgeId,
-      });
+  // Helper to add edge with deduplication
+  const addEdge = (id1: string, id2: string): void => {
+    const key = normalizeEdgeKey(id1, id2);
+    if (!edgeSet.has(key) && nodeMap.has(id1) && nodeMap.has(id2)) {
+      edgeSet.add(key);
+      const [source, target] = id1 < id2 ? [id1, id2] : [id2, id1];
+      edges.push({ id: key, source, target });
     }
   };
 
-  // ==========================================================================
-  // Generate EDGE nodes
-  // ==========================================================================
+  // Generate nodes layer by layer
+  for (let z = 0; z < Lz; z++) {
+    const isEvenZ = z % 2 === 0;
 
-  // Ex(i,j,k): i=0..Lx-1, j=0..Ly, k=0..Lz
-  // pos2 = (2i+1, 2j, 2k)
-  for (let i = 0; i < Lx; i++) {
-    for (let j = 0; j <= Ly; j++) {
-      for (let k = 0; k <= Lz; k++) {
-        addNode(exId(i, j, k), "EDGE", "Ex", [i, j, k], [2 * i + 1, 2 * j, 2 * k]);
+    // Add data qubits
+    for (const pos of dataPositions) {
+      const [x, y] = parsePosition(pos);
+      const id = nodeId(x, y, z);
+      const node: RHGNode = {
+        id,
+        role: "data",
+        position: [x, y, z],
+      };
+      nodes.push(node);
+      nodeMap.set(id, node);
+
+      // Temporal edge: connect to same (x, y) at previous z (data to data)
+      if (z > 0) {
+        const prevId = nodeId(x, y, z - 1);
+        if (nodeMap.has(prevId)) {
+          addEdge(id, prevId);
+        }
       }
     }
-  }
 
-  // Ey(i,j,k): i=0..Lx, j=0..Ly-1, k=0..Lz
-  // pos2 = (2i, 2j+1, 2k)
-  for (let i = 0; i <= Lx; i++) {
-    for (let j = 0; j < Ly; j++) {
-      for (let k = 0; k <= Lz; k++) {
-        addNode(eyId(i, j, k), "EDGE", "Ey", [i, j, k], [2 * i, 2 * j + 1, 2 * k]);
-      }
-    }
-  }
+    // Add ancillas based on z parity
+    const ancillaPositions = isEvenZ ? zAncillaPositions : xAncillaPositions;
+    const ancillaRole: RHGNodeRole = isEvenZ ? "ancilla_z" : "ancilla_x";
 
-  // Ez(i,j,k): i=0..Lx, j=0..Ly, k=0..Lz-1
-  // pos2 = (2i, 2j, 2k+1)
-  for (let i = 0; i <= Lx; i++) {
-    for (let j = 0; j <= Ly; j++) {
-      for (let k = 0; k < Lz; k++) {
-        addNode(ezId(i, j, k), "EDGE", "Ez", [i, j, k], [2 * i, 2 * j, 2 * k + 1]);
-      }
-    }
-  }
+    for (const pos of ancillaPositions) {
+      const [x, y] = parsePosition(pos);
+      const id = nodeId(x, y, z);
+      const node: RHGNode = {
+        id,
+        role: ancillaRole,
+        position: [x, y, z],
+      };
+      nodes.push(node);
+      nodeMap.set(id, node);
 
-  // ==========================================================================
-  // Generate FACE nodes and their edge connections
-  // ==========================================================================
-
-  // Fz(i,j,k): i=0..Lx-1, j=0..Ly-1, k=0..Lz
-  // pos2 = (2i+1, 2j+1, 2k)
-  // Connects to: Ex(i,j,k), Ex(i,j+1,k), Ey(i,j,k), Ey(i+1,j,k)
-  for (let i = 0; i < Lx; i++) {
-    for (let j = 0; j < Ly; j++) {
-      for (let k = 0; k <= Lz; k++) {
-        const fid = fzId(i, j, k);
-        addNode(fid, "FACE", "Fz", [i, j, k], [2 * i + 1, 2 * j + 1, 2 * k]);
-
-        // Connect to 4 edge qubits
-        addEdge(fid, exId(i, j, k));
-        addEdge(fid, exId(i, j + 1, k));
-        addEdge(fid, eyId(i, j, k));
-        addEdge(fid, eyId(i + 1, j, k));
-      }
-    }
-  }
-
-  // Fy(i,j,k): i=0..Lx-1, j=0..Ly, k=0..Lz-1
-  // pos2 = (2i+1, 2j, 2k+1)
-  // Connects to: Ex(i,j,k), Ex(i,j,k+1), Ez(i,j,k), Ez(i+1,j,k)
-  for (let i = 0; i < Lx; i++) {
-    for (let j = 0; j <= Ly; j++) {
-      for (let k = 0; k < Lz; k++) {
-        const fid = fyId(i, j, k);
-        addNode(fid, "FACE", "Fy", [i, j, k], [2 * i + 1, 2 * j, 2 * k + 1]);
-
-        // Connect to 4 edge qubits
-        addEdge(fid, exId(i, j, k));
-        addEdge(fid, exId(i, j, k + 1));
-        addEdge(fid, ezId(i, j, k));
-        addEdge(fid, ezId(i + 1, j, k));
-      }
-    }
-  }
-
-  // Fx(i,j,k): i=0..Lx, j=0..Ly-1, k=0..Lz-1
-  // pos2 = (2i, 2j+1, 2k+1)
-  // Connects to: Ey(i,j,k), Ey(i,j,k+1), Ez(i,j,k), Ez(i,j+1,k)
-  for (let i = 0; i <= Lx; i++) {
-    for (let j = 0; j < Ly; j++) {
-      for (let k = 0; k < Lz; k++) {
-        const fid = fxId(i, j, k);
-        addNode(fid, "FACE", "Fx", [i, j, k], [2 * i, 2 * j + 1, 2 * k + 1]);
-
-        // Connect to 4 edge qubits
-        addEdge(fid, eyId(i, j, k));
-        addEdge(fid, eyId(i, j, k + 1));
-        addEdge(fid, ezId(i, j, k));
-        addEdge(fid, ezId(i, j + 1, k));
+      // Spatial edges: connect to neighboring data qubits
+      for (const [dx, dy] of ANCILLA_EDGES) {
+        const nx = x + dx;
+        const ny = y + dy;
+        const neighborId = nodeId(nx, ny, z);
+        addEdge(id, neighborId);
       }
     }
   }
@@ -235,13 +342,6 @@ export function generateRHGLattice(params: RHGParams): RHGLattice {
 // =============================================================================
 
 /**
- * Normalize edge key for deduplication (alphabetically ordered).
- */
-function normalizeEdgeKey(a: string, b: string): string {
-  return a < b ? `${a}--${b}` : `${b}--${a}`;
-}
-
-/**
  * Convert RHG lattice to GeneratedGraph format for projectStore integration.
  *
  * @param lattice - RHG lattice to convert
@@ -256,19 +356,31 @@ export function rhgToGeneratedGraph(
   const oy = origin?.y ?? 0;
   const oz = origin?.z ?? 0;
 
-  const nodes: GeneratedNode[] = lattice.nodes.map((node) => ({
-    id: node.id,
-    position: [node.position[0] + ox, node.position[1] + oy, node.position[2] + oz],
-    role: "intermediate" as const,
-  }));
+  // Build ID mapping from original to offset IDs
+  const idMap = new Map<string, string>();
+  for (const node of lattice.nodes) {
+    const newX = node.position[0] + ox;
+    const newY = node.position[1] + oy;
+    const newZ = node.position[2] + oz;
+    idMap.set(node.id, `${newX}_${newY}_${newZ}`);
+  }
+
+  const nodes: GeneratedNode[] = lattice.nodes.map((node) => {
+    const newId = idMap.get(node.id) ?? node.id;
+    return {
+      id: newId,
+      position: [node.position[0] + ox, node.position[1] + oy, node.position[2] + oz],
+      role: "intermediate" as const,
+    };
+  });
 
   const edges: GeneratedEdge[] = lattice.edges.map((edge) => {
-    // Normalize edge IDs for consistency with other tiling patterns
-    const normalizedId = normalizeEdgeKey(edge.faceId, edge.edgeId);
+    const newSource = idMap.get(edge.source) ?? edge.source;
+    const newTarget = idMap.get(edge.target) ?? edge.target;
     const [source, target] =
-      edge.faceId < edge.edgeId ? [edge.faceId, edge.edgeId] : [edge.edgeId, edge.faceId];
+      newSource < newTarget ? [newSource, newTarget] : [newTarget, newSource];
     return {
-      id: normalizedId,
+      id: `${source}--${target}`,
       source,
       target,
     };
@@ -284,56 +396,62 @@ export function rhgToGeneratedGraph(
 /**
  * Estimate the number of nodes in an RHG lattice.
  *
- * Node counts for Lx × Ly × Lz:
- * - Ex: Lx × (Ly+1) × (Lz+1)
- * - Ey: (Lx+1) × Ly × (Lz+1)
- * - Ez: (Lx+1) × (Ly+1) × Lz
- * - Fz: Lx × Ly × (Lz+1)
- * - Fy: Lx × (Ly+1) × Lz
- * - Fx: (Lx+1) × Ly × Lz
+ * @param Lx - Number of data qubits in x direction
+ * @param Ly - Number of data qubits in y direction
+ * @param Lz - Number of z-layers
+ * @param boundary - Boundary specification (defaults to XXZZ)
  */
-export function estimateRHGNodeCount(Lx: number, Ly: number, Lz: number): number {
-  // Edge nodes
-  const exCount = Lx * (Ly + 1) * (Lz + 1);
-  const eyCount = (Lx + 1) * Ly * (Lz + 1);
-  const ezCount = (Lx + 1) * (Ly + 1) * Lz;
+export function estimateRHGNodeCount(
+  Lx: number,
+  Ly: number,
+  Lz: number,
+  boundary: RHGBoundary = DEFAULT_RHG_BOUNDARY
+): number {
+  const { dataPositions, xAncillaPositions, zAncillaPositions } = generate2DLayout(
+    Lx,
+    Ly,
+    boundary
+  );
 
-  // Face nodes
-  const fzCount = Lx * Ly * (Lz + 1);
-  const fyCount = Lx * (Ly + 1) * Lz;
-  const fxCount = (Lx + 1) * Ly * Lz;
+  const dataPerLayer = dataPositions.size;
+  const xAncillaCount = xAncillaPositions.size;
+  const zAncillaCount = zAncillaPositions.size;
 
-  return exCount + eyCount + ezCount + fzCount + fyCount + fxCount;
+  const evenLayers = Math.ceil(Lz / 2);
+  const oddLayers = Math.floor(Lz / 2);
+
+  return dataPerLayer * Lz + zAncillaCount * evenLayers + xAncillaCount * oddLayers;
 }
 
 /**
  * Estimate the number of edges in an RHG lattice.
- * Each face node connects to 4 edge nodes.
+ *
+ * @param Lx - Number of data qubits in x direction
+ * @param Ly - Number of data qubits in y direction
+ * @param Lz - Number of z-layers
+ * @param boundary - Boundary specification (defaults to XXZZ)
  */
-export function estimateRHGEdgeCount(Lx: number, Ly: number, Lz: number): number {
-  // Face nodes
-  const fzCount = Lx * Ly * (Lz + 1);
-  const fyCount = Lx * (Ly + 1) * Lz;
-  const fxCount = (Lx + 1) * Ly * Lz;
-
-  // Each face connects to 4 edges
-  return (fzCount + fyCount + fxCount) * 4;
+export function estimateRHGEdgeCount(
+  Lx: number,
+  Ly: number,
+  Lz: number,
+  boundary: RHGBoundary = DEFAULT_RHG_BOUNDARY
+): number {
+  try {
+    const lattice = generateRHGLattice({ Lx, Ly, Lz, boundary });
+    return lattice.edges.length;
+  } catch {
+    const nodeCount = estimateRHGNodeCount(Lx, Ly, Lz, boundary);
+    return Math.floor(nodeCount * 2);
+  }
 }
 
 // =============================================================================
-// 3D Cubic Grid Generator (using existing pattern)
+// 3D Cubic Grid Generator
 // =============================================================================
 
 /**
  * Generate a simple 3D cubic grid.
- * This is a straightforward grid where nodes are at integer coordinates
- * and each node connects to its 6 neighbors (±x, ±y, ±z).
- *
- * @param Lx - Number of cells in X direction
- * @param Ly - Number of cells in Y direction
- * @param Lz - Number of cells in Z direction
- * @param origin - Optional origin offset
- * @returns GeneratedGraph for the cubic grid
  */
 export function generateCubicGrid(
   Lx: number,
@@ -349,10 +467,8 @@ export function generateCubicGrid(
   const edges: GeneratedEdge[] = [];
   const edgeSet = new Set<string>();
 
-  // Generate node ID from coordinates
-  const nodeId = (x: number, y: number, z: number): string => `${x}_${y}_${z}`;
+  const nodeIdFn = (x: number, y: number, z: number): string => `${x}_${y}_${z}`;
 
-  // Add edge with deduplication
   const addEdge = (id1: string, id2: string): void => {
     const key = normalizeEdgeKey(id1, id2);
     if (!edgeSet.has(key)) {
@@ -362,27 +478,24 @@ export function generateCubicGrid(
     }
   };
 
-  // Generate nodes at vertices of the grid
-  // For Lx cells, we have Lx+1 vertices in each direction
-  for (let x = 0; x <= Lx; x++) {
-    for (let y = 0; y <= Ly; y++) {
-      for (let z = 0; z <= Lz; z++) {
-        const id = nodeId(x + ox, y + oy, z + oz);
+  for (let x = 0; x < Lx; x++) {
+    for (let y = 0; y < Ly; y++) {
+      for (let z = 0; z < Lz; z++) {
+        const id = nodeIdFn(x + ox, y + oy, z + oz);
         nodes.push({
           id,
           position: [x + ox, y + oy, z + oz],
           role: "intermediate",
         });
 
-        // Connect to neighbors in +x, +y, +z directions (to avoid duplicates)
-        if (x < Lx) {
-          addEdge(id, nodeId(x + 1 + ox, y + oy, z + oz));
+        if (x < Lx - 1) {
+          addEdge(id, nodeIdFn(x + 1 + ox, y + oy, z + oz));
         }
-        if (y < Ly) {
-          addEdge(id, nodeId(x + ox, y + 1 + oy, z + oz));
+        if (y < Ly - 1) {
+          addEdge(id, nodeIdFn(x + ox, y + 1 + oy, z + oz));
         }
-        if (z < Lz) {
-          addEdge(id, nodeId(x + ox, y + oy, z + 1 + oz));
+        if (z < Lz - 1) {
+          addEdge(id, nodeIdFn(x + ox, y + oy, z + 1 + oz));
         }
       }
     }
@@ -395,15 +508,12 @@ export function generateCubicGrid(
  * Estimate the number of nodes in a cubic grid.
  */
 export function estimateCubicNodeCount(Lx: number, Ly: number, Lz: number): number {
-  return (Lx + 1) * (Ly + 1) * (Lz + 1);
+  return Lx * Ly * Lz;
 }
 
 /**
  * Estimate the number of edges in a cubic grid.
  */
 export function estimateCubicEdgeCount(Lx: number, Ly: number, Lz: number): number {
-  // X-direction edges: Lx * (Ly+1) * (Lz+1)
-  // Y-direction edges: (Lx+1) * Ly * (Lz+1)
-  // Z-direction edges: (Lx+1) * (Ly+1) * Lz
-  return Lx * (Ly + 1) * (Lz + 1) + (Lx + 1) * Ly * (Lz + 1) + (Lx + 1) * (Ly + 1) * Lz;
+  return (Lx - 1) * Ly * Lz + Lx * (Ly - 1) * Lz + Lx * Ly * (Lz - 1);
 }

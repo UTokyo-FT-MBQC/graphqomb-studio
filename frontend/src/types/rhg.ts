@@ -1,101 +1,148 @@
 /**
  * RHG (Raussendorf-Harrington-Goyal) Lattice Type Definitions
  *
- * RHG lattice is a 3D cluster state for fault-tolerant MBQC.
- * Qubits are placed on faces and edges of a cubic lattice.
- * Each face qubit connects to exactly 4 edge qubits (bipartite graph).
+ * RHG lattice is a 3D cluster state for fault-tolerant MBQC using rotated surface code.
+ *
+ * 2D Layout (repeated at each z-level):
+ * - Data qubits: (even x, even y)
+ * - X ancillas: (odd x, odd y) where (x + y) % 4 == 0
+ * - Z ancillas: (odd x, odd y) where (x + y) % 4 == 2
+ *
+ * 3D Layer structure:
+ * - Even z layers: data qubits + Z-ancillas
+ * - Odd z layers: data qubits + X-ancillas
+ *
+ * Boundary conditions determine which ancillas are placed outside the data region.
  *
  * Reference: Raussendorf, Harrington, Goyal - PhysRevA.82.032332
  */
 
-/**
- * RHG lattice node kind.
- * FACE: Face qubits positioned on cube faces (XY, XZ, YZ planes)
- * EDGE: Edge qubits positioned on cube edges (X, Y, Z directions)
- */
-export type RHGNodeKind = "FACE" | "EDGE";
+// =============================================================================
+// Boundary Type Definitions
+// =============================================================================
 
 /**
- * RHG node orientation.
- * Face orientations: Fx (YZ plane), Fy (XZ plane), Fz (XY plane)
- * Edge orientations: Ex (x-direction), Ey (y-direction), Ez (z-direction)
+ * Boundary sides of the 2D patch.
  */
-export type RHGOrientation = "Fx" | "Fy" | "Fz" | "Ex" | "Ey" | "Ez";
+export type BoundarySide = "top" | "bottom" | "left" | "right";
+
+/**
+ * Edge specification values for boundary conditions.
+ * - X: X-type boundary (X ancillas on this edge)
+ * - Z: Z-type boundary (Z ancillas on this edge)
+ */
+export type EdgeSpecValue = "X" | "Z";
+
+/**
+ * Boundary specification for all four sides.
+ */
+export interface RHGBoundary {
+  top: EdgeSpecValue;
+  bottom: EdgeSpecValue;
+  left: EdgeSpecValue;
+  right: EdgeSpecValue;
+}
+
+/**
+ * Standard boundary presets for rotated surface code.
+ * XXZZ: X boundaries on top/bottom, Z boundaries on left/right
+ * ZZXX: Z boundaries on top/bottom, X boundaries on left/right
+ */
+export const RHG_BOUNDARY_PRESETS = {
+  XXZZ: { top: "X", bottom: "X", left: "Z", right: "Z" } as const satisfies RHGBoundary,
+  ZZXX: { top: "Z", bottom: "Z", left: "X", right: "X" } as const satisfies RHGBoundary,
+} as const;
+
+/**
+ * Boundary preset type.
+ */
+export type RHGBoundaryPresetId = keyof typeof RHG_BOUNDARY_PRESETS;
+
+/**
+ * Default boundary (XXZZ).
+ */
+export const DEFAULT_RHG_BOUNDARY: RHGBoundary = RHG_BOUNDARY_PRESETS.XXZZ;
+
+// =============================================================================
+// Node Type Definitions
+// =============================================================================
+
+/**
+ * RHG node role in the lattice.
+ * - data: Data qubits for logical information
+ * - ancilla_x: X-type ancilla qubits (at odd z layers)
+ * - ancilla_z: Z-type ancilla qubits (at even z layers)
+ */
+export type RHGNodeRole = "data" | "ancilla_x" | "ancilla_z";
 
 /**
  * RHG generated node with full metadata.
  */
 export interface RHGNode {
-  /** Node ID in format "Fz(i,j,k)" or "Ex(i,j,k)" */
+  /** Node ID in format "x_y_z" */
   id: string;
 
-  /** Node kind (FACE or EDGE) */
-  kind: RHGNodeKind;
+  /** Node role (data, ancilla_x, ancilla_z) */
+  role: RHGNodeRole;
 
-  /** Node orientation */
-  orientation: RHGOrientation;
-
-  /** Integer index coordinates (i, j, k) */
-  indices: [number, number, number];
-
-  /**
-   * Position using 2x integer coordinates to avoid floating point.
-   * This follows the spec: Ex: (2i+1, 2j, 2k), Fz: (2i+1, 2j+1, 2k), etc.
-   */
-  pos2: [number, number, number];
-
-  /**
-   * Actual position for rendering (pos2 / 2).
-   * This gives the real-world coordinate of the node.
-   */
+  /** Integer coordinates (x, y, z) */
   position: [number, number, number];
 }
 
 /**
- * RHG generated edge (only face-edge connections).
- * The RHG lattice is bipartite: edges only connect faces to edges, never same kind.
+ * RHG generated edge (connects adjacent nodes).
  */
 export interface RHGEdge {
-  /** Edge ID in format "faceId--edgeId" */
+  /** Edge ID in format "id1--id2" (alphabetically ordered) */
   id: string;
 
-  /** Face node ID (e.g., "Fz(0,0,0)") */
-  faceId: string;
+  /** Source node ID */
+  source: string;
 
-  /** Edge node ID (e.g., "Ex(0,0,0)") */
-  edgeId: string;
+  /** Target node ID */
+  target: string;
 }
 
 /**
  * RHG lattice generation result.
  */
 export interface RHGLattice {
-  /** All nodes in the lattice (both face and edge qubits) */
+  /** All nodes in the lattice */
   nodes: RHGNode[];
 
-  /** All edges in the lattice (face-edge connections only) */
+  /** All edges in the lattice */
   edges: RHGEdge[];
 
-  /** Lattice dimensions (number of cubic cells in each direction) */
+  /** Lattice dimensions (physical size) */
   size: {
+    /** Physical X dimension */
     Lx: number;
+    /** Physical Y dimension */
     Ly: number;
+    /** Physical Z dimension (number of layers) */
     Lz: number;
   };
 }
 
 /**
  * RHG generation parameters.
+ * Lx, Ly, Lz directly specify the physical size of the lattice.
  */
 export interface RHGParams {
-  /** Number of cells in X direction (must be >= 1) */
+  /** Number of data qubits in X direction (must be >= 1) */
   Lx: number;
 
-  /** Number of cells in Y direction (must be >= 1) */
+  /** Number of data qubits in Y direction (must be >= 1) */
   Ly: number;
 
-  /** Number of cells in Z direction (must be >= 1) */
+  /** Number of z-layers (must be >= 1) */
   Lz: number;
+
+  /**
+   * Boundary specification for the four sides.
+   * Defaults to XXZZ (X on top/bottom, Z on left/right).
+   */
+  boundary?: RHGBoundary;
 
   /**
    * Origin offset applied to all node positions.
@@ -115,18 +162,19 @@ export type Tiling3DPatternId = "cubic" | "rhg";
 
 /**
  * 3D tiling generation parameters.
+ * Both Cubic and RHG use Lx, Ly, Lz to specify physical dimensions.
  */
 export interface Tiling3DParams {
   /** Pattern ID */
   patternId: Tiling3DPatternId;
 
-  /** Number of cells in X direction */
+  /** Number of data qubits (for RHG) or grid size (for cubic) in X direction */
   Lx: number;
 
-  /** Number of cells in Y direction */
+  /** Number of data qubits (for RHG) or grid size (for cubic) in Y direction */
   Ly: number;
 
-  /** Number of cells in Z direction */
+  /** Number of z-layers */
   Lz: number;
 
   /** Origin X coordinate */
@@ -137,6 +185,9 @@ export interface Tiling3DParams {
 
   /** Origin Z coordinate */
   originZ: number;
+
+  /** Boundary preset for RHG (only used when patternId is "rhg") */
+  boundaryPreset: RHGBoundaryPresetId;
 }
 
 /**
@@ -144,10 +195,11 @@ export interface Tiling3DParams {
  */
 export const DEFAULT_TILING_3D_PARAMS: Tiling3DParams = {
   patternId: "cubic",
-  Lx: 2,
-  Ly: 2,
-  Lz: 2,
+  Lx: 3,
+  Ly: 3,
+  Lz: 3,
   originX: 0,
   originY: 0,
   originZ: 0,
+  boundaryPreset: "XXZZ",
 };
