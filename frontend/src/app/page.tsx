@@ -2,6 +2,7 @@
 
 import { GraphCanvas2D } from "@/components/canvas/GraphCanvas2D";
 import { GraphCanvas3D } from "@/components/canvas/GraphCanvas3D";
+import { Tiling3DDialog } from "@/components/dialogs/Tiling3DDialog";
 import { PropertyPanel } from "@/components/panels/PropertyPanel";
 import { ScheduleEditor } from "@/components/schedule";
 import { TimelineView } from "@/components/timeline/TimelineView";
@@ -35,6 +36,9 @@ export default function Home(): ReactNode {
 
       {/* Schedule Editor (expandable panel) */}
       <ScheduleEditor />
+
+      {/* 3D Tiling Dialog (modal) */}
+      <Tiling3DDialog />
 
       {/* Timeline */}
       <footer className="h-28 border-t border-gray-200 bg-white">

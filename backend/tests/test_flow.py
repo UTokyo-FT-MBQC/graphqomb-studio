@@ -48,7 +48,7 @@ async def test_compute_zflow() -> None:
         response = await client.post("/api/compute-zflow", json=create_project_with_xflow())
 
     assert response.status_code == 200
-    data = response.json()
+    data: dict[str, list[str]] = response.json()
 
     # Should return a dict with node IDs as keys
     assert isinstance(data, dict)
@@ -64,7 +64,7 @@ async def test_compute_zflow() -> None:
 
 async def test_compute_zflow_empty_xflow() -> None:
     """Test computing zflow with empty xflow."""
-    project = {
+    project: dict[str, Any] = {
         "name": "Empty Flow",
         "nodes": [
             {
@@ -100,7 +100,7 @@ async def test_compute_zflow_empty_xflow() -> None:
 
 async def test_compute_zflow_empty_project() -> None:
     """Test computing zflow for empty project."""
-    project = {
+    project: dict[str, Any] = {
         "name": "Empty",
         "nodes": [],
         "edges": [],

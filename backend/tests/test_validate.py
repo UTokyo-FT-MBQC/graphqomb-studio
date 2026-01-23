@@ -46,7 +46,7 @@ async def test_validate_valid_project() -> None:
 
 async def test_validate_empty_project() -> None:
     """Test validation of an empty project."""
-    project = {
+    project: dict[str, Any] = {
         "name": "Empty",
         "nodes": [],
         "edges": [],
@@ -68,7 +68,7 @@ async def test_validate_empty_project() -> None:
 async def test_validate_missing_meas_basis() -> None:
     """Test validation fails when intermediate node lacks measBasis."""
     # This should fail at the DTO level (Pydantic validation)
-    project = {
+    project: dict[str, Any] = {
         "name": "Test",
         "nodes": [
             {
@@ -94,7 +94,7 @@ async def test_validate_missing_meas_basis() -> None:
 
 async def test_validate_invalid_edge_id() -> None:
     """Test validation fails with non-normalized edge ID."""
-    project = {
+    project: dict[str, Any] = {
         "name": "Test",
         "nodes": [
             {

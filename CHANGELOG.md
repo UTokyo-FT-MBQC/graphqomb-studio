@@ -48,6 +48,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 2D patterns respect current Z slice when placing nodes (baseZ support)
   - Duplicate node/edge detection when applying overlapping tiling regions
 
+- **3D Tiling Feature**
+  - New `types/rhg.ts` with RHG lattice type definitions (RHGNode, RHGEdge, RHGLattice, Tiling3DParams)
+  - `lib/tiling/rhg-generator.ts` with RHG lattice and 3D cubic grid generators
+  - RHG (Raussendorf-Harrington-Goyal) lattice for fault-tolerant MBQC using parity-based rotated surface code layout
+  - Parity-based node placement with XXZZ boundary conditions (6 allowed parities out of 8)
+  - Node roles: data qubits (4 parities), ancilla_x_check (parity 0,1,0), ancilla_z_check (parity 1,0,1)
+  - Edge connectivity based on Manhattan distance = 1 between allowed parity nodes
+  - RHG parameters: dx (distance X), dy (distance Y), rounds (error correction rounds)
+  - Physical dimensions: Lx = 2*dx - 1, Ly = 2*dy - 1, Lz = 2*rounds + 1
+  - Simple 3D cubic grid generator with nodes at vertices connected to 6 neighbors
+  - Node/edge count estimation functions for preview display
+  - `Tiling3DDialog` component for dialog-based 3D pattern configuration
+  - Pattern selection with pattern-specific inputs: Cubic (Lx, Ly, Lz) or RHG (dx, dy, rounds)
+  - Physical size display for RHG patterns showing computed Lx x Ly x Lz dimensions
+  - Origin offset support for positioning generated structures
+  - Real-time node/edge count estimation with performance limit warnings
+  - Extended `tilingStore` with 3D tiling state (params3D, preview3D, generatePreview3D, applyTiling3D)
+  - Extended `uiStore` with 3D tiling dialog state (is3DTilingDialogOpen, open3DTilingDialog, close3DTilingDialog)
+  - "3D Tiling" button in toolbar to open configuration dialog
+
 - **Manual Schedule Editor (Phase 1)** (#9)
   - New `scheduleEditorStore` for managing draft schedule state with lock/unlock functionality
   - Expandable `ScheduleEditor` panel between canvas and timeline footer
