@@ -34,6 +34,9 @@ interface UIState {
   // Node label display
   showNodeLabels: boolean;
 
+  // FTQC modal
+  isFTQCModalOpen: boolean;
+
   // Actions
   setViewMode: (mode: ViewMode) => void;
   setZSlice: (z: number) => void;
@@ -63,6 +66,10 @@ interface UIState {
   // Node label display actions
   setShowNodeLabels: (show: boolean) => void;
   toggleNodeLabels: () => void;
+
+  // FTQC modal actions
+  openFTQCModal: () => void;
+  closeFTQCModal: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -88,6 +95,9 @@ export const useUIStore = create<UIState>((set) => ({
 
   // Node label display (default: show labels)
   showNodeLabels: true,
+
+  // FTQC modal (default: closed)
+  isFTQCModalOpen: false,
 
   setViewMode: (mode) => set({ viewMode: mode }),
 
@@ -133,4 +143,9 @@ export const useUIStore = create<UIState>((set) => ({
   setShowNodeLabels: (show) => set({ showNodeLabels: show }),
 
   toggleNodeLabels: () => set((state) => ({ showNodeLabels: !state.showNodeLabels })),
+
+  // FTQC modal actions
+  openFTQCModal: () => set({ isFTQCModalOpen: true }),
+
+  closeFTQCModal: () => set({ isFTQCModalOpen: false }),
 }));

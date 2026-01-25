@@ -117,6 +117,15 @@ export const ResolvedFlowSchema = z
   })
   .strict();
 
+// === FTQC Schema ===
+
+export const FTQCDefinitionSchema = z
+  .object({
+    parityCheckGroup: z.array(z.array(z.string())),
+    logicalObservableGroup: z.record(z.string(), z.array(z.string())),
+  })
+  .strict();
+
 // === Schedule Schema ===
 
 export const TimeSliceSchema = z
@@ -146,6 +155,7 @@ export const ProjectSchema = z
     nodes: z.array(GraphNodeSchema),
     edges: z.array(GraphEdgeSchema),
     flow: FlowDefinitionSchema,
+    ftqc: FTQCDefinitionSchema.optional(),
     schedule: ScheduleResultSchema.optional(),
   })
   .strict();

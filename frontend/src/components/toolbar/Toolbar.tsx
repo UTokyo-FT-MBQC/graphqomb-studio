@@ -8,6 +8,7 @@
 
 "use client";
 
+import { FTQCModal } from "@/components/ftqc/FTQCModal";
 import { EdgeCreationToolbar } from "@/components/toolbar/EdgeCreationToolbar";
 import { FileMenu } from "@/components/toolbar/FileMenu";
 import { GhostRangeSlider } from "@/components/toolbar/GhostRangeSlider";
@@ -36,6 +37,7 @@ export function Toolbar(): React.ReactNode {
   const setSchedule = useProjectStore((state) => state.setSchedule);
 
   const viewMode = useUIStore((state) => state.viewMode);
+  const openFTQCModal = useUIStore((state) => state.openFTQCModal);
 
   // Calculate axis ranges from nodes
   const zRange = useMemo(() => getZRange(project.nodes), [project.nodes]);
@@ -175,6 +177,19 @@ export function Toolbar(): React.ReactNode {
           {isScheduling ? "Scheduling..." : "Schedule"}
         </button>
 
+        <button
+          type="button"
+          onClick={openFTQCModal}
+          disabled={!hasNodes}
+          className={`px-3 py-1.5 text-sm rounded transition-colors ${
+            !hasNodes
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-purple-100 hover:bg-purple-200 text-purple-700"
+          }`}
+        >
+          FTQC
+        </button>
+
         {/* Validation Success Indicator */}
         {validationResult?.valid === true && (
           <span className="text-sm text-green-600 font-medium">Valid</span>
@@ -235,6 +250,9 @@ export function Toolbar(): React.ReactNode {
           </>
         )}
       </ToolbarRow>
+
+      {/* FTQC Modal */}
+      <FTQCModal />
     </div>
   );
 }
