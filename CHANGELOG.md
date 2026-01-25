@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
+- **2D Viewer Node Styling Enhancement**
+  - Redesigned 2D nodes to match 3D viewer's sphere-like appearance
+  - Radial gradient backgrounds simulating 3D lighting/shading
+  - Saturated role-based colors (green-500, blue-500, gray-500) instead of pale backgrounds
+  - Emissive-like glow effects for selection states (white glow when selected, purple for edge source)
+  - Node labels repositioned above nodes (matching 3D viewer layout)
+  - Scale animation on edge creation source node (1.2x scale)
+  - Updated `GhostNode` with matching sphere styling (lighter colors, dashed border)
+  - Drop shadow effects for depth perception
+
 - **3D Viewer Editing Enhancements**
   - Node drag movement in 3D edit mode (drag nodes on the working plane)
   - Keyboard deletion support (Backspace/Delete keys) for selected nodes/edges
