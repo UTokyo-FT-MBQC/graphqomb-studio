@@ -119,7 +119,14 @@ export const useProjectStore = create<ProjectState>()(
           if (state.project.ftqc !== undefined) {
             const newParityCheckGroup = state.project.ftqc.parityCheckGroup
               .map((group) => group.filter((nodeId) => nodeId !== id))
-              .filter((group) => group.length > 0);
+              .filter((group, index) => {
+                // Only remove groups that became empty due to this deletion
+                // Keep empty placeholder groups that didn't contain the deleted node
+                const originalGroup = state.project.ftqc?.parityCheckGroup[index];
+                if (originalGroup === undefined) return true;
+                const containedDeletedNode = originalGroup.includes(id);
+                return group.length > 0 || !containedDeletedNode;
+              });
 
             const newLogicalObservableGroup: Record<string, string[]> = {};
             for (const [key, targets] of Object.entries(
