@@ -12,7 +12,7 @@ def create_valid_schedule_project() -> tuple[dict[str, Any], dict[str, Any]]:
     Returns a linear chain: n0 (input) -> n1 (intermediate) -> n2 (output)
     with a valid schedule that respects all constraints.
     """
-    project = {
+    project: dict[str, Any] = {
         "name": "Test Project",
         "nodes": [
             {
@@ -46,7 +46,7 @@ def create_valid_schedule_project() -> tuple[dict[str, Any], dict[str, Any]]:
     # Measure n0 at 1, n1 at 2 (n0 must be measured before n1 due to flow)
     # Entangle edges after their nodes are prepared but BEFORE measurement
     # Note: entangle time must be strictly less than measure time for both endpoints
-    schedule = {
+    schedule: dict[str, Any] = {
         "prepareTime": {"n1": 0, "n2": 1},
         "measureTime": {"n0": 1, "n1": 2},
         "entangleTime": {"n0-n1": 0, "n1-n2": 1},

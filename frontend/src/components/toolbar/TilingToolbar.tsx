@@ -2,9 +2,10 @@
  * Tiling Toolbar Component
  *
  * UI for tiling feature:
- * - Toggle tiling mode
+ * - Toggle 2D tiling mode (drag-based)
  * - Select pattern from presets
  * - Apply/Cancel preview
+ * - Open 3D tiling dialog (dialog-based)
  */
 
 "use client";
@@ -16,6 +17,7 @@ import { useCallback, useMemo } from "react";
 export function TilingToolbar(): React.ReactNode {
   const isTilingMode = useUIStore((state) => state.isTilingMode);
   const setTilingMode = useUIStore((state) => state.setTilingMode);
+  const open3DTilingDialog = useUIStore((state) => state.open3DTilingDialog);
 
   const selectedPatternId = useTilingStore((state) => state.selectedPatternId);
   const pattern = useTilingStore((state) => state.pattern);
@@ -57,11 +59,15 @@ export function TilingToolbar(): React.ReactNode {
     clearPreview();
   }, [clearPreview]);
 
+  const handleOpen3DDialog = useCallback(() => {
+    open3DTilingDialog();
+  }, [open3DTilingDialog]);
+
   const hasPreview = previewGraph !== null && previewGraph.nodes.length > 0;
 
   return (
     <div className="flex items-center gap-2">
-      {/* Tiling Mode Toggle */}
+      {/* 2D Tiling Mode Toggle */}
       <button
         type="button"
         onClick={handleToggleTilingMode}
@@ -70,11 +76,22 @@ export function TilingToolbar(): React.ReactNode {
             ? "bg-purple-500 text-white hover:bg-purple-600"
             : "bg-purple-100 hover:bg-purple-200 text-purple-700"
         }`}
+        title="2D tiling with drag interaction"
       >
-        {isTilingMode ? "Exit Tiling" : "Tiling"}
+        {isTilingMode ? "Exit Tiling" : "2D Tiling"}
       </button>
 
-      {/* Pattern Selection - only visible in tiling mode */}
+      {/* 3D Tiling Dialog Button */}
+      <button
+        type="button"
+        onClick={handleOpen3DDialog}
+        className="px-3 py-1.5 text-sm bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded transition-colors"
+        title="3D tiling with dialog input"
+      >
+        3D Tiling
+      </button>
+
+      {/* Pattern Selection - only visible in 2D tiling mode */}
       {isTilingMode && (
         <>
           <select

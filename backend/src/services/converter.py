@@ -5,6 +5,8 @@ library objects (DRY principle - no reimplementation of graphqomb logic).
 """
 
 import math
+from collections.abc import Sequence
+from typing import Any
 
 from graphqomb.common import Axis, AxisMeasBasis, Plane, PlannerMeasBasis, Sign
 from graphqomb.graphstate import GraphState
@@ -118,7 +120,7 @@ def schedule_to_dto(
     prepare_time: dict[int, int | None],
     measure_time: dict[int, int | None],
     entangle_time: dict[tuple[int, int], int | None],
-    timeline: list[object],  # TimeSlice from graphqomb
+    timeline: Sequence[Any],  # TimeSlice from graphqomb
     reverse_map: dict[int, str],
 ) -> ScheduleResultDTO:
     """Convert graphqomb schedule result to DTO.
@@ -156,11 +158,11 @@ def schedule_to_dto(
     timeline_dto: list[TimeSliceDTO] = []
     for i, ts in enumerate(timeline):
         # TimeSlice has: prepare_nodes, entangle_edges, measure_nodes
-        prepare_nodes = [reverse_map[n] for n in ts.prepare_nodes if n in reverse_map]  # type: ignore[attr-defined]
-        measure_nodes = [reverse_map[n] for n in ts.measure_nodes if n in reverse_map]  # type: ignore[attr-defined]
+        prepare_nodes = [reverse_map[n] for n in ts.prepare_nodes if n in reverse_map]
+        measure_nodes = [reverse_map[n] for n in ts.measure_nodes if n in reverse_map]
         entangle_edges = [
             normalize_edge_id(reverse_map[e[0]], reverse_map[e[1]])
-            for e in ts.entangle_edges  # type: ignore[attr-defined]
+            for e in ts.entangle_edges
             if e[0] in reverse_map and e[1] in reverse_map
         ]
 

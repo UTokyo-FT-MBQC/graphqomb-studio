@@ -7,7 +7,7 @@ dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "pydantic>=2.10.0",
-    "graphqomb>=0.1.0",
+    "graphqomb>=0.2.0",
 ]
 
 [project.optional-dependencies]
@@ -90,19 +90,17 @@ docstring-code-format = true
 
 [tool.mypy]
 strict = true
-ignore_missing_imports = true
 files = ["src", "tests"]
+# FastAPI decorators are untyped
+disallow_untyped_decorators = false
 
 [tool.pyright]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 include = ["src", "tests"]
+venvPath = "."
+venv = ".venv"
 reportMissingTypeStubs = false
-reportUnknownArgumentType = "information"
-reportUnknownLambdaType = "information"
-reportUnknownMemberType = "information"
-reportUnknownParameterType = "information"
-reportUnknownVariableType = "information"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

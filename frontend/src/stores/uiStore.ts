@@ -28,6 +28,9 @@ interface UIState {
   // Tiling mode
   isTilingMode: boolean;
 
+  // 3D Tiling dialog
+  is3DTilingDialogOpen: boolean;
+
   // Node label display
   showNodeLabels: boolean;
 
@@ -56,6 +59,10 @@ interface UIState {
   setTilingMode: (enabled: boolean) => void;
   toggleTilingMode: () => void;
 
+  // 3D Tiling dialog actions
+  open3DTilingDialog: () => void;
+  close3DTilingDialog: () => void;
+
   // Node label display actions
   setShowNodeLabels: (show: boolean) => void;
   toggleNodeLabels: () => void;
@@ -82,6 +89,9 @@ export const useUIStore = create<UIState>((set) => ({
 
   // Tiling mode default
   isTilingMode: false,
+
+  // 3D Tiling dialog default
+  is3DTilingDialogOpen: false,
 
   // Node label display (default: show labels)
   showNodeLabels: true,
@@ -123,6 +133,11 @@ export const useUIStore = create<UIState>((set) => ({
   setTilingMode: (enabled) => set({ isTilingMode: enabled }),
 
   toggleTilingMode: () => set((state) => ({ isTilingMode: !state.isTilingMode })),
+
+  // 3D Tiling dialog actions
+  open3DTilingDialog: () => set({ is3DTilingDialogOpen: true }),
+
+  close3DTilingDialog: () => set({ is3DTilingDialogOpen: false }),
 
   // Node label display actions
   setShowNodeLabels: (show) => set({ showNodeLabels: show }),

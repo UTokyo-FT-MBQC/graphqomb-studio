@@ -1,9 +1,10 @@
 /**
  * Ghost Node Component (React Flow Custom Node)
  *
- * Renders semi-transparent nodes from adjacent Z levels (z±1).
+ * Renders semi-transparent nodes from adjacent Z levels (z±1)
+ * with 3D-like sphere appearance matching CustomNode styling.
  * - Semi-transparent appearance (enhanced in edge creation mode)
- * - Dashed border
+ * - Dashed outline effect
  * - Z-level label
  * - Not draggable or selectable
  * - Has handles for edge connections
@@ -27,27 +28,32 @@ interface GhostNodeProps {
   data: GhostNodeData;
 }
 
-const ghostColors: Record<NodeRole, { bg: string; border: string; text: string }> = {
-  input: {
-    bg: "bg-green-50",
-    border: "border-green-300",
-    text: "text-green-400",
-  },
-  output: {
-    bg: "bg-blue-50",
-    border: "border-blue-300",
-    text: "text-blue-400",
-  },
-  intermediate: {
-    bg: "bg-gray-50",
-    border: "border-gray-300",
-    text: "text-gray-400",
-  },
-};
+// Ghost node colors (lighter versions for transparency effect)
+const ghostStyles: Record<NodeRole, { baseColor: string; lightColor: string; darkColor: string }> =
+  {
+    input: {
+      baseColor: "#86efac", // green-300
+      lightColor: "#bbf7d0", // green-200
+      darkColor: "#4ade80", // green-400
+    },
+    output: {
+      baseColor: "#93c5fd", // blue-300
+      lightColor: "#bfdbfe", // blue-200
+      darkColor: "#60a5fa", // blue-400
+    },
+    intermediate: {
+      baseColor: "#d1d5db", // gray-300
+      lightColor: "#e5e7eb", // gray-200
+      darkColor: "#9ca3af", // gray-400
+    },
+  };
+
+// Node size (same as CustomNode)
+const NODE_SIZE = 32;
 
 function GhostNodeComponent({ data }: GhostNodeProps): React.ReactNode {
   const { node } = data;
-  const colors = ghostColors[node.role];
+  const style = ghostStyles[node.role];
   const nodeZ = node.coordinate.z;
 
   // Node label visibility
@@ -60,40 +66,58 @@ function GhostNodeComponent({ data }: GhostNodeProps): React.ReactNode {
   const isSourceNode = sourceNodeId === node.id;
   const showEnhanced = isEdgeCreationMode;
 
+  // Determine opacity and glow based on state
+  const opacity = isSourceNode ? 0.9 : showEnhanced ? 0.7 : 0.5;
+  const glowEffect = isSourceNode ? "0 0 12px 3px rgba(168, 85, 247, 0.6)" : "none";
+
   return (
-    <>
+    <div className="relative flex flex-col items-center">
+      {/* Node label (positioned above the node) */}
+      {showNodeLabels && (
+        <div
+          className="absolute text-xs font-medium text-gray-400 whitespace-nowrap text-center"
+          style={{
+            top: -28,
+            left: "50%",
+            transform: "translateX(-50%)",
+          }}
+        >
+          <div>{node.id}</div>
+          <div className="text-[10px] opacity-75">z={nodeZ}</div>
+        </div>
+      )}
+
+      {/* Connection handles */}
       <Handle
         type="target"
         position={Position.Top}
-        className={`!w-2 !h-2 ${
+        className={`!w-2 !h-2 !border-0 !-top-1 ${
           showEnhanced ? "!bg-purple-400 !opacity-80 !w-3 !h-3" : "!bg-gray-300 !opacity-50"
         }`}
       />
+
+      {/* Sphere-like ghost node with dashed outline */}
       <div
-        className={`
-          px-3 py-2 rounded-full border-2 border-dashed min-w-[60px] text-center
-          ${colors.bg} ${colors.border} ${colors.text}
-          ${isSourceNode ? "opacity-90 ring-2 ring-purple-400 ring-offset-1" : showEnhanced ? "opacity-70" : "opacity-50"}
-          ${showEnhanced ? "cursor-pointer hover:opacity-90" : ""}
-          transition-opacity
-        `}
+        className={`rounded-full transition-all duration-150 ${showEnhanced ? "cursor-pointer" : ""}`}
+        style={{
+          width: NODE_SIZE,
+          height: NODE_SIZE,
+          opacity,
+          background: `radial-gradient(circle at 30% 30%, ${style.lightColor}, ${style.baseColor} 50%, ${style.darkColor} 100%)`,
+          boxShadow: glowEffect,
+          border: "2px dashed rgba(156, 163, 175, 0.6)",
+        }}
         title={`${node.id} (z=${nodeZ})${isEdgeCreationMode ? " - Click to connect" : ""}`}
-      >
-        {showNodeLabels && (
-          <>
-            <div className="text-sm font-medium">{node.id}</div>
-            <div className="text-xs opacity-75">z={nodeZ}</div>
-          </>
-        )}
-      </div>
+      />
+
       <Handle
         type="source"
         position={Position.Bottom}
-        className={`!w-2 !h-2 ${
+        className={`!w-2 !h-2 !border-0 !-bottom-1 ${
           showEnhanced ? "!bg-purple-400 !opacity-80 !w-3 !h-3" : "!bg-gray-300 !opacity-50"
         }`}
       />
-    </>
+    </div>
   );
 }
 
