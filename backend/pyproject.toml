@@ -1,6 +1,6 @@
 [project]
 name = "graphqomb-studio-backend"
-version = "0.1.0"
+version = "0.3.0"
 description = "Backend API for GraphQOMB Studio"
 requires-python = ">=3.12"
 dependencies = [
