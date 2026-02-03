@@ -11,6 +11,7 @@
 
 "use client";
 
+import { FlowOverlay3D } from "@/components/canvas/FlowOverlay3D";
 import { WorkingPlaneGrid } from "@/components/canvas/WorkingPlaneGrid";
 import { useFTQCVisualization } from "@/hooks/useFTQCVisualization";
 import { useWorkingPlane } from "@/hooks/useWorkingPlane";
@@ -405,6 +406,9 @@ function Scene(): React.ReactNode {
           onClick={() => selectEdge(edge.id)}
         />
       ))}
+
+      {/* Flow arrows overlay */}
+      <FlowOverlay3D />
 
       {/* Invisible plane for drag detection */}
       {dragState.isDragging && (

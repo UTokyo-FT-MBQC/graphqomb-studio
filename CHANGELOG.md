@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
+- **3D Flow Visualization**
+  - X-Flow (red) and Z-Flow (blue) arrows now displayed in 3D viewer
+  - Dashed lines with cone arrowheads matching 2D viewer style
+  - Self-loop arrows for nodes that flow to themselves (elliptical loop above node)
+  - Respects showXFlow/showZFlow toggles from uiStore
+  - Supports "auto" Z-Flow mode with resolved flow from backend
+  - New `FlowOverlay3D` component integrated into `GraphCanvas3D`
 - **FTQC Configuration Editor**
   - New `FTQCDefinition` type for fault-tolerant quantum computing configuration
   - `parityCheckGroup`: List of node ID groups for parity check (error detection)
