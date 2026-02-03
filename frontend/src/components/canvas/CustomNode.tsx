@@ -14,6 +14,8 @@
 
 "use client";
 
+import { useFTQCVisualization } from "@/hooks/useFTQCVisualization";
+import { createGlowEffect } from "@/lib/ftqcColors";
 import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
 import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -85,14 +87,27 @@ function CustomNodeComponent({ data, selected }: CustomNodeProps): React.ReactNo
   const isScheduleHighlighted =
     isEditorOpen && (hoveredNodeId === node.id || selectedEntryId === node.id);
 
-  // Determine glow effect based on state priority
+  // FTQC visualization state
+  const { highlights: ftqcHighlights } = useFTQCVisualization();
+  const ftqcHighlight = ftqcHighlights.get(node.id);
+
+  // Determine glow effect based on state priority (lowest to highest):
+  // 1. FTQC group highlight (new, lowest priority)
+  // 2. Selected node
+  // 3. Edge source node
+  // 4. Schedule highlight (highest priority)
   let glowEffect = "none";
+  if (ftqcHighlight !== undefined) {
+    glowEffect = createGlowEffect(ftqcHighlight.colorRgb);
+  }
+  if (selected === true) {
+    glowEffect = selectionGlows.selected;
+  }
+  if (isSourceNode) {
+    glowEffect = selectionGlows.edgeSource;
+  }
   if (isScheduleHighlighted) {
     glowEffect = selectionGlows.scheduleHighlight;
-  } else if (isSourceNode) {
-    glowEffect = selectionGlows.edgeSource;
-  } else if (selected === true) {
-    glowEffect = selectionGlows.selected;
   }
 
   // Scale up slightly when source node in edge creation mode (matching 3D behavior)

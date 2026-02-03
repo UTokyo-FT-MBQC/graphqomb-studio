@@ -12,7 +12,9 @@
 "use client";
 
 import { WorkingPlaneGrid } from "@/components/canvas/WorkingPlaneGrid";
+import { useFTQCVisualization } from "@/hooks/useFTQCVisualization";
 import { useWorkingPlane } from "@/hooks/useWorkingPlane";
+import type { FTQCHighlight } from "@/lib/ftqcColors";
 import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
@@ -63,6 +65,7 @@ interface Node3DProps {
   isSourceNode: boolean;
   isEdgeCreationMode: boolean;
   isDragging: boolean;
+  ftqcHighlight: FTQCHighlight | undefined;
   onClick: () => void;
   onDragStart: ((nodeId: string, event: ThreeEvent<PointerEvent>) => void) | undefined;
 }
@@ -73,6 +76,7 @@ function Node3DComponent({
   isSourceNode,
   isEdgeCreationMode,
   isDragging,
+  ftqcHighlight,
   onClick,
   onDragStart,
 }: Node3DProps): React.ReactNode {
@@ -82,15 +86,30 @@ function Node3DComponent({
   // Node label visibility
   const showNodeLabels = useUIStore((s) => s.showNodeLabels);
 
-  // Determine emissive effect based on selection state
-  const emissiveColor = isDragging
-    ? "#f97316" // orange for dragging
-    : isSourceNode
-      ? "#a855f7"
-      : isSelected
-        ? SELECTED_EMISSIVE
-        : undefined;
-  const emissiveIntensity = isDragging ? 0.5 : isSourceNode ? 0.5 : isSelected ? 0.3 : 0;
+  // Determine emissive effect based on state priority (lowest to highest):
+  // 1. FTQC group highlight (lowest priority)
+  // 2. Selected node
+  // 3. Edge source node
+  // 4. Dragging (highest priority)
+  let emissiveColor: string | undefined;
+  let emissiveIntensity = 0;
+
+  if (ftqcHighlight !== undefined) {
+    emissiveColor = ftqcHighlight.colorHex;
+    emissiveIntensity = 0.4;
+  }
+  if (isSelected) {
+    emissiveColor = SELECTED_EMISSIVE;
+    emissiveIntensity = 0.3;
+  }
+  if (isSourceNode) {
+    emissiveColor = "#a855f7";
+    emissiveIntensity = 0.5;
+  }
+  if (isDragging) {
+    emissiveColor = "#f97316"; // orange for dragging
+    emissiveIntensity = 0.5;
+  }
 
   // Handle pointer down for drag initiation
   const handlePointerDown = useCallback(
@@ -193,6 +212,9 @@ function Scene(): React.ReactNode {
   const sourceNodeId = useEdgeCreationStore((state) => state.sourceNodeId);
   const setSourceNode = useEdgeCreationStore((state) => state.setSourceNode);
   const clearSourceNode = useEdgeCreationStore((state) => state.clearSourceNode);
+
+  // FTQC visualization state
+  const { highlights: ftqcHighlights } = useFTQCVisualization();
 
   // Working plane utilities
   const { threeToGraph, threePlane } = useWorkingPlane(workingPlane, workingPlaneOffset);
@@ -367,6 +389,7 @@ function Scene(): React.ReactNode {
           isSourceNode={node.id === sourceNodeId}
           isEdgeCreationMode={isEdgeCreationMode}
           isDragging={dragState.draggedNodeId === node.id}
+          ftqcHighlight={ftqcHighlights.get(node.id)}
           onClick={() => handleNodeClick(node.id)}
           onDragStart={is3DEditMode ? handleDragStart : undefined}
         />

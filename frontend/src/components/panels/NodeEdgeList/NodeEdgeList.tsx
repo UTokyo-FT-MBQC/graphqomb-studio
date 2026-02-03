@@ -10,9 +10,10 @@
 import { useProjectStore } from "@/stores/projectStore";
 import { useState } from "react";
 import { EdgeList } from "./EdgeList";
+import { FTQCList } from "./FTQCList";
 import { NodeList } from "./NodeList";
 
-type Tab = "nodes" | "edges";
+type Tab = "nodes" | "edges" | "ftqc";
 
 interface NodeEdgeListProps {
   defaultExpanded?: boolean;
@@ -24,6 +25,9 @@ export function NodeEdgeList({ defaultExpanded = true }: NodeEdgeListProps): Rea
 
   const nodeCount = useProjectStore((state) => state.project.nodes.length);
   const edgeCount = useProjectStore((state) => state.project.edges.length);
+  const ftqc = useProjectStore((state) => state.project.ftqc);
+  const ftqcCount =
+    (ftqc?.parityCheckGroup.length ?? 0) + Object.keys(ftqc?.logicalObservableGroup ?? {}).length;
 
   return (
     <div className="border-b border-gray-200">
@@ -55,10 +59,19 @@ export function NodeEdgeList({ defaultExpanded = true }: NodeEdgeListProps): Rea
             >
               Edges
             </TabButton>
+            <TabButton
+              active={activeTab === "ftqc"}
+              onClick={() => setActiveTab("ftqc")}
+              count={ftqcCount}
+            >
+              FTQC
+            </TabButton>
           </div>
 
           {/* Content */}
-          {activeTab === "nodes" ? <NodeList /> : <EdgeList />}
+          {activeTab === "nodes" && <NodeList />}
+          {activeTab === "edges" && <EdgeList />}
+          {activeTab === "ftqc" && <FTQCList />}
         </div>
       )}
     </div>

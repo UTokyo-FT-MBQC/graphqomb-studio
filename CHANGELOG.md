@@ -21,6 +21,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - FTQC data included in JSON export/import
   - Node deletion automatically removes node references from FTQC configuration
   - UI state management for modal in `uiStore`
+- **FTQC Group Visualization**
+  - Parity Check Groups and Logical Observables can be visualized on the canvas with colored highlights
+  - New "FTQC" tab in Node/Edge List panel showing all groups with node ID previews
+  - `FTQCList` component displays groups with click-to-select for filtering
+  - Parity Groups use warm colors (orange, amber, yellow, lime, cyan)
+  - Logical Observables use cool colors (purple, pink, indigo, violet, fuchsia)
+  - Click group to filter visualization, "Show All" button to reset filter
+  - Node IDs displayed as preview text under each group name
+  - 2D canvas: Glow effect (box-shadow) for highlighted nodes
+  - 3D canvas: Emissive effect for highlighted nodes
+  - New `useFTQCVisualization` hook computes node highlights based on UI state and FTQC data
+  - New `ftqcColors.ts` utility with color palette definitions and helper functions
+  - Extended `uiStore` with `ftqcVisualization` state (showParityGroups, selectedParityGroupIndex, showLogicalObservables, selectedObservableKey)
+  - Highlight priority: FTQC highlight (lowest) < Selection < Edge Source < Schedule highlight (highest)
 - **2D Viewer Node Styling Enhancement**
   - Redesigned 2D nodes to match 3D viewer's sphere-like appearance
   - Radial gradient backgrounds simulating 3D lighting/shading
