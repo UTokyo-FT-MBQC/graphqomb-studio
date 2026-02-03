@@ -36,7 +36,7 @@ export function PropertyPanel(): React.ReactNode {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Node/Edge List (always visible at top) */}
+      {/* Elements panel (always visible at top) */}
       <NodeEdgeList />
 
       {/* Properties Section */}

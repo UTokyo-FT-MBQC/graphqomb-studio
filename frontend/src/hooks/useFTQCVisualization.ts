@@ -3,12 +3,15 @@
  *
  * Computes which nodes should be highlighted based on UI state and FTQC data.
  * Returns a Map<nodeId, FTQCHighlight> for efficient lookup in canvas components.
+ *
+ * IMPORTANT: This hook should only be called once at the canvas level, not per-node.
+ * Use FTQCHighlightContext to pass highlights to individual node components.
  */
 
 import { type FTQCHighlight, getObservableColor, getParityGroupColor } from "@/lib/ftqcColors";
 import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 export interface FTQCVisualizationResult {
   highlights: Map<string, FTQCHighlight>;
@@ -20,6 +23,34 @@ export interface FTQCVisualizationResult {
 export function useFTQCVisualization(): FTQCVisualizationResult {
   const ftqc = useProjectStore((state) => state.project.ftqc);
   const ftqcVisualization = useUIStore((state) => state.ftqcVisualization);
+  const setSelectedParityGroupIndex = useUIStore((state) => state.setSelectedParityGroupIndex);
+  const setSelectedObservableKey = useUIStore((state) => state.setSelectedObservableKey);
+
+  const selectedParityGroupIndex = ftqcVisualization.selectedParityGroupIndex;
+  const selectedObservableKey = ftqcVisualization.selectedObservableKey;
+
+  // Validate and reset selection when underlying data changes
+  // This prevents stale selection indices after group deletion/reordering
+  useEffect(() => {
+    const parityGroupCount = ftqc?.parityCheckGroup.length ?? 0;
+    const observableKeys = Object.keys(ftqc?.logicalObservableGroup ?? {});
+
+    // Reset parity group selection if index is out of bounds
+    if (selectedParityGroupIndex !== null && selectedParityGroupIndex >= parityGroupCount) {
+      setSelectedParityGroupIndex(null);
+    }
+
+    // Reset observable selection if key no longer exists
+    if (selectedObservableKey !== null && !observableKeys.includes(selectedObservableKey)) {
+      setSelectedObservableKey(null);
+    }
+  }, [
+    ftqc,
+    selectedParityGroupIndex,
+    selectedObservableKey,
+    setSelectedParityGroupIndex,
+    setSelectedObservableKey,
+  ]);
 
   return useMemo(() => {
     const highlights = new Map<string, FTQCHighlight>();

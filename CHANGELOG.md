@@ -35,6 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New `ftqcColors.ts` utility with color palette definitions and helper functions
   - Extended `uiStore` with `ftqcVisualization` state (showParityGroups, selectedParityGroupIndex, showLogicalObservables, selectedObservableKey)
   - Highlight priority: FTQC highlight (lowest) < Selection < Edge Source < Schedule highlight (highest)
+  - New `FTQCHighlightContext` for efficient highlight map sharing (O(1) per-node lookup instead of O(N) recomputation)
+
+#### Fixed
+
+- **FTQC Visualization**
+  - Fixed stale group selection after deletion/reordering (selection auto-resets when index becomes invalid)
+  - Fixed O(N²) performance issue where FTQC highlights were recomputed per-node; now computed once at canvas level
 - **2D Viewer Node Styling Enhancement**
   - Redesigned 2D nodes to match 3D viewer's sphere-like appearance
   - Radial gradient backgrounds simulating 3D lighting/shading

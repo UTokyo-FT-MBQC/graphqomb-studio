@@ -14,7 +14,7 @@
 
 "use client";
 
-import { useFTQCVisualization } from "@/hooks/useFTQCVisualization";
+import { useFTQCHighlight } from "@/contexts/FTQCHighlightContext";
 import { createGlowEffect } from "@/lib/ftqcColors";
 import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
 import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
@@ -87,9 +87,8 @@ function CustomNodeComponent({ data, selected }: CustomNodeProps): React.ReactNo
   const isScheduleHighlighted =
     isEditorOpen && (hoveredNodeId === node.id || selectedEntryId === node.id);
 
-  // FTQC visualization state
-  const { highlights: ftqcHighlights } = useFTQCVisualization();
-  const ftqcHighlight = ftqcHighlights.get(node.id);
+  // FTQC visualization state (from context, O(1) lookup)
+  const ftqcHighlight = useFTQCHighlight(node.id);
 
   // Determine glow effect based on state priority (lowest to highest):
   // 1. FTQC group highlight (new, lowest priority)

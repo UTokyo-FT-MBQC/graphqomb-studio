@@ -16,6 +16,8 @@ import { CustomNode } from "@/components/canvas/CustomNode";
 import { FlowOverlay } from "@/components/canvas/FlowOverlay";
 import { GhostNode, type GhostNodeData } from "@/components/canvas/GhostNode";
 import { TilingPreview2D } from "@/components/canvas/TilingPreview2D";
+import { FTQCHighlightProvider } from "@/contexts/FTQCHighlightContext";
+import { useFTQCVisualization } from "@/hooks/useFTQCVisualization";
 import { useTilingDrag } from "@/hooks/useTilingDrag";
 
 // Internal type for ghost node computation (includes position before converting to React Flow node)
@@ -109,6 +111,9 @@ function generateNodeId(existingIds: string[]): string {
 
 // Inner component that uses useReactFlow (must be inside ReactFlowProvider)
 function GraphCanvas2DInner(): React.ReactNode {
+  // FTQC visualization (computed once, shared via context to all nodes)
+  const { highlights: ftqcHighlights } = useFTQCVisualization();
+
   const project = useProjectStore((state) => state.project);
   const addNode = useProjectStore((state) => state.addNode);
   const updateNode = useProjectStore((state) => state.updateNode);
@@ -483,39 +488,41 @@ function GraphCanvas2DInner(): React.ReactNode {
   );
 
   return (
-    <div
-      className="w-full h-full relative"
-      onMouseDown={tilingDrag.isActive ? tilingDrag.handleMouseDown : undefined}
-      onMouseMove={tilingDrag.isActive ? tilingDrag.handleMouseMove : undefined}
-      onMouseUp={tilingDrag.isActive ? tilingDrag.handleMouseUp : undefined}
-      onMouseLeave={tilingDrag.isActive ? tilingDrag.handleMouseLeave : undefined}
-    >
-      <ReactFlow
-        nodes={nodesWithSelection}
-        edges={edgesWithSelection}
-        onNodesChange={handleNodesChange}
-        onEdgesChange={handleEdgesChange}
-        onConnect={handleConnect}
-        onNodeClick={handleNodeClick}
-        onPaneClick={handlePaneClick}
-        onDoubleClick={handlePaneDoubleClick}
-        zoomOnDoubleClick={false}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        fitView
-        snapToGrid
-        snapGrid={[10, 10]}
-        deleteKeyCode={["Backspace", "Delete"]}
-        proOptions={{ hideAttribution: true }}
-        panOnDrag={!tilingDrag.isActive}
-        selectionOnDrag={!tilingDrag.isActive}
+    <FTQCHighlightProvider highlights={ftqcHighlights}>
+      <div
+        className="w-full h-full relative"
+        onMouseDown={tilingDrag.isActive ? tilingDrag.handleMouseDown : undefined}
+        onMouseMove={tilingDrag.isActive ? tilingDrag.handleMouseMove : undefined}
+        onMouseUp={tilingDrag.isActive ? tilingDrag.handleMouseUp : undefined}
+        onMouseLeave={tilingDrag.isActive ? tilingDrag.handleMouseLeave : undefined}
       >
-        <Background gap={20} size={1} />
-        <Controls />
-        <FlowOverlay />
-        {isTilingMode && <TilingPreview2D />}
-      </ReactFlow>
-    </div>
+        <ReactFlow
+          nodes={nodesWithSelection}
+          edges={edgesWithSelection}
+          onNodesChange={handleNodesChange}
+          onEdgesChange={handleEdgesChange}
+          onConnect={handleConnect}
+          onNodeClick={handleNodeClick}
+          onPaneClick={handlePaneClick}
+          onDoubleClick={handlePaneDoubleClick}
+          zoomOnDoubleClick={false}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          fitView
+          snapToGrid
+          snapGrid={[10, 10]}
+          deleteKeyCode={["Backspace", "Delete"]}
+          proOptions={{ hideAttribution: true }}
+          panOnDrag={!tilingDrag.isActive}
+          selectionOnDrag={!tilingDrag.isActive}
+        >
+          <Background gap={20} size={1} />
+          <Controls />
+          <FlowOverlay />
+          {isTilingMode && <TilingPreview2D />}
+        </ReactFlow>
+      </div>
+    </FTQCHighlightProvider>
   );
 }
 

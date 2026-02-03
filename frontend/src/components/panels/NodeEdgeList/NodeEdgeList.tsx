@@ -1,7 +1,7 @@
 /**
- * Node/Edge List Panel
+ * Elements Panel
  *
- * Collapsible panel that displays a list of all nodes and edges.
+ * Collapsible panel that displays lists of nodes, edges, and FTQC groups.
  * Supports filtering, sorting, and click-to-select functionality.
  */
 
@@ -37,7 +37,7 @@ export function NodeEdgeList({ defaultExpanded = true }: NodeEdgeListProps): Rea
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full px-4 py-2 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
       >
-        <span className="text-sm font-medium text-gray-700">Node/Edge List</span>
+        <span className="text-sm font-medium text-gray-700">Elements</span>
         <span className="text-gray-400">{isExpanded ? "▼" : "▶"}</span>
       </button>
 
