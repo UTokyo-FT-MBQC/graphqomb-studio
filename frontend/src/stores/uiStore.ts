@@ -10,6 +10,14 @@ import { create } from "zustand";
 export type ViewMode = "2d-projection" | "2d-slice" | "3d-isometric";
 export type WorkingPlane = "XY" | "XZ" | "YZ";
 
+// FTQC Visualization state
+export interface FTQCVisualizationState {
+  showParityGroups: boolean;
+  selectedParityGroupIndex: number | null; // null = show all
+  showLogicalObservables: boolean;
+  selectedObservableKey: string | null; // null = show all
+}
+
 interface UIState {
   viewMode: ViewMode;
   currentZSlice: number;
@@ -36,6 +44,9 @@ interface UIState {
 
   // FTQC modal
   isFTQCModalOpen: boolean;
+
+  // FTQC visualization
+  ftqcVisualization: FTQCVisualizationState;
 
   // Actions
   setViewMode: (mode: ViewMode) => void;
@@ -70,6 +81,14 @@ interface UIState {
   // FTQC modal actions
   openFTQCModal: () => void;
   closeFTQCModal: () => void;
+
+  // FTQC visualization actions
+  setShowParityGroups: (show: boolean) => void;
+  toggleShowParityGroups: () => void;
+  setSelectedParityGroupIndex: (index: number | null) => void;
+  setShowLogicalObservables: (show: boolean) => void;
+  toggleShowLogicalObservables: () => void;
+  setSelectedObservableKey: (key: string | null) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -98,6 +117,14 @@ export const useUIStore = create<UIState>((set) => ({
 
   // FTQC modal (default: closed)
   isFTQCModalOpen: false,
+
+  // FTQC visualization (default: disabled)
+  ftqcVisualization: {
+    showParityGroups: false,
+    selectedParityGroupIndex: null,
+    showLogicalObservables: false,
+    selectedObservableKey: null,
+  },
 
   setViewMode: (mode) => set({ viewMode: mode }),
 
@@ -148,4 +175,41 @@ export const useUIStore = create<UIState>((set) => ({
   openFTQCModal: () => set({ isFTQCModalOpen: true }),
 
   closeFTQCModal: () => set({ isFTQCModalOpen: false }),
+
+  // FTQC visualization actions
+  setShowParityGroups: (show) =>
+    set((state) => ({
+      ftqcVisualization: { ...state.ftqcVisualization, showParityGroups: show },
+    })),
+
+  toggleShowParityGroups: () =>
+    set((state) => ({
+      ftqcVisualization: {
+        ...state.ftqcVisualization,
+        showParityGroups: !state.ftqcVisualization.showParityGroups,
+      },
+    })),
+
+  setSelectedParityGroupIndex: (index) =>
+    set((state) => ({
+      ftqcVisualization: { ...state.ftqcVisualization, selectedParityGroupIndex: index },
+    })),
+
+  setShowLogicalObservables: (show) =>
+    set((state) => ({
+      ftqcVisualization: { ...state.ftqcVisualization, showLogicalObservables: show },
+    })),
+
+  toggleShowLogicalObservables: () =>
+    set((state) => ({
+      ftqcVisualization: {
+        ...state.ftqcVisualization,
+        showLogicalObservables: !state.ftqcVisualization.showLogicalObservables,
+      },
+    })),
+
+  setSelectedObservableKey: (key) =>
+    set((state) => ({
+      ftqcVisualization: { ...state.ftqcVisualization, selectedObservableKey: key },
+    })),
 }));

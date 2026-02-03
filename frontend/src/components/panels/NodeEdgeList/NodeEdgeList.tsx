@@ -1,7 +1,7 @@
 /**
- * Node/Edge List Panel
+ * Elements Panel
  *
- * Collapsible panel that displays a list of all nodes and edges.
+ * Collapsible panel that displays lists of nodes, edges, and FTQC groups.
  * Supports filtering, sorting, and click-to-select functionality.
  */
 
@@ -10,9 +10,10 @@
 import { useProjectStore } from "@/stores/projectStore";
 import { useState } from "react";
 import { EdgeList } from "./EdgeList";
+import { FTQCList } from "./FTQCList";
 import { NodeList } from "./NodeList";
 
-type Tab = "nodes" | "edges";
+type Tab = "nodes" | "edges" | "ftqc";
 
 interface NodeEdgeListProps {
   defaultExpanded?: boolean;
@@ -24,6 +25,9 @@ export function NodeEdgeList({ defaultExpanded = true }: NodeEdgeListProps): Rea
 
   const nodeCount = useProjectStore((state) => state.project.nodes.length);
   const edgeCount = useProjectStore((state) => state.project.edges.length);
+  const ftqc = useProjectStore((state) => state.project.ftqc);
+  const ftqcCount =
+    (ftqc?.parityCheckGroup.length ?? 0) + Object.keys(ftqc?.logicalObservableGroup ?? {}).length;
 
   return (
     <div className="border-b border-gray-200">
@@ -33,7 +37,7 @@ export function NodeEdgeList({ defaultExpanded = true }: NodeEdgeListProps): Rea
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full px-4 py-2 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
       >
-        <span className="text-sm font-medium text-gray-700">Node/Edge List</span>
+        <span className="text-sm font-medium text-gray-700">Elements</span>
         <span className="text-gray-400">{isExpanded ? "▼" : "▶"}</span>
       </button>
 
@@ -55,10 +59,19 @@ export function NodeEdgeList({ defaultExpanded = true }: NodeEdgeListProps): Rea
             >
               Edges
             </TabButton>
+            <TabButton
+              active={activeTab === "ftqc"}
+              onClick={() => setActiveTab("ftqc")}
+              count={ftqcCount}
+            >
+              FTQC
+            </TabButton>
           </div>
 
           {/* Content */}
-          {activeTab === "nodes" ? <NodeList /> : <EdgeList />}
+          {activeTab === "nodes" && <NodeList />}
+          {activeTab === "edges" && <EdgeList />}
+          {activeTab === "ftqc" && <FTQCList />}
         </div>
       )}
     </div>
