@@ -12,6 +12,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
+function getLastFetchUrl(): URL {
+  const lastCall = mockFetch.mock.calls.at(-1);
+  expect(lastCall).toBeDefined();
+  const fetchUrl = lastCall?.[0];
+  expect(fetchUrl).toEqual(expect.any(String));
+  return new URL(fetchUrl as string);
+}
+
 describe("API Client", () => {
   beforeEach(() => {
     mockFetch.mockReset();
@@ -165,12 +173,11 @@ describe("API Client", () => {
         maxQubitCount: 5,
       });
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining(
-          "strategy=MINIMIZE_TIME&use_greedy=true&max_time=12&max_qubit_count=5"
-        ),
-        expect.any(Object)
-      );
+      const params = getLastFetchUrl().searchParams;
+      expect(params.get("strategy")).toBe("MINIMIZE_TIME");
+      expect(params.get("use_greedy")).toBe("true");
+      expect(params.get("max_time")).toBe("12");
+      expect(params.get("max_qubit_count")).toBe("5");
     });
 
     it("should throw ApiError on failure", async () => {

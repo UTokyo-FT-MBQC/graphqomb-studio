@@ -49,4 +49,18 @@ describe("edgeUtils", () => {
     expect(offsets.get("e3")).toBe(-(offsets.get("e4") ?? 0));
     expect(offsets.get("e1")).toBe(offsets.get("e3"));
   });
+
+  it("offsets antiparallel edges that share a visual line", () => {
+    const offsets = calculateEdgeOffsets([edge("e1", 0, 0, 100, 0), edge("e2", 100, 10, 0, 10)]);
+
+    expect(offsets.get("e1")).not.toBe(0);
+    expect(offsets.get("e2")).not.toBe(0);
+  });
+
+  it("offsets overlapping edges across spatial grid boundaries", () => {
+    const offsets = calculateEdgeOffsets([edge("e1", 49, 0, 149, 0), edge("e2", 51, 10, 151, 10)]);
+
+    expect(offsets.get("e1")).not.toBe(0);
+    expect(offsets.get("e2")).not.toBe(0);
+  });
 });

@@ -57,6 +57,22 @@ describe("useResolvedFlow", () => {
     expect(mockComputeZFlow).not.toHaveBeenCalled();
   });
 
+  it("auto-fetches after being enabled", async () => {
+    useProjectStore.getState().setProject(createProject());
+    mockComputeZFlow.mockResolvedValueOnce({ n0: ["n1"] });
+
+    const { rerender } = renderHook(({ enabled }) => useResolvedFlow(enabled), {
+      initialProps: { enabled: false },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(mockComputeZFlow).not.toHaveBeenCalled();
+
+    rerender({ enabled: true });
+
+    await waitFor(() => expect(mockComputeZFlow).toHaveBeenCalledTimes(1));
+  });
+
   it("auto-fetches when enabled", async () => {
     useProjectStore.getState().setProject(createProject());
     mockComputeZFlow.mockResolvedValueOnce({ n0: ["n1"] });

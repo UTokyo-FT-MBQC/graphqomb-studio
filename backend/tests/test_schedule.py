@@ -2,8 +2,11 @@
 
 from typing import Any
 
+import pytest
+from graphqomb.schedule_solver import ScheduleConfig
 from httpx import ASGITransport, AsyncClient
 from src.main import app
+from src.routers import schedule as schedule_router
 
 
 def create_schedulable_project() -> dict[str, Any]:
@@ -121,6 +124,38 @@ async def test_schedule_rejects_too_small_max_time() -> None:
         )
 
     assert response.status_code == 400
+
+
+async def test_schedule_passes_max_qubit_count_to_solver(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test max_qubit_count is passed through to graphqomb ScheduleConfig."""
+    project = create_schedulable_project()
+    captured_config: dict[str, ScheduleConfig] = {}
+
+    class FakeScheduler:
+        def __init__(self, _graph: Any, _xflow: Any, _zflow: Any) -> None:
+            self.prepare_time: dict[int, int | None] = {}
+            self.measure_time: dict[int, int | None] = {}
+            self.entangle_time: dict[tuple[int, int], int | None] = {}
+            self.timeline: list[Any] = []
+
+        def solve_schedule(self, config: ScheduleConfig, timeout: int) -> bool:
+            assert timeout == 60
+            captured_config["config"] = config
+            return True
+
+    monkeypatch.setattr(schedule_router, "Scheduler", FakeScheduler)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post(
+            "/api/schedule?strategy=MINIMIZE_SPACE&max_qubit_count=1",
+            json=project,
+        )
+
+    assert response.status_code == 200
+    assert captured_config["config"].max_qubit_count == 1
 
 
 async def test_schedule_rejects_invalid_performance_limits() -> None:
