@@ -426,7 +426,7 @@ function Scene(): React.ReactNode {
       ))}
 
       {/* Flow arrows overlay */}
-      <FlowOverlay3D />
+      <FlowOverlay3D nodePositions={nodePositions} />
 
       {/* Invisible plane for drag detection */}
       {dragState.isDragging && (
