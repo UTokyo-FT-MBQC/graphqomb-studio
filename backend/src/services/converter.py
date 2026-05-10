@@ -102,16 +102,14 @@ def dto_to_flow(
     """
     xflow: dict[int, set[int]] = {}
     for node_id, targets in project.flow.xflow.items():
-        if node_id in node_map:
-            xflow[node_map[node_id]] = {node_map[t] for t in targets if t in node_map}
+        xflow[node_map[node_id]] = {node_map[t] for t in targets}
 
     if project.flow.zflow == "auto":
         return xflow, None
 
     zflow: dict[int, set[int]] = {}
     for node_id, targets in project.flow.zflow.items():
-        if node_id in node_map:
-            zflow[node_map[node_id]] = {node_map[t] for t in targets if t in node_map}
+        zflow[node_map[node_id]] = {node_map[t] for t in targets}
 
     return xflow, zflow
 

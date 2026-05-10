@@ -118,6 +118,20 @@ async def test_compute_zflow_empty_project() -> None:
     assert data == {}
 
 
+async def test_compute_zflow_rejects_unknown_xflow_reference() -> None:
+    """Test computing zflow rejects unknown xflow targets."""
+    project = create_project_with_xflow()
+    project["flow"] = {"xflow": {"n0": ["missing"]}, "zflow": "auto"}
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post("/api/compute-zflow", json=project)
+
+    assert response.status_code == 422
+
+
 async def test_compute_zflow_multi_z_project() -> None:
     """Test computing zflow for project with nodes at different Z levels."""
     project = {

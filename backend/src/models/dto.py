@@ -4,6 +4,7 @@ These models are designed to match the frontend types exactly,
 with strict validation (extra="forbid") to prevent schema drift.
 """
 
+from collections.abc import Mapping, Sequence, Set
 from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, model_validator
@@ -164,6 +165,38 @@ class ProjectPayloadDTO(BaseModel):
     edges: list[GraphEdgeDTO]
     flow: FlowDefinitionDTO
     ftqc: FTQCDefinitionDTO | None = None
+
+    @model_validator(mode="after")
+    def validate_project_references(self) -> Self:
+        """Validate references that span nodes, edges, and flow definitions."""
+        node_ids = [node.id for node in self.nodes]
+        node_id_set = set(node_ids)
+        if len(node_ids) != len(node_id_set):
+            raise ValueError("node IDs must be unique")
+
+        for edge in self.edges:
+            if edge.source == edge.target:
+                raise ValueError(f"self-edge is not allowed: {edge.id}")
+            if edge.source not in node_id_set:
+                raise ValueError(f"edge '{edge.id}' references unknown source node '{edge.source}'")
+            if edge.target not in node_id_set:
+                raise ValueError(f"edge '{edge.id}' references unknown target node '{edge.target}'")
+
+        self._validate_flow_references("xflow", self.flow.xflow, node_id_set)
+        if self.flow.zflow != "auto":
+            self._validate_flow_references("zflow", self.flow.zflow, node_id_set)
+
+        return self
+
+    @staticmethod
+    def _validate_flow_references(flow_name: str, flow: Mapping[str, Sequence[str]], node_ids: Set[str]) -> None:
+        """Validate that a flow map only references existing nodes."""
+        for node_id, targets in flow.items():
+            if node_id not in node_ids:
+                raise ValueError(f"{flow_name} references unknown source node '{node_id}'")
+            for target_id in targets:
+                if target_id not in node_ids:
+                    raise ValueError(f"{flow_name} for node '{node_id}' references unknown target node '{target_id}'")
 
 
 # === Response DTOs ===
