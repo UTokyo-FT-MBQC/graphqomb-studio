@@ -196,9 +196,7 @@ class ProjectPayloadDTO(BaseModel):
                 raise ValueError(f"{flow_name} references unknown source node '{node_id}'")
             for target_id in targets:
                 if target_id not in node_ids:
-                    raise ValueError(
-                        f"{flow_name} for node '{node_id}' references unknown target node '{target_id}'"
-                    )
+                    raise ValueError(f"{flow_name} for node '{node_id}' references unknown target node '{target_id}'")
 
 
 # === Response DTOs ===
