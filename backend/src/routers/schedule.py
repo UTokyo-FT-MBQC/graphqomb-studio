@@ -4,7 +4,7 @@ POST /api/schedule - Compute measurement schedule.
 POST /api/validate-schedule - Validate a manually edited schedule.
 """
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, HTTPException, Query
 from graphqomb.schedule_solver import ScheduleConfig, Strategy
@@ -34,6 +34,18 @@ def compute_schedule(
         default="MINIMIZE_SPACE",
         description="Schedule optimization strategy",
     ),
+    use_greedy: bool = Query(
+        default=False,
+        description="Use fast greedy scheduling instead of the optimal CP-SAT solver",
+    ),
+    max_time: Annotated[
+        int | None,
+        Query(ge=1, description="Maximum allowed schedule time index"),
+    ] = None,
+    max_qubit_count: Annotated[
+        int | None,
+        Query(ge=1, description="Maximum allowed number of active qubits"),
+    ] = None,
 ) -> ScheduleResultDTO:
     """Compute measurement schedule for the graph.
 
@@ -43,6 +55,9 @@ def compute_schedule(
     Args:
         project: The project payload to schedule.
         strategy: Optimization strategy (MINIMIZE_SPACE or MINIMIZE_TIME).
+        use_greedy: Use fast greedy scheduling instead of the optimal solver.
+        max_time: Optional maximum allowed schedule time index.
+        max_qubit_count: Optional maximum allowed number of active qubits.
 
     Returns:
         ScheduleResultDTO with timing information for each operation.
@@ -61,7 +76,12 @@ def compute_schedule(
     scheduler = Scheduler(graph, xflow, zflow)
 
     # Configure and solve
-    config = ScheduleConfig(strategy=Strategy[strategy])
+    config = ScheduleConfig(
+        strategy=Strategy[strategy],
+        max_time=max_time,
+        max_qubit_count=max_qubit_count,
+        use_greedy=use_greedy,
+    )
 
     try:
         success = scheduler.solve_schedule(config, timeout=60)
@@ -70,6 +90,12 @@ def compute_schedule(
 
     if not success:
         raise HTTPException(status_code=400, detail="Schedule computation failed: no solution found")
+
+    if use_greedy and max_time is not None and scheduler.num_slices() - 1 > max_time:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Schedule computation failed: greedy schedule exceeds max_time={max_time}",
+        )
 
     # Convert result to DTO
     return schedule_to_dto(

@@ -89,6 +89,55 @@ async def test_schedule_with_strategy() -> None:
         assert response.status_code == 200
 
 
+async def test_schedule_with_performance_controls() -> None:
+    """Test scheduling with greedy mode and resource limits."""
+    project = create_schedulable_project()
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post(
+            "/api/schedule?strategy=MINIMIZE_TIME&use_greedy=true&max_time=10&max_qubit_count=3",
+            json=project,
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "timeline" in data
+
+
+async def test_schedule_rejects_too_small_max_time() -> None:
+    """Test scheduling fails when max_time is too small."""
+    project = create_schedulable_project()
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post(
+            "/api/schedule?strategy=MINIMIZE_TIME&use_greedy=true&max_time=1",
+            json=project,
+        )
+
+    assert response.status_code == 400
+
+
+async def test_schedule_rejects_invalid_performance_limits() -> None:
+    """Test scheduling rejects non-positive performance limits."""
+    project = create_schedulable_project()
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post("/api/schedule?max_time=0", json=project)
+        assert response.status_code == 422
+
+        response = await client.post("/api/schedule?max_qubit_count=0", json=project)
+        assert response.status_code == 422
+
+
 async def test_schedule_empty_project() -> None:
     """Test scheduling an empty project."""
     project: dict[str, Any] = {

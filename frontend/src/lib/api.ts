@@ -25,6 +25,15 @@ export interface ValidationResult {
   errors: ValidationError[];
 }
 
+export type ScheduleStrategy = "MINIMIZE_SPACE" | "MINIMIZE_TIME";
+
+export interface ScheduleOptions {
+  strategy?: ScheduleStrategy;
+  useGreedy?: boolean;
+  maxTime?: number;
+  maxQubitCount?: number;
+}
+
 // === Type Guards ===
 
 export function isApiError(error: unknown): error is ApiError {
@@ -85,9 +94,25 @@ export async function validate(payload: ProjectPayload): Promise<ValidationResul
  */
 export async function schedule(
   payload: ProjectPayload,
-  strategy: "MINIMIZE_SPACE" | "MINIMIZE_TIME" = "MINIMIZE_SPACE"
+  options: ScheduleStrategy | ScheduleOptions = "MINIMIZE_SPACE"
 ): Promise<ScheduleResult> {
-  return apiRequest<ScheduleResult>(`/api/schedule?strategy=${strategy}`, {
+  const scheduleOptions: ScheduleOptions =
+    typeof options === "string" ? { strategy: options } : options;
+  const params = new URLSearchParams({
+    strategy: scheduleOptions.strategy ?? "MINIMIZE_SPACE",
+  });
+
+  if (scheduleOptions.useGreedy === true) {
+    params.set("use_greedy", "true");
+  }
+  if (scheduleOptions.maxTime !== undefined) {
+    params.set("max_time", String(scheduleOptions.maxTime));
+  }
+  if (scheduleOptions.maxQubitCount !== undefined) {
+    params.set("max_qubit_count", String(scheduleOptions.maxQubitCount));
+  }
+
+  return apiRequest<ScheduleResult>(`/api/schedule?${params.toString()}`, {
     method: "POST",
     body: JSON.stringify(payload),
   });

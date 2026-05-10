@@ -215,7 +215,7 @@ export function FlowOverlay3D(): React.ReactNode {
   const project = useProjectStore((state) => state.project);
   const showXFlow = useUIStore((state) => state.showXFlow);
   const showZFlow = useUIStore((state) => state.showZFlow);
-  const { resolvedFlow } = useResolvedFlow();
+  const { resolvedFlow } = useResolvedFlow(showZFlow);
 
   // Build node position map
   const nodePositions = useMemo(() => {

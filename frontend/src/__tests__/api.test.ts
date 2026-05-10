@@ -152,6 +152,27 @@ describe("API Client", () => {
       );
     });
 
+    it("should include schedule performance options", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}),
+      });
+
+      await schedule(testPayload, {
+        strategy: "MINIMIZE_TIME",
+        useGreedy: true,
+        maxTime: 12,
+        maxQubitCount: 5,
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "strategy=MINIMIZE_TIME&use_greedy=true&max_time=12&max_qubit_count=5"
+        ),
+        expect.any(Object)
+      );
+    });
+
     it("should throw ApiError on failure", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
