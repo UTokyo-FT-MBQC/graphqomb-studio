@@ -125,6 +125,111 @@ async def test_validate_invalid_edge_id() -> None:
     assert response.status_code == 422
 
 
+async def test_validate_rejects_duplicate_node_ids() -> None:
+    """Test validation fails when node IDs are duplicated."""
+    project = create_simple_project()
+    project["nodes"].append(
+        {
+            "id": "n0",
+            "coordinate": {"x": 2, "y": 0, "z": 0},
+            "role": "intermediate",
+            "measBasis": {"type": "planner", "plane": "XY", "angleCoeff": 0},
+        }
+    )
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post("/api/validate", json=project)
+
+    assert response.status_code == 422
+
+
+async def test_validate_rejects_unknown_edge_endpoint() -> None:
+    """Test validation fails when an edge references a missing node."""
+    project = create_simple_project()
+    project["edges"] = [{"id": "n0-n2", "source": "n0", "target": "n2"}]
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post("/api/validate", json=project)
+
+    assert response.status_code == 422
+
+
+async def test_validate_rejects_self_edge() -> None:
+    """Test validation fails when an edge connects a node to itself."""
+    project = create_simple_project()
+    project["edges"] = [{"id": "n0-n0", "source": "n0", "target": "n0"}]
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post("/api/validate", json=project)
+
+    assert response.status_code == 422
+
+
+async def test_validate_rejects_unknown_xflow_reference() -> None:
+    """Test validation fails when xflow references a missing node."""
+    project = create_simple_project()
+    project["flow"] = {"xflow": {"n0": ["n2"]}, "zflow": "auto"}
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post("/api/validate", json=project)
+
+    assert response.status_code == 422
+
+
+async def test_validate_rejects_unknown_xflow_source() -> None:
+    """Test validation fails when xflow has a missing source node."""
+    project = create_simple_project()
+    project["flow"] = {"xflow": {"n2": ["n1"]}, "zflow": "auto"}
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post("/api/validate", json=project)
+
+    assert response.status_code == 422
+
+
+async def test_validate_rejects_unknown_manual_zflow_reference() -> None:
+    """Test validation fails when manual zflow references a missing node."""
+    project = create_simple_project()
+    project["flow"] = {"xflow": {"n0": ["n1"]}, "zflow": {"n0": ["n2"]}}
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post("/api/validate", json=project)
+
+    assert response.status_code == 422
+
+
+async def test_validate_rejects_unknown_manual_zflow_source() -> None:
+    """Test validation fails when manual zflow has a missing source node."""
+    project = create_simple_project()
+    project["flow"] = {"xflow": {"n0": ["n1"]}, "zflow": {"n2": ["n1"]}}
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post("/api/validate", json=project)
+
+    assert response.status_code == 422
+
+
 async def test_validate_project_with_different_z() -> None:
     """Test validation of a project with nodes at different Z levels."""
     project = {

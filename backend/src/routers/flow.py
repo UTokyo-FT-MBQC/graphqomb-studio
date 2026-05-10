@@ -32,8 +32,7 @@ def compute_zflow(project: ProjectPayloadDTO) -> dict[str, list[str]]:
     # Convert x-flow to internal format
     xflow: dict[int, set[int]] = {}
     for node_id, targets in project.flow.xflow.items():
-        if node_id in node_map:
-            xflow[node_map[node_id]] = {node_map[t] for t in targets if t in node_map}
+        xflow[node_map[node_id]] = {node_map[t] for t in targets}
 
     # Compute z-flow using odd_neighbors
     zflow = compute_zflow_from_xflow(graph, xflow)

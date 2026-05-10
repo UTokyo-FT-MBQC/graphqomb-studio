@@ -148,7 +148,7 @@ export const ScheduleResultSchema = z
 
 // === Project Schemas ===
 
-export const ProjectSchema = z
+const BaseProjectSchema = z
   .object({
     $schema: z.literal("graphqomb-studio/v1"),
     name: z.string(),
@@ -160,13 +160,97 @@ export const ProjectSchema = z
   })
   .strict();
 
+interface ProjectReferenceInput {
+  nodes: Array<{ id: string }>;
+  edges: Array<{ id: string; source: string; target: string }>;
+  flow: {
+    xflow: Record<string, string[]>;
+    zflow: Record<string, string[]> | "auto";
+  };
+}
+
+function addFlowReferenceIssues(
+  flowName: "xflow" | "zflow",
+  flow: Record<string, string[]>,
+  nodeIds: Set<string>,
+  ctx: z.RefinementCtx
+): void {
+  for (const [nodeId, targets] of Object.entries(flow)) {
+    if (!nodeIds.has(nodeId)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["flow", flowName, nodeId],
+        message: `${flowName} references unknown source node '${nodeId}'`,
+      });
+    }
+
+    for (const [targetIndex, targetId] of targets.entries()) {
+      if (!nodeIds.has(targetId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["flow", flowName, nodeId, targetIndex],
+          message: `${flowName} for node '${nodeId}' references unknown target node '${targetId}'`,
+        });
+      }
+    }
+  }
+}
+
+function validateProjectReferences(project: ProjectReferenceInput, ctx: z.RefinementCtx): void {
+  const seenNodeIds = new Set<string>();
+
+  for (const [index, node] of project.nodes.entries()) {
+    if (seenNodeIds.has(node.id)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["nodes", index, "id"],
+        message: `node ID '${node.id}' is duplicated`,
+      });
+    }
+    seenNodeIds.add(node.id);
+  }
+
+  const nodeIds = new Set(project.nodes.map((node) => node.id));
+
+  for (const [index, edge] of project.edges.entries()) {
+    if (edge.source === edge.target) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["edges", index],
+        message: `self-edge is not allowed: ${edge.id}`,
+      });
+    }
+    if (!nodeIds.has(edge.source)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["edges", index, "source"],
+        message: `edge '${edge.id}' references unknown source node '${edge.source}'`,
+      });
+    }
+    if (!nodeIds.has(edge.target)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["edges", index, "target"],
+        message: `edge '${edge.id}' references unknown target node '${edge.target}'`,
+      });
+    }
+  }
+
+  addFlowReferenceIssues("xflow", project.flow.xflow, nodeIds, ctx);
+  if (project.flow.zflow !== "auto") {
+    addFlowReferenceIssues("zflow", project.flow.zflow, nodeIds, ctx);
+  }
+}
+
+export const ProjectSchema = BaseProjectSchema.superRefine(validateProjectReferences);
+
 export type Project = z.infer<typeof ProjectSchema>;
 
 // API payload schema (without $schema and schedule)
-export const ProjectPayloadSchema = ProjectSchema.omit({
+export const ProjectPayloadSchema = BaseProjectSchema.omit({
   $schema: true,
   schedule: true,
-});
+}).superRefine(validateProjectReferences);
 
 export type ProjectPayload = z.infer<typeof ProjectPayloadSchema>;
 
