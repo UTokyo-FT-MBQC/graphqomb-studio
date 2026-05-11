@@ -18,7 +18,13 @@ import { ToolbarDivider, ToolbarRow, ToolbarSpacer } from "@/components/toolbar/
 import { ViewControls } from "@/components/toolbar/ViewControls";
 import { WorkingPlaneControls } from "@/components/toolbar/WorkingPlaneControls";
 import { ZSliceSlider } from "@/components/toolbar/ZSliceSlider";
-import { isApiError, schedule, validate } from "@/lib/api";
+import {
+  type ScheduleOptions,
+  type ScheduleStrategy,
+  isApiError,
+  schedule,
+  validate,
+} from "@/lib/api";
 import { getAxisRange, getZRange } from "@/lib/geometry";
 import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -56,6 +62,10 @@ export function Toolbar(): React.ReactNode {
   const [isValidating, setIsValidating] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidationState | null>(null);
+  const [scheduleStrategy, setScheduleStrategy] = useState<ScheduleStrategy>("MINIMIZE_SPACE");
+  const [useGreedySchedule, setUseGreedySchedule] = useState(false);
+  const [maxTimeInput, setMaxTimeInput] = useState("");
+  const [maxQubitCountInput, setMaxQubitCountInput] = useState("");
 
   // Handle project name change
   const handleNameChange = useCallback(
@@ -97,8 +107,31 @@ export function Toolbar(): React.ReactNode {
     setError(null);
 
     try {
+      const parseLimit = (value: string, label: string): number | undefined => {
+        if (value.trim() === "") {
+          return undefined;
+        }
+        const parsed = Number.parseInt(value, 10);
+        if (!Number.isInteger(parsed) || parsed < 1) {
+          throw new Error(`${label} must be a positive integer`);
+        }
+        return parsed;
+      };
+
+      const maxTime = parseLimit(maxTimeInput, "Max time");
+      const maxQubitCount = parseLimit(maxQubitCountInput, "Max qubits");
       const payload = toPayload(project);
-      const result = await schedule(payload);
+      const options: ScheduleOptions = {
+        strategy: scheduleStrategy,
+        useGreedy: useGreedySchedule,
+      };
+      if (maxTime !== undefined) {
+        options.maxTime = maxTime;
+      }
+      if (maxQubitCount !== undefined) {
+        options.maxQubitCount = maxQubitCount;
+      }
+      const result = await schedule(payload, options);
       setSchedule(result);
     } catch (err) {
       if (isApiError(err)) {
@@ -109,7 +142,7 @@ export function Toolbar(): React.ReactNode {
     } finally {
       setIsScheduling(false);
     }
-  }, [project, setSchedule]);
+  }, [project, scheduleStrategy, useGreedySchedule, maxTimeInput, maxQubitCountInput, setSchedule]);
 
   const hasNodes = project.nodes.length > 0;
 
@@ -149,6 +182,46 @@ export function Toolbar(): React.ReactNode {
         />
 
         <ToolbarSpacer />
+
+        {/* Schedule Controls */}
+        <div className="flex items-center gap-2 text-sm">
+          <select
+            value={scheduleStrategy}
+            onChange={(e) => setScheduleStrategy(e.target.value as ScheduleStrategy)}
+            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            aria-label="Schedule strategy"
+          >
+            <option value="MINIMIZE_SPACE">Min space</option>
+            <option value="MINIMIZE_TIME">Min time</option>
+          </select>
+          <label className="flex items-center gap-1 text-gray-600">
+            <input
+              type="checkbox"
+              checked={useGreedySchedule}
+              onChange={() => setUseGreedySchedule((value) => !value)}
+              className="w-4 h-4 accent-blue-500"
+            />
+            Greedy
+          </label>
+          <input
+            type="number"
+            min={1}
+            value={maxTimeInput}
+            onChange={(e) => setMaxTimeInput(e.target.value)}
+            placeholder="Max t"
+            aria-label="Maximum schedule time"
+            className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+          <input
+            type="number"
+            min={1}
+            value={maxQubitCountInput}
+            onChange={(e) => setMaxQubitCountInput(e.target.value)}
+            placeholder="Max q"
+            aria-label="Maximum active qubits"
+            className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        </div>
 
         {/* Validate and Schedule Buttons */}
         <button

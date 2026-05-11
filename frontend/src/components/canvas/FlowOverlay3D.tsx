@@ -13,7 +13,6 @@
 import { useResolvedFlow } from "@/hooks/useResolvedFlow";
 import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
-import type { GraphNode } from "@/types";
 import { Line } from "@react-three/drei";
 import { memo, useMemo } from "react";
 import * as THREE from "three";
@@ -34,13 +33,6 @@ const GAP_SIZE = 0.05;
 // Flow colors
 const X_FLOW_COLOR = "#ef4444"; // red-500
 const Z_FLOW_COLOR = "#3b82f6"; // blue-500
-
-// Get 3D position from graph node (graph Z -> Three.js Y for upward axis)
-function getPosition(node: GraphNode): THREE.Vector3 {
-  const { x, y, z } = node.coordinate;
-  // Map: graph X -> Three X, graph Y -> Three Z, graph Z -> Three Y (up)
-  return new THREE.Vector3(x, z, y);
-}
 
 interface FlowArrow3DProps {
   from: THREE.Vector3;
@@ -206,25 +198,20 @@ interface SelfLoopData {
   position: THREE.Vector3;
 }
 
+interface FlowOverlay3DProps {
+  nodePositions: ReadonlyMap<string, THREE.Vector3>;
+}
+
 /**
  * Flow Overlay 3D Component
  *
  * Renders X-Flow and Z-Flow arrows in 3D space
  */
-export function FlowOverlay3D(): React.ReactNode {
+export function FlowOverlay3D({ nodePositions }: FlowOverlay3DProps): React.ReactNode {
   const project = useProjectStore((state) => state.project);
   const showXFlow = useUIStore((state) => state.showXFlow);
   const showZFlow = useUIStore((state) => state.showZFlow);
-  const { resolvedFlow } = useResolvedFlow();
-
-  // Build node position map
-  const nodePositions = useMemo(() => {
-    const positions = new Map<string, THREE.Vector3>();
-    for (const node of project.nodes) {
-      positions.set(node.id, getPosition(node));
-    }
-    return positions;
-  }, [project.nodes]);
+  const { resolvedFlow } = useResolvedFlow(showZFlow);
 
   // Generate X-Flow arrows and self-loops
   const { xflowArrows, xflowSelfLoops } = useMemo<{

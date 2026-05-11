@@ -23,26 +23,9 @@ import { useUIStore } from "@/stores/uiStore";
 import type { GraphEdge, GraphNode, IntermediateNode, NodeRole } from "@/types";
 import { createEdge } from "@/types";
 import { Line, OrbitControls, Text } from "@react-three/drei";
-import { Canvas, type ThreeElements, type ThreeEvent } from "@react-three/fiber";
+import { Canvas, type ThreeEvent } from "@react-three/fiber";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-
-// Extend JSX.IntrinsicElements for React Three Fiber
-declare module "react" {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace JSX {
-    interface IntrinsicElements {
-      group: ThreeElements["group"];
-      mesh: ThreeElements["mesh"];
-      sphereGeometry: ThreeElements["sphereGeometry"];
-      meshStandardMaterial: ThreeElements["meshStandardMaterial"];
-      ambientLight: ThreeElements["ambientLight"];
-      directionalLight: ThreeElements["directionalLight"];
-      gridHelper: ThreeElements["gridHelper"];
-      axesHelper: ThreeElements["axesHelper"];
-    }
-  }
-}
 
 // Role-based colors matching 2D view
 const ROLE_COLORS: Record<NodeRole, string> = {
@@ -153,19 +136,24 @@ const Node3D = memo(Node3DComponent);
 
 interface Edge3DProps {
   edge: GraphEdge;
-  nodes: readonly GraphNode[];
+  nodePositions: ReadonlyMap<string, THREE.Vector3>;
   isSelected: boolean;
   onClick: () => void;
 }
 
-function Edge3DComponent({ edge, nodes, isSelected, onClick }: Edge3DProps): React.ReactNode {
+function Edge3DComponent({
+  edge,
+  nodePositions,
+  isSelected,
+  onClick,
+}: Edge3DProps): React.ReactNode {
   const points = useMemo(() => {
-    const source = nodes.find((n) => n.id === edge.source);
-    const target = nodes.find((n) => n.id === edge.target);
+    const source = nodePositions.get(edge.source);
+    const target = nodePositions.get(edge.target);
     if (source === undefined || target === undefined) return null;
 
-    return [new THREE.Vector3(...getPosition(source)), new THREE.Vector3(...getPosition(target))];
-  }, [edge, nodes]);
+    return [source, target];
+  }, [edge, nodePositions]);
 
   if (points === null) return null;
 
@@ -228,10 +216,24 @@ function Scene(): React.ReactNode {
   const [dragState, setDragState] = useState<{
     isDragging: boolean;
     draggedNodeId: string | null;
+    previewCoordinate: GraphNode["coordinate"] | null;
   }>({
     isDragging: false,
     draggedNodeId: null,
+    previewCoordinate: null,
   });
+
+  const nodePositions = useMemo(() => {
+    const positions = new Map<string, THREE.Vector3>();
+    for (const node of project.nodes) {
+      const coordinate =
+        dragState.draggedNodeId === node.id && dragState.previewCoordinate !== null
+          ? dragState.previewCoordinate
+          : node.coordinate;
+      positions.set(node.id, new THREE.Vector3(coordinate.x, coordinate.z, coordinate.y));
+    }
+    return positions;
+  }, [project.nodes, dragState.draggedNodeId, dragState.previewCoordinate]);
 
   // Handle drag start
   const handleDragStart = useCallback(
@@ -248,6 +250,7 @@ function Scene(): React.ReactNode {
       setDragState({
         isDragging: true,
         draggedNodeId: nodeId,
+        previewCoordinate: null,
       });
       selectNode(nodeId);
     },
@@ -273,10 +276,13 @@ function Scene(): React.ReactNode {
         intersectPoint.z = Math.round(intersectPoint.z);
 
         const newCoord = threeToGraph(intersectPoint);
-        updateNode(dragState.draggedNodeId, { coordinate: newCoord });
+        setDragState((state) => ({
+          ...state,
+          previewCoordinate: newCoord,
+        }));
       }
     },
-    [dragState, threePlane, threeToGraph, updateNode]
+    [dragState, threePlane, threeToGraph]
   );
 
   // Handle drag end
@@ -286,11 +292,17 @@ function Scene(): React.ReactNode {
       controlsRef.current.enabled = true;
     }
 
-    setDragState({
-      isDragging: false,
-      draggedNodeId: null,
+    setDragState((state) => {
+      if (state.draggedNodeId !== null && state.previewCoordinate !== null) {
+        updateNode(state.draggedNodeId, { coordinate: state.previewCoordinate });
+      }
+      return {
+        isDragging: false,
+        draggedNodeId: null,
+        previewCoordinate: null,
+      };
     });
-  }, []);
+  }, [updateNode]);
 
   // Handle node click for edge creation mode
   const handleNodeClick = useCallback(
@@ -382,33 +394,39 @@ function Scene(): React.ReactNode {
       )}
 
       {/* Nodes */}
-      {project.nodes.map((node) => (
-        <Node3D
-          key={node.id}
-          node={node}
-          isSelected={node.id === selectedNodeId}
-          isSourceNode={node.id === sourceNodeId}
-          isEdgeCreationMode={isEdgeCreationMode}
-          isDragging={dragState.draggedNodeId === node.id}
-          ftqcHighlight={ftqcHighlights.get(node.id)}
-          onClick={() => handleNodeClick(node.id)}
-          onDragStart={is3DEditMode ? handleDragStart : undefined}
-        />
-      ))}
+      {project.nodes.map((node) => {
+        const displayNode =
+          dragState.draggedNodeId === node.id && dragState.previewCoordinate !== null
+            ? ({ ...node, coordinate: dragState.previewCoordinate } as GraphNode)
+            : node;
+        return (
+          <Node3D
+            key={node.id}
+            node={displayNode}
+            isSelected={node.id === selectedNodeId}
+            isSourceNode={node.id === sourceNodeId}
+            isEdgeCreationMode={isEdgeCreationMode}
+            isDragging={dragState.draggedNodeId === node.id}
+            ftqcHighlight={ftqcHighlights.get(node.id)}
+            onClick={() => handleNodeClick(node.id)}
+            onDragStart={is3DEditMode ? handleDragStart : undefined}
+          />
+        );
+      })}
 
       {/* Edges */}
       {project.edges.map((edge) => (
         <Edge3D
           key={edge.id}
           edge={edge}
-          nodes={project.nodes}
+          nodePositions={nodePositions}
           isSelected={edge.id === selectedEdgeId}
           onClick={() => selectEdge(edge.id)}
         />
       ))}
 
       {/* Flow arrows overlay */}
-      <FlowOverlay3D />
+      <FlowOverlay3D nodePositions={nodePositions} />
 
       {/* Invisible plane for drag detection */}
       {dragState.isDragging && (

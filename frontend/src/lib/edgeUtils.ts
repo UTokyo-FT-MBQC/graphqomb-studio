@@ -28,6 +28,13 @@ const OVERLAP_DISTANCE_THRESHOLD = 50;
 // Default offset multiplier between edges (in pixels)
 const DEFAULT_OFFSET_MULTIPLIER = 30;
 
+// Spatial grid cell size for narrowing overlap candidates.
+const OVERLAP_GRID_CELL_SIZE = OVERLAP_DISTANCE_THRESHOLD;
+
+// Direction bins over [0, π), since antiparallel edges share a visual line.
+const DIRECTION_BIN_COUNT = 12;
+const DIRECTION_BIN_NEIGHBORHOOD = 2;
+
 /**
  * Normalize a 2D vector
  */
@@ -63,6 +70,43 @@ function getEdgeMidpoint(pos: EdgePosition): { x: number; y: number } {
     x: (pos.sourceX + pos.targetX) / 2,
     y: (pos.sourceY + pos.targetY) / 2,
   };
+}
+
+function getDirectionBin(pos: EdgePosition): number {
+  let angle = Math.atan2(pos.targetY - pos.sourceY, pos.targetX - pos.sourceX);
+  if (angle < 0) {
+    angle += Math.PI;
+  }
+  if (angle >= Math.PI) {
+    angle -= Math.PI;
+  }
+  return Math.floor((angle / Math.PI) * DIRECTION_BIN_COUNT);
+}
+
+function areDirectionBinsCompatible(bin1: number, bin2: number): boolean {
+  const diff = Math.abs(bin1 - bin2);
+  const wrappedDiff = Math.min(diff, DIRECTION_BIN_COUNT - diff);
+  return wrappedDiff <= DIRECTION_BIN_NEIGHBORHOOD;
+}
+
+function getExpandedGridCells(pos: EdgePosition): string[] {
+  const minX = Math.min(pos.sourceX, pos.targetX) - OVERLAP_DISTANCE_THRESHOLD;
+  const maxX = Math.max(pos.sourceX, pos.targetX) + OVERLAP_DISTANCE_THRESHOLD;
+  const minY = Math.min(pos.sourceY, pos.targetY) - OVERLAP_DISTANCE_THRESHOLD;
+  const maxY = Math.max(pos.sourceY, pos.targetY) + OVERLAP_DISTANCE_THRESHOLD;
+
+  const minCellX = Math.floor(minX / OVERLAP_GRID_CELL_SIZE);
+  const maxCellX = Math.floor(maxX / OVERLAP_GRID_CELL_SIZE);
+  const minCellY = Math.floor(minY / OVERLAP_GRID_CELL_SIZE);
+  const maxCellY = Math.floor(maxY / OVERLAP_GRID_CELL_SIZE);
+
+  const cells: string[] = [];
+  for (let x = minCellX; x <= maxCellX; x++) {
+    for (let y = minCellY; y <= maxCellY; y++) {
+      cells.push(`${x}:${y}`);
+    }
+  }
+  return cells;
 }
 
 /**
@@ -237,13 +281,48 @@ export function groupOverlappingEdges(edges: readonly EdgeWithPosition[]): EdgeW
     }
   }
 
-  // Compare all pairs of edges
+  const directionBins = edges.map((edge) => getDirectionBin(edge.position));
+  const spatialBuckets = new Map<string, number[]>();
   for (let i = 0; i < edges.length; i++) {
-    for (let j = i + 1; j < edges.length; j++) {
-      const edgeI = edges[i];
-      const edgeJ = edges[j];
-      if (edgeI !== undefined && edgeJ !== undefined) {
-        if (areEdgesOverlapping(edgeI.position, edgeJ.position)) {
+    const edge = edges[i];
+    if (edge === undefined) {
+      continue;
+    }
+    for (const cell of getExpandedGridCells(edge.position)) {
+      const bucket = spatialBuckets.get(cell) ?? [];
+      bucket.push(i);
+      spatialBuckets.set(cell, bucket);
+    }
+  }
+
+  const comparedPairs = new Set<string>();
+  for (const bucket of spatialBuckets.values()) {
+    for (let bucketI = 0; bucketI < bucket.length; bucketI++) {
+      for (let bucketJ = bucketI + 1; bucketJ < bucket.length; bucketJ++) {
+        const i = bucket[bucketI];
+        const j = bucket[bucketJ];
+        if (i === undefined || j === undefined) {
+          continue;
+        }
+
+        const pairKey = i < j ? `${i}:${j}` : `${j}:${i}`;
+        if (comparedPairs.has(pairKey)) {
+          continue;
+        }
+        comparedPairs.add(pairKey);
+
+        const edgeI = edges[i];
+        const edgeJ = edges[j];
+        const binI = directionBins[i];
+        const binJ = directionBins[j];
+        if (
+          edgeI !== undefined &&
+          edgeJ !== undefined &&
+          binI !== undefined &&
+          binJ !== undefined &&
+          areDirectionBinsCompatible(binI, binJ) &&
+          areEdgesOverlapping(edgeI.position, edgeJ.position)
+        ) {
           union(i, j);
         }
       }

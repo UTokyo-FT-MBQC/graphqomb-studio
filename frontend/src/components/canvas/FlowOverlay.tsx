@@ -97,7 +97,7 @@ export function FlowOverlay(): React.ReactNode {
   const project = useProjectStore((state) => state.project);
   const showXFlow = useUIStore((state) => state.showXFlow);
   const showZFlow = useUIStore((state) => state.showZFlow);
-  const { resolvedFlow } = useResolvedFlow();
+  const { resolvedFlow } = useResolvedFlow(showZFlow);
   const nodes = useNodes();
   const { x: viewportX, y: viewportY, zoom } = useViewport();
 

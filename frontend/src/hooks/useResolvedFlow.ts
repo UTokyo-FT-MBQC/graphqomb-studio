@@ -14,7 +14,7 @@ import type { ResolvedFlow } from "@/types";
 import { toPayload } from "@/types";
 import { useCallback, useEffect, useRef } from "react";
 
-export function useResolvedFlow(): {
+export function useResolvedFlow(enabled = true): {
   resolvedFlow: ResolvedFlow | null;
   isLoading: boolean;
   error: string | null;
@@ -35,48 +35,62 @@ export function useResolvedFlow(): {
     edgeIds: project.edges.map((e) => e.id),
   });
 
-  const fetchResolvedFlow = useCallback(async () => {
-    // If zflow is not "auto", resolve directly without API call
-    if (project.flow.zflow !== "auto") {
-      setResolvedFlow({
-        xflow: project.flow.xflow,
-        zflow: project.flow.zflow,
-      });
-      return;
-    }
+  const fetchResolvedFlow = useCallback(
+    async (force = false) => {
+      if (!enabled && !force) {
+        return;
+      }
 
-    // Skip if no nodes or xflow is empty
-    if (project.nodes.length === 0 || Object.keys(project.flow.xflow).length === 0) {
-      setResolvedFlow({
-        xflow: project.flow.xflow,
-        zflow: {},
-      });
-      return;
-    }
+      // If zflow is not "auto", resolve directly without API call
+      if (project.flow.zflow !== "auto") {
+        setResolvedFlow({
+          xflow: project.flow.xflow,
+          zflow: project.flow.zflow,
+        });
+        return;
+      }
 
-    setLoading(true);
-    try {
-      const payload = toPayload(project);
-      const computedZflow = await computeZFlow(payload);
-      setResolvedFlow({
-        xflow: project.flow.xflow,
-        zflow: computedZflow,
-      });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to compute zflow";
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, [project, setResolvedFlow, setLoading, setError]);
+      // Skip if no nodes or xflow is empty
+      if (project.nodes.length === 0 || Object.keys(project.flow.xflow).length === 0) {
+        setResolvedFlow({
+          xflow: project.flow.xflow,
+          zflow: {},
+        });
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const payload = toPayload(project);
+        const computedZflow = await computeZFlow(payload);
+        setResolvedFlow({
+          xflow: project.flow.xflow,
+          zflow: computedZflow,
+        });
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Failed to compute zflow";
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [enabled, project, setResolvedFlow, setLoading, setError]
+  );
+
+  const refresh = useCallback(() => {
+    void fetchResolvedFlow(true);
+  }, [fetchResolvedFlow]);
 
   // Auto-refresh when dependencies change
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
     if (prevDepsKeyRef.current !== depsKey) {
       prevDepsKeyRef.current = depsKey;
       void fetchResolvedFlow();
     }
-  }, [depsKey, fetchResolvedFlow]);
+  }, [enabled, depsKey, fetchResolvedFlow]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -89,6 +103,6 @@ export function useResolvedFlow(): {
     resolvedFlow,
     isLoading,
     error,
-    refresh: fetchResolvedFlow,
+    refresh,
   };
 }
