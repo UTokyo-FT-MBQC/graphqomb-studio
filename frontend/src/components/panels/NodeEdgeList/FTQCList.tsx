@@ -48,7 +48,7 @@ export function FTQCList(): React.ReactNode {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pr-1">
       {/* Parity Check Groups Section */}
       {hasParityGroups && (
         <div>
@@ -73,7 +73,7 @@ export function FTQCList(): React.ReactNode {
                 </button>
               )}
           </div>
-          <div className="space-y-1 max-h-40 overflow-y-auto">
+          <div className="space-y-1">
             {ftqc.parityCheckGroup.map((group, index) => {
               const color = getParityGroupColor(index);
               const isSelected = ftqcVisualization.selectedParityGroupIndex === index;
@@ -146,7 +146,7 @@ export function FTQCList(): React.ReactNode {
                 </button>
               )}
           </div>
-          <div className="space-y-1 max-h-40 overflow-y-auto">
+          <div className="space-y-1">
             {observableKeys.map((key, keyIndex) => {
               const targets = ftqc.logicalObservableGroup[key] ?? [];
               const color = getObservableColor(keyIndex);

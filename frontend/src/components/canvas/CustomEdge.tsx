@@ -10,13 +10,14 @@
 
 import { getOffsetBezierPath } from "@/lib/edgeUtils";
 import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
-import { BaseEdge } from "@xyflow/react";
 import type { EdgeProps } from "@xyflow/react";
 import type { CSSProperties } from "react";
 import { memo } from "react";
 
 export interface CustomEdgeData {
   offset?: number;
+  sourceCenter?: { x: number; y: number };
+  targetCenter?: { x: number; y: number };
 }
 
 function CustomEdgeComponent({
@@ -31,6 +32,10 @@ function CustomEdgeComponent({
 }: EdgeProps): React.ReactNode {
   const edgeData = data as CustomEdgeData | undefined;
   const offset = edgeData?.offset ?? 0;
+  const pathSourceX = edgeData?.sourceCenter?.x ?? sourceX;
+  const pathSourceY = edgeData?.sourceCenter?.y ?? sourceY;
+  const pathTargetX = edgeData?.targetCenter?.x ?? targetX;
+  const pathTargetY = edgeData?.targetCenter?.y ?? targetY;
 
   // Schedule editor highlight state
   const hoveredEdgeId = useScheduleEditorStore((s) => s.hoveredEdgeId);
@@ -40,11 +45,17 @@ function CustomEdgeComponent({
   const isScheduleHighlighted =
     isEditorOpen && (hoveredEdgeId === id || selectedEdgeEntryId === id);
 
-  const [edgePath] = getOffsetBezierPath(sourceX, sourceY, targetX, targetY, offset);
+  const [edgePath] = getOffsetBezierPath(
+    pathSourceX,
+    pathSourceY,
+    pathTargetX,
+    pathTargetY,
+    offset
+  );
 
   // Determine stroke color and width based on state
   let strokeColor = "#6b7280"; // Default gray
-  let strokeWidth = 1.5;
+  let strokeWidth = 2;
 
   if (isScheduleHighlighted) {
     strokeColor = "#f97316"; // Orange for schedule highlight
@@ -55,12 +66,35 @@ function CustomEdgeComponent({
   }
 
   const combinedStyle: CSSProperties = {
+    ...(style ?? {}),
     stroke: strokeColor,
     strokeWidth,
-    ...(style ?? {}),
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
   };
 
-  return <BaseEdge id={id} path={edgePath} style={combinedStyle} />;
+  const haloStyle: CSSProperties = {
+    ...(style ?? {}),
+    stroke: strokeColor,
+    strokeWidth: strokeWidth + 5,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    opacity: isScheduleHighlighted || selected === true ? 0.24 : 0.14,
+    pointerEvents: "none",
+  };
+
+  return (
+    <g>
+      <path d={edgePath} fill="none" style={haloStyle} />
+      <path
+        id={id}
+        className="react-flow__edge-path"
+        d={edgePath}
+        fill="none"
+        style={combinedStyle}
+      />
+    </g>
+  );
 }
 
 export const CustomEdge = memo(CustomEdgeComponent);

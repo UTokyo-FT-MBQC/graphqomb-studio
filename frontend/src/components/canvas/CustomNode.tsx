@@ -62,6 +62,8 @@ const selectionGlows = {
 
 // Node size (diameter in pixels)
 const NODE_SIZE = 32;
+const CENTER_HANDLE_CLASS =
+  "!absolute !left-1/2 !top-1/2 !-translate-x-1/2 !-translate-y-1/2 !w-0 !h-0 !border-0 !bg-transparent !opacity-0 !pointer-events-none";
 
 interface CustomNodeProps {
   data: CustomNodeData;
@@ -129,11 +131,7 @@ function CustomNodeComponent({ data, selected }: CustomNodeProps): React.ReactNo
       )}
 
       {/* Connection handles */}
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="!bg-gray-400 !w-2 !h-2 !border-0 !-top-1"
-      />
+      <Handle type="target" position={Position.Top} className={CENTER_HANDLE_CLASS} />
 
       {/* Sphere-like node */}
       <div
@@ -149,11 +147,7 @@ function CustomNodeComponent({ data, selected }: CustomNodeProps): React.ReactNo
         title={showNodeLabels ? undefined : node.id}
       />
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="!bg-gray-400 !w-2 !h-2 !border-0 !-bottom-1"
-      />
+      <Handle type="source" position={Position.Bottom} className={CENTER_HANDLE_CLASS} />
     </div>
   );
 }

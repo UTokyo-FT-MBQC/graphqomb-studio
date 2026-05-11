@@ -106,8 +106,8 @@ export function FlowOverlay(): React.ReactNode {
     const positions: Record<string, { x: number; y: number }> = {};
     for (const node of nodes) {
       positions[node.id] = {
-        x: node.position.x + 20, // Center of node (node width is 40px)
-        y: node.position.y + 20, // Center of node (node height is 40px)
+        x: node.position.x,
+        y: node.position.y,
       };
     }
     return positions;

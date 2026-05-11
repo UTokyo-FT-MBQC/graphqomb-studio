@@ -86,7 +86,7 @@ export function NodeList(): React.ReactNode {
         onSortAscChange={setSortAsc}
       />
 
-      <div className="max-h-48 overflow-y-auto space-y-1">
+      <div className="space-y-1 pr-1">
         {filteredNodes.length === 0 ? (
           <div className="text-xs text-gray-400 text-center py-2">
             {nodes.length === 0 ? "No nodes" : "No matching nodes"}
