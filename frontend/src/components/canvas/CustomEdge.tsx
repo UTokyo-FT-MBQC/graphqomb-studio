@@ -32,10 +32,6 @@ function CustomEdgeComponent({
 }: EdgeProps): React.ReactNode {
   const edgeData = data as CustomEdgeData | undefined;
   const offset = edgeData?.offset ?? 0;
-  const pathSourceX = edgeData?.sourceCenter?.x ?? sourceX;
-  const pathSourceY = edgeData?.sourceCenter?.y ?? sourceY;
-  const pathTargetX = edgeData?.targetCenter?.x ?? targetX;
-  const pathTargetY = edgeData?.targetCenter?.y ?? targetY;
 
   // Schedule editor highlight state
   const hoveredEdgeId = useScheduleEditorStore((s) => s.hoveredEdgeId);
@@ -45,13 +41,7 @@ function CustomEdgeComponent({
   const isScheduleHighlighted =
     isEditorOpen && (hoveredEdgeId === id || selectedEdgeEntryId === id);
 
-  const [edgePath] = getOffsetBezierPath(
-    pathSourceX,
-    pathSourceY,
-    pathTargetX,
-    pathTargetY,
-    offset
-  );
+  const [edgePath] = getOffsetBezierPath(sourceX, sourceY, targetX, targetY, offset);
 
   // Determine stroke color and width based on state
   let strokeColor = "#6b7280"; // Default gray
