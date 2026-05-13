@@ -17,11 +17,18 @@ type Tab = "nodes" | "edges" | "ftqc";
 
 interface NodeEdgeListProps {
   defaultExpanded?: boolean;
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
-export function NodeEdgeList({ defaultExpanded = true }: NodeEdgeListProps): React.ReactNode {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+export function NodeEdgeList({
+  defaultExpanded = true,
+  expanded,
+  onExpandedChange,
+}: NodeEdgeListProps): React.ReactNode {
+  const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
   const [activeTab, setActiveTab] = useState<Tab>("nodes");
+  const isExpanded = expanded ?? internalExpanded;
 
   const nodeCount = useProjectStore((state) => state.project.nodes.length);
   const edgeCount = useProjectStore((state) => state.project.edges.length);
@@ -29,22 +36,27 @@ export function NodeEdgeList({ defaultExpanded = true }: NodeEdgeListProps): Rea
   const ftqcCount =
     (ftqc?.parityCheckGroup.length ?? 0) + Object.keys(ftqc?.logicalObservableGroup ?? {}).length;
 
+  function setIsExpanded(nextExpanded: boolean): void {
+    setInternalExpanded(nextExpanded);
+    onExpandedChange?.(nextExpanded);
+  }
+
   return (
-    <div className="border-b border-gray-200">
+    <div className="flex h-full min-h-0 flex-col border-b border-gray-200">
       {/* Header with collapse toggle */}
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-4 py-2 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+        className="flex w-full shrink-0 items-center justify-between bg-gray-50 px-4 py-2 transition-colors hover:bg-gray-100"
       >
         <span className="text-sm font-medium text-gray-700">Elements</span>
         <span className="text-gray-400">{isExpanded ? "▼" : "▶"}</span>
       </button>
 
       {isExpanded && (
-        <div className="p-4 space-y-3">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
           {/* Tab Selector */}
-          <div className="flex border-b border-gray-200">
+          <div className="flex shrink-0 border-b border-gray-200">
             <TabButton
               active={activeTab === "nodes"}
               onClick={() => setActiveTab("nodes")}

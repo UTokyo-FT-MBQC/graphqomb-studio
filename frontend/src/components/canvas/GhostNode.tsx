@@ -50,6 +50,8 @@ const ghostStyles: Record<NodeRole, { baseColor: string; lightColor: string; dar
 
 // Node size (same as CustomNode)
 const NODE_SIZE = 32;
+const CENTER_HANDLE_CLASS =
+  "!absolute !left-1/2 !top-1/2 !-translate-x-1/2 !-translate-y-1/2 !w-0 !h-0 !border-0 !bg-transparent !opacity-0 !pointer-events-none";
 
 function GhostNodeComponent({ data }: GhostNodeProps): React.ReactNode {
   const { node } = data;
@@ -88,13 +90,7 @@ function GhostNodeComponent({ data }: GhostNodeProps): React.ReactNode {
       )}
 
       {/* Connection handles */}
-      <Handle
-        type="target"
-        position={Position.Top}
-        className={`!w-2 !h-2 !border-0 !-top-1 ${
-          showEnhanced ? "!bg-purple-400 !opacity-80 !w-3 !h-3" : "!bg-gray-300 !opacity-50"
-        }`}
-      />
+      <Handle type="target" position={Position.Top} className={CENTER_HANDLE_CLASS} />
 
       {/* Sphere-like ghost node with dashed outline */}
       <div
@@ -110,13 +106,7 @@ function GhostNodeComponent({ data }: GhostNodeProps): React.ReactNode {
         title={`${node.id} (z=${nodeZ})${isEdgeCreationMode ? " - Click to connect" : ""}`}
       />
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className={`!w-2 !h-2 !border-0 !-bottom-1 ${
-          showEnhanced ? "!bg-purple-400 !opacity-80 !w-3 !h-3" : "!bg-gray-300 !opacity-50"
-        }`}
-      />
+      <Handle type="source" position={Position.Bottom} className={CENTER_HANDLE_CLASS} />
     </div>
   );
 }

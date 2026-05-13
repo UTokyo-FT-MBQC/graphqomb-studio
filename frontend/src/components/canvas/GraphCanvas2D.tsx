@@ -59,6 +59,8 @@ const edgeTypes: EdgeTypes = {
   custom: CustomEdge,
 };
 
+const NODE_ORIGIN: [number, number] = [0.5, 0.5];
+
 // Convert graph node to React Flow node
 function toFlowNode(node: GraphNode): Node<CustomNodeData> {
   const coord = node.coordinate;
@@ -268,13 +270,15 @@ function GraphCanvas2DInner(): React.ReactNode {
     return filteredEdges.map((edge) => {
       const isCrossZ = ghostNodeIds.has(edge.source) || ghostNodeIds.has(edge.target);
       const offset = offsets.get(edge.id) ?? 0;
+      const sourceCenter = nodePositions.get(edge.source);
+      const targetCenter = nodePositions.get(edge.target);
 
       return {
         id: edge.id,
         source: edge.source,
         target: edge.target,
         type: "custom",
-        data: { offset },
+        data: { offset, sourceCenter, targetCenter },
         ...(isCrossZ ? { style: { strokeDasharray: "5,5", opacity: 0.5 } } : {}),
       };
     });
@@ -508,6 +512,7 @@ function GraphCanvas2DInner(): React.ReactNode {
           zoomOnDoubleClick={false}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
+          nodeOrigin={NODE_ORIGIN}
           fitView
           snapToGrid
           snapGrid={[10, 10]}

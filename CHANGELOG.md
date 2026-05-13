@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Frontend
+
+#### Added
+
+- Resizable property sidebar and resizable elements/details split inside the property panel, including pointer and keyboard controls with clamped dimensions.
+- Regression tests for panel resizing behavior and 2D canvas center-coordinate edge rendering.
+
+#### Fixed
+
+- 2D canvas nodes and edges now use center-based React Flow coordinates so edges, flow overlays, and ghost nodes align with the rendered node centers.
+- Edge rendering now includes center-based paths and subtle halos while preserving selection and schedule-editor highlighting.
+
 ## [v0.3.0] - 2026-02-03
 
 ### Frontend
