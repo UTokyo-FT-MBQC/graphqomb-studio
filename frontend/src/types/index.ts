@@ -60,7 +60,7 @@ export interface OutputNode {
   id: string;
   coordinate: Coordinate;
   role: "output";
-  measBasis?: undefined;
+  measBasis?: MeasBasis | undefined;
   qubitIndex: number;
 }
 

@@ -3,14 +3,15 @@
  *
  * Dropdown menu for file operations:
  * - New: Reset project
- * - Import: Load JSON file
- * - Export: Download JSON file
+ * - Import: Load JSON/PTN file
+ * - Export: Download JSON/PTN file
  */
 
 "use client";
 
 import { DropdownMenu, type DropdownMenuItem } from "@/components/ui/DropdownMenu";
-import { downloadProject, safeParseProject } from "@/lib/validation";
+import { exportPtn, importPtn, isApiError } from "@/lib/api";
+import { downloadProject, downloadText, safeParseProject } from "@/lib/validation";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import type { ChangeEvent } from "react";
@@ -20,6 +21,13 @@ interface FileMenuProps {
   onError: (error: string) => void;
   onClearError: () => void;
   onClearValidation: () => void;
+}
+
+function formatError(err: unknown): string {
+  if (isApiError(err)) {
+    return err.detail;
+  }
+  return err instanceof Error ? err.message : String(err);
 }
 
 export function FileMenu({
@@ -61,18 +69,27 @@ export function FileMenu({
 
       try {
         const text = await file.text();
-        const result = safeParseProject(text);
+        const isPtnFile = file.name.toLowerCase().endsWith(".ptn");
 
-        if (result.success) {
-          setProject(result.data);
+        if (isPtnFile) {
+          const importedProject = await importPtn(text, file.name.replace(/\.ptn$/i, ""));
+          setProject(importedProject);
           clearSelection();
           onClearError();
           onClearValidation();
         } else {
-          onError(`Invalid project file: ${result.error.message}`);
+          const result = safeParseProject(text);
+          if (result.success) {
+            setProject(result.data);
+            clearSelection();
+            onClearError();
+            onClearValidation();
+          } else {
+            onError(`Invalid project file: ${result.error.message}`);
+          }
         }
       } catch (err) {
-        onError(`Failed to read file: ${err instanceof Error ? err.message : String(err)}`);
+        onError(`Failed to read file: ${formatError(err)}`);
       }
 
       // Reset file input
@@ -89,10 +106,21 @@ export function FileMenu({
     onClearError();
   }, [project, onClearError]);
 
+  const handleExportPtn = useCallback(async () => {
+    try {
+      const ptn = await exportPtn(project);
+      downloadText(ptn, `${project.name.replace(/\s+/g, "_")}.ptn`, "text/plain");
+      onClearError();
+    } catch (err) {
+      onError(`Failed to export PTN: ${formatError(err)}`);
+    }
+  }, [project, onClearError, onError]);
+
   const menuItems: DropdownMenuItem[] = [
     { label: "New", onClick: handleNew },
-    { label: "Import", onClick: handleImportClick },
-    { label: "Export", onClick: handleExport },
+    { label: "Import JSON/PTN", onClick: handleImportClick },
+    { label: "Export JSON", onClick: handleExport },
+    { label: "Export PTN", onClick: () => void handleExportPtn() },
   ];
 
   return (
@@ -101,7 +129,7 @@ export function FileMenu({
       <input
         ref={fileInputRef}
         type="file"
-        accept=".json"
+        accept=".json,.ptn"
         onChange={handleFileChange}
         className="hidden"
       />

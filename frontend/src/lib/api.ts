@@ -4,7 +4,8 @@
  * Functions for communicating with the FastAPI backend.
  */
 
-import type { ProjectPayload, ScheduleResult } from "@/types";
+import type { GraphQOMBProject, ProjectPayload, ScheduleResult } from "@/types";
+import { toPayload } from "@/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -54,8 +55,14 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
   if (!response.ok) {
     let detail: string;
     try {
-      const errorData = (await response.json()) as { detail?: string };
-      detail = errorData.detail ?? response.statusText;
+      const errorData: unknown = await response.json();
+      detail =
+        typeof errorData === "object" &&
+        errorData !== null &&
+        "detail" in errorData &&
+        typeof errorData.detail === "string"
+          ? errorData.detail
+          : response.statusText;
     } catch {
       detail = response.statusText;
     }
@@ -67,7 +74,8 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
     throw error;
   }
 
-  return response.json() as Promise<T>;
+  const data: T = await response.json();
+  return data;
 }
 
 // === API Functions ===
@@ -146,6 +154,39 @@ export async function validateSchedule(
     method: "POST",
     body: JSON.stringify({ project: payload, schedule }),
   });
+}
+
+/**
+ * Export a project to graphqomb PTN text.
+ */
+export async function exportPtn(project: GraphQOMBProject): Promise<string> {
+  const response = await apiRequest<{ content: string }>("/api/ptn/export", {
+    method: "POST",
+    body: JSON.stringify({
+      project: toPayload(project),
+      schedule: project.schedule,
+    }),
+  });
+  return response.content;
+}
+
+/**
+ * Import graphqomb PTN text as a Studio project.
+ */
+export async function importPtn(content: string, name: string): Promise<GraphQOMBProject> {
+  const response = await apiRequest<{
+    project: ProjectPayload;
+    schedule?: ScheduleResult;
+  }>("/api/ptn/import", {
+    method: "POST",
+    body: JSON.stringify({ content, name }),
+  });
+
+  return {
+    $schema: "graphqomb-studio/v1",
+    ...response.project,
+    schedule: response.schedule,
+  };
 }
 
 /**
