@@ -129,15 +129,15 @@ class TestGraphNode:
         assert node.role == "output"
 
     def test_output_node_with_meas_basis(self) -> None:
-        """Test output node must not have measBasis."""
-        with pytest.raises(ValidationError, match="output node must not have measBasis"):
-            GraphNodeDTO(
-                id="n0",
-                coordinate=CoordinateDTO(x=0, y=0, z=0),
-                role="output",
-                measBasis=PlannerMeasBasisDTO(type="planner", plane="XY", angleCoeff=0),
-                qubitIndex=0,
-            )
+        """Test output node may carry a measurement basis for PTN patterns."""
+        node = GraphNodeDTO(
+            id="n0",
+            coordinate=CoordinateDTO(x=0, y=0, z=0),
+            role="output",
+            measBasis=PlannerMeasBasisDTO(type="planner", plane="XY", angleCoeff=0),
+            qubitIndex=0,
+        )
+        assert node.measBasis is not None
 
     def test_intermediate_node_valid(self) -> None:
         """Test valid intermediate node."""

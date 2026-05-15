@@ -48,12 +48,19 @@ export function serializeProject(project: GraphQOMBProject): string {
  */
 export function downloadProject(project: GraphQOMBProject, filename?: string): void {
   const json = serializeProject(project);
-  const blob = new Blob([json], { type: "application/json" });
+  downloadText(json, filename ?? `${project.name.replace(/\s+/g, "_")}.json`, "application/json");
+}
+
+/**
+ * Download text content as a file
+ */
+export function downloadText(content: string, filename: string, type = "text/plain"): void {
+  const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = filename ?? `${project.name.replace(/\s+/g, "_")}.json`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

@@ -67,7 +67,7 @@ class GraphNodeDTO(BaseModel):
     """Graph node with role-based validation.
 
     - input: requires measBasis and qubitIndex
-    - output: must NOT have measBasis, requires qubitIndex
+    - output: may have measBasis, requires qubitIndex
     - intermediate: requires measBasis, must NOT have qubitIndex
     """
 
@@ -88,8 +88,6 @@ class GraphNodeDTO(BaseModel):
             if self.qubitIndex is None:
                 raise ValueError("input node requires qubitIndex")
         elif self.role == "output":
-            if self.measBasis is not None:
-                raise ValueError("output node must not have measBasis")
             if self.qubitIndex is None:
                 raise ValueError("output node requires qubitIndex")
         elif self.role == "intermediate":
@@ -232,3 +230,34 @@ class ScheduleResultDTO(BaseModel):
     measureTime: dict[str, int | None]
     entangleTime: dict[str, int | None]
     timeline: list[TimeSliceDTO]
+
+
+class PtnExportRequestDTO(BaseModel):
+    """Request body for exporting a Studio project as graphqomb PTN."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    project: ProjectPayloadDTO
+    schedule: ScheduleResultDTO | None = None
+
+
+class PtnExportResponseDTO(BaseModel):
+    """Response body containing graphqomb PTN text."""
+
+    content: str
+
+
+class PtnImportRequestDTO(BaseModel):
+    """Request body for importing graphqomb PTN into a Studio project."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    content: str
+    name: str
+
+
+class PtnImportResponseDTO(BaseModel):
+    """Response body containing a Studio project converted from PTN."""
+
+    project: ProjectPayloadDTO
+    schedule: ScheduleResultDTO | None = None

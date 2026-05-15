@@ -30,21 +30,21 @@ function createValidProjectWithNodes(): GraphQOMBProject {
     edges: [{ id: "n0-n1", source: "n0", target: "n1" }],
     flow: {
       xflow: { n0: ["n1"] },
-      zflow: "auto" as const,
+      zflow: "auto",
     },
   };
 }
 
 describe("Project validation", () => {
   it("should validate a minimal valid project", () => {
-    const validProject = {
+    const validProject: GraphQOMBProject = {
       $schema: "graphqomb-studio/v1",
       name: "Test Project",
       nodes: [],
       edges: [],
       flow: {
         xflow: {},
-        zflow: "auto" as const,
+        zflow: "auto",
       },
     };
 
@@ -68,8 +68,22 @@ describe("Project validation", () => {
     expect(result.success).toBe(true);
   });
 
+  it("should validate an output node with a measurement basis", () => {
+    const projectWithMeasuredOutput = createValidProjectWithNodes();
+    projectWithMeasuredOutput.nodes[1] = {
+      id: "n1",
+      coordinate: { x: 1, y: 0, z: 0 },
+      role: "output",
+      qubitIndex: 0,
+      measBasis: { type: "axis", axis: "Y", sign: "MINUS" },
+    };
+
+    const result = safeValidateProject(projectWithMeasuredOutput);
+    expect(result.success).toBe(true);
+  });
+
   it("should validate a project with intermediate node", () => {
-    const projectWithIntermediate = {
+    const projectWithIntermediate: GraphQOMBProject = {
       $schema: "graphqomb-studio/v1",
       name: "Test Project",
       nodes: [
@@ -83,7 +97,7 @@ describe("Project validation", () => {
       edges: [],
       flow: {
         xflow: {},
-        zflow: "auto" as const,
+        zflow: "auto",
       },
     };
 
@@ -92,7 +106,7 @@ describe("Project validation", () => {
   });
 
   it("should validate a project with fractional Z coordinates", () => {
-    const projectWithFractionalZ = {
+    const projectWithFractionalZ: GraphQOMBProject = {
       $schema: "graphqomb-studio/v1",
       name: "Test Project",
       nodes: [
@@ -112,7 +126,7 @@ describe("Project validation", () => {
       edges: [],
       flow: {
         xflow: {},
-        zflow: "auto" as const,
+        zflow: "auto",
       },
     };
 
@@ -153,7 +167,7 @@ describe("Project validation", () => {
     const project = createValidProjectWithNodes();
     project.flow = {
       xflow: { n0: ["n2"] },
-      zflow: "auto" as const,
+      zflow: "auto",
     };
 
     const result = safeValidateProject(project);
@@ -164,7 +178,7 @@ describe("Project validation", () => {
     const project = createValidProjectWithNodes();
     project.flow = {
       xflow: { n2: ["n1"] },
-      zflow: "auto" as const,
+      zflow: "auto",
     };
 
     const result = safeValidateProject(project);

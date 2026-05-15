@@ -4,8 +4,16 @@
  * Tests for the backend API client functions.
  */
 
-import { checkHealth, computeZFlow, isApiError, schedule, validate } from "@/lib/api";
-import type { ProjectPayload } from "@/types";
+import {
+  checkHealth,
+  computeZFlow,
+  exportPtn,
+  importPtn,
+  isApiError,
+  schedule,
+  validate,
+} from "@/lib/api";
+import type { GraphQOMBProject, ProjectPayload } from "@/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock fetch globally
@@ -17,7 +25,10 @@ function getLastFetchUrl(): URL {
   expect(lastCall).toBeDefined();
   const fetchUrl = lastCall?.[0];
   expect(fetchUrl).toEqual(expect.any(String));
-  return new URL(fetchUrl as string);
+  if (typeof fetchUrl !== "string") {
+    throw new Error("Fetch URL was not a string");
+  }
+  return new URL(fetchUrl);
 }
 
 describe("API Client", () => {
@@ -228,6 +239,81 @@ describe("API Client", () => {
       const result = await computeZFlow(emptyPayload);
 
       expect(result).toEqual({});
+    });
+  });
+
+  describe("PTN", () => {
+    const testPayload: ProjectPayload = {
+      name: "Test",
+      nodes: [],
+      edges: [],
+      flow: { xflow: {}, zflow: "auto" },
+    };
+    const testProject: GraphQOMBProject = {
+      $schema: "graphqomb-studio/v1",
+      ...testPayload,
+      schedule: {
+        prepareTime: {},
+        measureTime: {},
+        entangleTime: {},
+        timeline: [],
+      },
+    };
+
+    it("should export PTN content", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ content: ".version 1\n" }),
+      });
+
+      const result = await exportPtn(testProject);
+
+      expect(result).toBe(".version 1\n");
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/ptn/export"),
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({
+            project: testPayload,
+            schedule: testProject.schedule,
+          }),
+        })
+      );
+    });
+
+    it("should import PTN content", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          project: testPayload,
+          schedule: {
+            prepareTime: {},
+            measureTime: {},
+            entangleTime: {},
+            timeline: [],
+          },
+        }),
+      });
+
+      const result = await importPtn(".version 1\n", "imported");
+
+      expect(result).toEqual({
+        $schema: "graphqomb-studio/v1",
+        ...testPayload,
+        schedule: {
+          prepareTime: {},
+          measureTime: {},
+          entangleTime: {},
+          timeline: [],
+        },
+      });
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/ptn/import"),
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ content: ".version 1\n", name: "imported" }),
+        })
+      );
     });
   });
 

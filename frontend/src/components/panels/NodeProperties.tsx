@@ -6,7 +6,7 @@
  * - Position (x, y, z for 3D)
  * - Role (input, output, intermediate)
  * - Qubit index (for input/output nodes)
- * - Measurement basis (for input/intermediate nodes)
+ * - Measurement basis (for measured nodes)
  * - Flow targets (for input/intermediate nodes)
  */
 
@@ -30,6 +30,10 @@ interface NodePropertiesProps {
   node: GraphNode;
 }
 
+function isNodeRole(value: string): value is NodeRole {
+  return value === "input" || value === "output" || value === "intermediate";
+}
+
 export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
   const updateNode = useProjectStore((state) => state.updateNode);
   const removeNode = useProjectStore((state) => state.removeNode);
@@ -49,7 +53,10 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
   // Handle role change
   const handleRoleChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
-      const newRole = e.target.value as NodeRole;
+      const newRole = e.target.value;
+      if (!isNodeRole(newRole)) {
+        return;
+      }
 
       // Create appropriate node structure based on role
       if (newRole === "input") {
@@ -91,6 +98,15 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
       if (!Number.isNaN(value) && value >= 0) {
         updateNode(node.id, { qubitIndex: value });
       }
+    },
+    [node.id, updateNode]
+  );
+
+  const handleOutputMeasurementToggle = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      updateNode(node.id, {
+        measBasis: e.target.checked ? { type: "planner", plane: "XY", angleCoeff: 0 } : undefined,
+      });
     },
     [node.id, updateNode]
   );
@@ -204,8 +220,20 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
           </div>
         )}
 
-        {/* Measurement Basis (for input/intermediate) */}
-        {node.role !== "output" && node.measBasis !== undefined && (
+        {node.role === "output" && (
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={node.measBasis !== undefined}
+              onChange={handleOutputMeasurementToggle}
+              className="w-4 h-4"
+            />
+            Measure output
+          </label>
+        )}
+
+        {/* Measurement Basis */}
+        {node.measBasis !== undefined && (
           <MeasBasisEditor
             basis={node.measBasis}
             onChange={(basis: MeasBasis) => updateNode(node.id, { measBasis: basis })}
