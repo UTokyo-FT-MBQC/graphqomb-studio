@@ -59,10 +59,10 @@ export function useFlowOperations(nodeId: string) {
 
   // Set Z-Flow to manual mode (initializes with current xflow as base)
   const setZFlowManual = useCallback(() => {
-    // Initialize manual zflow with empty entries for all nodes
+    // Initialize manual zflow with empty entries for measured nodes.
     const manualZflow: Record<string, string[]> = {};
     for (const node of project.nodes) {
-      if (node.role !== "output") {
+      if (node.measBasis !== undefined) {
         manualZflow[node.id] = [];
       }
     }
@@ -104,9 +104,11 @@ export function useFlowOperations(nodeId: string) {
     [zflowTargets, updateZFlowTargets]
   );
 
-  // Available target nodes (all nodes except self and output nodes)
+  // Available target nodes (all measured nodes except self)
   const availableTargets = useMemo(() => {
-    return project.nodes.filter((n) => n.id !== nodeId && n.role !== "output").map((n) => n.id);
+    return project.nodes
+      .filter((n) => n.id !== nodeId && n.measBasis !== undefined)
+      .map((n) => n.id);
   }, [project.nodes, nodeId]);
 
   // Available X-Flow targets (not already selected)

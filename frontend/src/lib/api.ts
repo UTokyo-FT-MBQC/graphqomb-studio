@@ -4,7 +4,7 @@
  * Functions for communicating with the FastAPI backend.
  */
 
-import type { ProjectPayload, ScheduleResult } from "@/types";
+import type { GraphQOMBProject, ProjectPayload, ScheduleResult } from "@/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -146,6 +146,13 @@ export async function validateSchedule(
     method: "POST",
     body: JSON.stringify({ project: payload, schedule }),
   });
+}
+
+/**
+ * Fetch a temporary project imported by the CLI.
+ */
+export async function fetchImportSession(token: string): Promise<GraphQOMBProject> {
+  return apiRequest<GraphQOMBProject>(`/api/import-session/${encodeURIComponent(token)}`);
 }
 
 /**

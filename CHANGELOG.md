@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Backend
+
+#### Fixed
+
+- PTN import now accepts measured output nodes by preserving `role: "output"` while allowing an optional measurement basis.
+
 ### Frontend
 
 #### Added
@@ -16,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Fixed
 
+- Measured output nodes are now included in measurement-basis editing, flow editing, and schedule editing when present in imported projects.
 - 2D canvas nodes and edges now use center-based React Flow coordinates so edges, flow overlays, and ghost nodes align with the rendered node centers.
 - Edge rendering now includes center-based paths and subtle halos while preserving selection and schedule-editor highlighting.
 

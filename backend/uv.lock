@@ -205,7 +205,7 @@ wheels = [
 
 [[package]]
 name = "graphqomb"
-version = "0.3.0"
+version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "matplotlib" },
@@ -214,9 +214,9 @@ dependencies = [
     { name = "ortools" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/84/a1/46285532ff2a9b1f2d0a1eb12211a1fc7ea7885c76d70daee58212c3a904/graphqomb-0.3.0.tar.gz", hash = "sha256:4809c4c0532be470b92b993eed2856d2a07e05ea4d5602cad08dcaf7119d0fbb", size = 112278, upload-time = "2026-04-08T06:38:02.321Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/e4/a9001f4f96b19d152294edcc40723d94691ba51144216eff928097caaea5/graphqomb-0.3.1.tar.gz", hash = "sha256:ca5d456f770ad51f99aaac7ae952c4ade812e7aed393110cf966819cf01ef3f7", size = 123766, upload-time = "2026-05-17T17:52:49.532Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9e/67/c5ed41a4d89fd54d9038c2d39e6f803b1c18b218be44ba3875276c5cb084/graphqomb-0.3.0-py3-none-any.whl", hash = "sha256:7280a7daf3229727e63bbf95b7a0d0cc7281186d615a99e8d8e569970cf5b16b", size = 77243, upload-time = "2026-04-08T06:38:00.856Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/95/1ba513f77196c9fff01c399559c7a6794e42909925977a74ec1a74b376d6/graphqomb-0.3.1-py3-none-any.whl", hash = "sha256:4f3480db2218e8c0bfb7d6eb5fc73be45f933c40c99820df6a31400f5edfadad", size = 84701, upload-time = "2026-05-17T17:52:47.589Z" },
 ]
 
 [[package]]
@@ -226,6 +226,7 @@ source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "graphqomb" },
+    { name = "networkx" },
     { name = "pydantic" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -243,9 +244,10 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
-    { name = "graphqomb", specifier = ">=0.3.0" },
+    { name = "graphqomb", specifier = ">=0.3.1" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.13.0" },
+    { name = "networkx", specifier = ">=3.0" },
     { name = "pydantic", specifier = ">=2.10.0" },
     { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1.390" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },

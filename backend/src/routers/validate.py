@@ -33,7 +33,7 @@ def validate_project(project: ProjectPayloadDTO) -> ValidationResponseDTO:
         graph, node_map = dto_to_graphstate(project)
         xflow, zflow = dto_to_flow(project, node_map)
 
-        # Check canonical form (all non-output nodes have measurement basis)
+        # Check canonical form against graphqomb's graph/input/output conventions.
         graph.check_canonical_form()
 
         # Check flow validity

@@ -19,8 +19,8 @@ export function ScheduleTable(): React.ReactNode {
   const selectedEntryId = useScheduleEditorStore((s) => s.selectedEntryId);
   const nodes = useProjectStore((s) => s.project.nodes);
 
-  // Get non-output nodes (output nodes don't have schedules)
-  const schedulableNodes = useMemo(() => nodes.filter((n) => n.role !== "output"), [nodes]);
+  // Get measured nodes. Imported PTN files can contain measured output nodes.
+  const schedulableNodes = useMemo(() => nodes.filter((n) => n.measBasis !== undefined), [nodes]);
 
   // Calculate max time for visual reference in mini timeline
   const maxTime = useMemo(() => {

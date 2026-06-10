@@ -62,7 +62,7 @@ export const OutputNodeSchema = z
     id: z.string().min(1),
     coordinate: CoordinateSchema,
     role: z.literal("output"),
-    measBasis: z.undefined().optional(),
+    measBasis: MeasBasisSchema.optional(),
     qubitIndex: z.number().int().nonnegative(),
   })
   .strict();

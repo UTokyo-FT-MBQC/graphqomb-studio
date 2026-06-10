@@ -222,16 +222,16 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
 
       // Helper to get effective prepare time for a node:
       // - Input nodes: always ready at time -1
-      // - Output nodes (not in entries): always ready at time -1
-      // - Intermediate nodes with prepareTime set: use that value
-      // - Intermediate nodes with prepareTime null: return null (not scheduled)
+      // - Unmeasured output nodes (not in entries): always ready at time -1
+      // - Measured nodes with prepareTime set: use that value
+      // - Measured nodes with prepareTime null: return null (not scheduled)
       const getEffectivePrepareTime = (nodeId: string): number | null => {
         if (inputNodeIds.has(nodeId)) {
           return -1; // Input nodes are always ready
         }
         const entry = entries[nodeId];
         if (!entry) {
-          return -1; // Node not in entries (output node), treat as ready
+          return -1; // Node not in entries (unmeasured output node), treat as ready
         }
         return entry.prepareTime; // null if not scheduled, otherwise the time
       };

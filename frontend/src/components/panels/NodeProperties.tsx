@@ -6,8 +6,8 @@
  * - Position (x, y, z for 3D)
  * - Role (input, output, intermediate)
  * - Qubit index (for input/output nodes)
- * - Measurement basis (for input/intermediate nodes)
- * - Flow targets (for input/intermediate nodes)
+ * - Measurement basis (for measured nodes)
+ * - Flow targets (for measured nodes)
  */
 
 "use client";
@@ -57,7 +57,7 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
           role: "input",
           qubitIndex: 0,
           measBasis:
-            node.role !== "output" && "measBasis" in node && node.measBasis !== undefined
+            node.measBasis !== undefined
               ? node.measBasis
               : { type: "planner", plane: "XY", angleCoeff: 0 },
         };
@@ -74,14 +74,14 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
           role: "intermediate",
           qubitIndex: undefined,
           measBasis:
-            node.role !== "output" && "measBasis" in node && node.measBasis !== undefined
+            node.measBasis !== undefined
               ? node.measBasis
               : { type: "planner", plane: "XY", angleCoeff: 0 },
         };
         updateNode(node.id, updates);
       }
     },
-    [node.id, node.role, node, updateNode]
+    [node.id, node, updateNode]
   );
 
   // Handle qubit index change
@@ -204,16 +204,16 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
           </div>
         )}
 
-        {/* Measurement Basis (for input/intermediate) */}
-        {node.role !== "output" && node.measBasis !== undefined && (
+        {/* Measurement Basis */}
+        {node.measBasis !== undefined && (
           <MeasBasisEditor
             basis={node.measBasis}
             onChange={(basis: MeasBasis) => updateNode(node.id, { measBasis: basis })}
           />
         )}
 
-        {/* Flow Editor (for input/intermediate) */}
-        {node.role !== "output" && <FlowEditor nodeId={node.id} />}
+        {/* Flow Editor */}
+        {node.measBasis !== undefined && <FlowEditor nodeId={node.id} />}
       </div>
     </div>
   );
