@@ -11,20 +11,24 @@ import subprocess
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import webbrowser
 from pathlib import Path
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, Any, NoReturn
+
+from pydantic import TypeAdapter, ValidationError
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-from src.services.import_sessions import create_import_session
 from src.services.ptn_import import load_ptn_project
 
 DEFAULT_BACKEND_PORT = 8000
 DEFAULT_FRONTEND_PORT = 3000
+LOCAL_HOST = "localhost"
 SERVER_TIMEOUT_SECONDS = 120.0
+IMPORT_SESSION_RESPONSE_ADAPTER = TypeAdapter(dict[str, str])
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -55,10 +59,8 @@ def _view(args: argparse.Namespace) -> int:
     if args.json_out is not None:
         args.json_out.write_text(json.dumps(project, indent=2), encoding="utf-8")
 
-    token = create_import_session(project)
-    backend_url = f"http://127.0.0.1:{args.backend_port}"
-    frontend_url = f"http://127.0.0.1:{args.frontend_port}"
-    import_url = f"{frontend_url}/?importToken={token}"
+    backend_url = f"http://{LOCAL_HOST}:{args.backend_port}"
+    frontend_url = f"http://{LOCAL_HOST}:{args.frontend_port}"
 
     processes: list[subprocess.Popen[str]] = []
     try:
@@ -66,12 +68,16 @@ def _view(args: argparse.Namespace) -> int:
             processes.append(_start_backend(args.backend_port))
             _wait_until(lambda: _backend_is_healthy(backend_url), f"backend at {backend_url}")
 
+        token = _create_remote_import_session(backend_url, project)
+        import_url = _import_url(frontend_url, token)
+
         if not _url_is_healthy(frontend_url):
             processes.append(_start_frontend(args.frontend_port, backend_url))
             _wait_until(lambda: _url_is_healthy(frontend_url), f"frontend at {frontend_url}")
 
         print(import_url)
         if not args.no_open:
+            print("If the browser does not open automatically, open the URL above.", file=sys.stderr)
             webbrowser.open(import_url)
 
         if processes:
@@ -86,6 +92,30 @@ def _backend_is_healthy(base_url: str) -> bool:
     return _url_is_healthy(f"{base_url}/health")
 
 
+def _import_url(frontend_url: str, token: str) -> str:
+    query = urllib.parse.urlencode({"importToken": token})
+    return f"{frontend_url}/?{query}"
+
+
+def _create_remote_import_session(base_url: str, project: dict[str, Any]) -> str:
+    request = urllib.request.Request(
+        f"{base_url}/api/import-session",
+        data=json.dumps(project).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=10.0) as response:
+            payload = IMPORT_SESSION_RESPONSE_ADAPTER.validate_json(response.read())
+    except (OSError, urllib.error.URLError, ValidationError) as exc:
+        _die(f"Failed to create import session on backend at {base_url}: {exc}")
+
+    token = payload.get("token", "")
+    if token == "":
+        _die(f"Backend at {base_url} returned an invalid import session token")
+    return token
+
+
 def _url_is_healthy(url: str) -> bool:
     try:
         with urllib.request.urlopen(url, timeout=1.0) as response:
@@ -97,7 +127,7 @@ def _url_is_healthy(url: str) -> bool:
 def _start_backend(port: int) -> subprocess.Popen[str]:
     backend_dir = Path(__file__).resolve().parents[1]
     return subprocess.Popen(
-        ["uv", "run", "uvicorn", "src.main:app", "--host", "127.0.0.1", "--port", str(port)],
+        ["uv", "run", "uvicorn", "src.main:app", "--host", LOCAL_HOST, "--port", str(port)],
         cwd=backend_dir,
         text=True,
     )
@@ -109,7 +139,7 @@ def _start_frontend(port: int, backend_url: str) -> subprocess.Popen[str]:
     env = os.environ.copy()
     env["NEXT_PUBLIC_API_URL"] = backend_url
     return subprocess.Popen(
-        ["pnpm", "dev", "--hostname", "127.0.0.1", "--port", str(port)],
+        ["pnpm", "dev", "--hostname", LOCAL_HOST, "--port", str(port)],
         cwd=frontend_dir,
         env=env,
         text=True,

@@ -7,9 +7,16 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
-from src.services.import_sessions import read_import_session
+from src.services.import_sessions import create_import_session, read_import_session
 
 router = APIRouter(prefix="/api", tags=["imports"])
+
+
+@router.post("/import-session")
+def create_import_session_endpoint(project: dict[str, Any]) -> dict[str, str]:
+    """Create a temporary project import session."""
+    token = create_import_session(project)
+    return {"token": token}
 
 
 @router.get("/import-session/{token}")

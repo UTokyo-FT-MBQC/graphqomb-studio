@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.routers import flow_router, imports_router, schedule_router, validate_router
 
+LOCAL_FRONTEND_ORIGIN_REGEX = r"^http://(localhost|127\.0\.0\.1):\d+$"
+
 app = FastAPI(
     title="GraphQOMB Studio API",
     description="Backend API for GraphQOMB Studio - Visual MBQC editor",
@@ -15,6 +17,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
+    allow_origin_regex=LOCAL_FRONTEND_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

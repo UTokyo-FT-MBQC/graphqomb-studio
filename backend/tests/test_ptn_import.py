@@ -111,6 +111,27 @@ async def test_import_session_endpoint(tmp_path: Path, monkeypatch: pytest.Monke
     assert response.json()["nodes"] == project["nodes"]
 
 
+async def test_create_import_session_endpoint_uses_backend_session_store(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Import sessions can be created in the backend process that will serve them."""
+    monkeypatch.setattr(import_sessions, "IMPORT_SESSION_DIR", tmp_path)
+    project = ptn_text_to_project(simple_ptn())
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        create_response = await client.post("/api/import-session", json=project)
+        token = create_response.json()["token"]
+        read_response = await client.get(f"/api/import-session/{token}")
+
+    assert create_response.status_code == 200
+    assert read_response.status_code == 200
+    assert read_response.json()["nodes"] == project["nodes"]
+
+
 async def test_import_session_endpoint_rejects_invalid_token() -> None:
     """Import session endpoint rejects non-UUID tokens."""
     async with AsyncClient(
@@ -151,8 +172,12 @@ def test_start_frontend_requires_pnpm(
     def no_pnpm(_command: str) -> None:
         return None
 
+    def create_session(_url: str, _project: dict[str, Any]) -> str:
+        return "import-token"
+
     monkeypatch.setattr(cli, "_backend_is_healthy", is_healthy)
     monkeypatch.setattr(cli, "_url_is_healthy", is_unhealthy)
+    monkeypatch.setattr(cli, "_create_remote_import_session", create_session)
     monkeypatch.setattr(cli.shutil, "which", no_pnpm)
 
     with pytest.raises(SystemExit):
@@ -181,8 +206,12 @@ def test_start_frontend_requires_installed_node_modules(
     def pnpm_path(_command: str) -> str:
         return "/usr/bin/pnpm"
 
+    def create_session(_url: str, _project: dict[str, Any]) -> str:
+        return "import-token"
+
     monkeypatch.setattr(cli, "_backend_is_healthy", is_healthy)
     monkeypatch.setattr(cli, "_url_is_healthy", is_unhealthy)
+    monkeypatch.setattr(cli, "_create_remote_import_session", create_session)
     monkeypatch.setattr(cli.shutil, "which", pnpm_path)
 
     with pytest.raises(SystemExit):
@@ -205,13 +234,23 @@ def test_cli_view_writes_json_and_prints_url(
     def is_healthy(_url: str) -> bool:
         return True
 
+    captured_project: dict[str, Any] | None = None
+
+    def create_session(_url: str, project: dict[str, Any]) -> str:
+        nonlocal captured_project
+        captured_project = project
+        return "import-token"
+
     monkeypatch.setattr(cli, "_backend_is_healthy", is_healthy)
     monkeypatch.setattr(cli, "_url_is_healthy", is_healthy)
+    monkeypatch.setattr(cli, "_create_remote_import_session", create_session)
 
     exit_code = cli.main(["view", str(ptn_path), "--no-open", "--json-out", str(json_path)])
 
     captured = capsys.readouterr()
     assert exit_code == 0
-    assert "http://127.0.0.1:3000/?importToken=" in captured.out
+    assert "http://localhost:3000/?importToken=import-token" in captured.out
     data: dict[str, Any] = json.loads(json_path.read_text(encoding="utf-8"))
     assert data["name"] == "sample"
+    assert captured_project is not None
+    assert len(captured_project["nodes"]) == 3
