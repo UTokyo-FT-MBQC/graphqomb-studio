@@ -28,9 +28,9 @@ export function useFTQCOperations() {
     return project.ftqc?.logicalObservableGroup ?? {};
   }, [project.ftqc?.logicalObservableGroup]);
 
-  // Available nodes (all nodes except output nodes, since they have no measurement basis)
+  // Available nodes with measurement bases.
   const availableNodes = useMemo(() => {
-    return project.nodes.filter((n) => n.role !== "output").map((n) => n.id);
+    return project.nodes.filter((n) => n.measBasis !== undefined).map((n) => n.id);
   }, [project.nodes]);
 
   // Parity Check Group operations

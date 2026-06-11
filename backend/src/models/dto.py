@@ -67,7 +67,7 @@ class GraphNodeDTO(BaseModel):
     """Graph node with role-based validation.
 
     - input: requires measBasis and qubitIndex
-    - output: must NOT have measBasis, requires qubitIndex
+    - output: may have measBasis when the output is measured, requires qubitIndex
     - intermediate: requires measBasis, must NOT have qubitIndex
     """
 
@@ -88,8 +88,6 @@ class GraphNodeDTO(BaseModel):
             if self.qubitIndex is None:
                 raise ValueError("input node requires qubitIndex")
         elif self.role == "output":
-            if self.measBasis is not None:
-                raise ValueError("output node must not have measBasis")
             if self.qubitIndex is None:
                 raise ValueError("output node requires qubitIndex")
         elif self.role == "intermediate":

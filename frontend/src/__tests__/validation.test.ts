@@ -91,6 +91,20 @@ describe("Project validation", () => {
     expect(result.success).toBe(true);
   });
 
+  it("should validate a measured output node", () => {
+    const project = createValidProjectWithNodes();
+    project.nodes[1] = {
+      id: "n1",
+      coordinate: { x: 1, y: 0, z: 0 },
+      role: "output",
+      qubitIndex: 0,
+      measBasis: { type: "axis", axis: "X", sign: "PLUS" },
+    };
+
+    const result = safeValidateProject(project);
+    expect(result.success).toBe(true);
+  });
+
   it("should validate a project with fractional Z coordinates", () => {
     const projectWithFractionalZ = {
       $schema: "graphqomb-studio/v1",

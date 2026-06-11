@@ -11,6 +11,7 @@ import { cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const reactFlowState = vi.hoisted(() => ({
+  fitView: vi.fn(),
   props: undefined as
     | {
         nodes: Array<{ id: string; position: { x: number; y: number } }>;
@@ -46,6 +47,7 @@ vi.mock("@xyflow/react", async () => {
     useNodes: () => [],
     useNodesState: <T,>(initialNodes: T[]) => [initialNodes, vi.fn(), vi.fn()],
     useReactFlow: () => ({
+      fitView: reactFlowState.fitView,
       screenToFlowPosition: ({ x, y }: { x: number; y: number }) => ({ x, y }),
     }),
     useViewport: () => ({ x: 0, y: 0, zoom: 1 }),
@@ -114,6 +116,7 @@ function createProject(): GraphQOMBProject {
 
 describe("GraphCanvas2D", () => {
   beforeEach(() => {
+    reactFlowState.fitView.mockReset();
     reactFlowState.props = undefined;
     useProjectStore.getState().setProject(createProject());
     useSelectionStore.getState().clearSelection();
@@ -148,5 +151,13 @@ describe("GraphCanvas2D", () => {
         }),
       }),
     ]);
+  });
+
+  it("fits the viewport after graph nodes are available", async () => {
+    render(<GraphCanvas2D />);
+
+    await waitFor(() => {
+      expect(reactFlowState.fitView).toHaveBeenCalledWith({ padding: 0.2, duration: 200 });
+    });
   });
 });

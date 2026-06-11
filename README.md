@@ -128,7 +128,22 @@ For 3D projects (dimension = 3):
    uv sync
    ```
 
-4. **Start development servers**
+4. **Open a `.ptn` file with the CLI**
+   ```bash
+   cd backend
+   uv run gqomb-vis view path/to/file.ptn
+   ```
+
+   `uv` installs and runs the Python backend only. The CLI starts the frontend with `pnpm dev` when it is not already running, so the frontend dependencies from step 2 must be installed first. If `pnpm` or `frontend/node_modules` is missing, the CLI exits with instructions to run `cd frontend && pnpm install`.
+
+   Useful options:
+   ```bash
+   uv run gqomb-vis view path/to/file.ptn --no-open
+   uv run gqomb-vis view path/to/file.ptn --json-out project.json
+   uv run gqomb-vis view path/to/file.ptn --backend-port 8010 --frontend-port 3010
+   ```
+
+5. **Start development servers manually**
    ```bash
    # Using Docker Compose (recommended)
    docker-compose up
@@ -141,7 +156,7 @@ For 3D projects (dimension = 3):
    cd backend && uv run uvicorn src.main:app --reload
    ```
 
-5. **Open the application**
+6. **Open the application**
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
 

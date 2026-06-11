@@ -259,7 +259,6 @@ async def test_validate_schedule_output_node_in_measure_time() -> None:
 
     graphqomb's validate_schedule does not reject output nodes in measure_time;
     it treats them as extra (redundant but harmless) information.
-    Output nodes are not measured in MBQC (they preserve the final quantum state).
     """
     project, schedule = create_valid_schedule_project()
 

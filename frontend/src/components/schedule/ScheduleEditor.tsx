@@ -35,9 +35,9 @@ export function ScheduleEditor(): React.ReactNode {
 
   const [activeTab, setActiveTab] = useState<ScheduleTab>("nodes");
 
-  // Filter to non-output nodes (output nodes are not measured)
+  // Filter to measured nodes. Imported PTN files can contain measured output nodes.
   const schedulableNodeIds = useMemo(
-    () => nodes.filter((n) => n.role !== "output").map((n) => n.id),
+    () => nodes.filter((n) => n.measBasis !== undefined).map((n) => n.id),
     [nodes]
   );
 

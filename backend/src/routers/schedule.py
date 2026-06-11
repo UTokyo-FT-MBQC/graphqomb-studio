@@ -116,9 +116,8 @@ def validate_schedule(
 
     Uses graphqomb's Scheduler.validate_schedule() to check:
     - Input nodes are not prepared (assumed prepared before time 0)
-    - Output nodes are not measured
     - All non-input nodes have preparation times
-    - All non-output nodes have measurement times
+    - All measured nodes have measurement times
     - Measurement order respects DAG dependencies (flow constraints)
     - Entanglement times respect causality constraints
 

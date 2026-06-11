@@ -146,7 +146,7 @@ function GraphCanvas2DInner(): React.ReactNode {
   // Tiling mode
   const isTilingMode = useUIStore((state) => state.isTilingMode);
 
-  const { screenToFlowPosition } = useReactFlow();
+  const { fitView, screenToFlowPosition } = useReactFlow();
 
   // Tiling drag handlers
   const tilingDrag = useTilingDrag(currentZSlice, viewMode);
@@ -294,6 +294,15 @@ function GraphCanvas2DInner(): React.ReactNode {
     setEdges(flowEdges);
     isSyncing.current = false;
   }, [flowNodes, flowEdges, setNodes, setEdges]);
+
+  useEffect(() => {
+    if (flowNodes.length === 0) {
+      return;
+    }
+    requestAnimationFrame(() => {
+      void fitView({ padding: 0.2, duration: 200 });
+    });
+  }, [fitView, flowNodes.length]);
 
   // Handle node changes (position, selection)
   const handleNodesChange = useCallback(
