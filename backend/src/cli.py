@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -37,7 +38,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="graphqomb-studio")
+    parser = argparse.ArgumentParser(prog="gqomb-vis")
     subparsers = parser.add_subparsers(dest="command")
 
     view_parser = subparsers.add_parser("view", help="Open a .ptn file in GraphQOMB Studio")
@@ -103,8 +104,8 @@ def _start_backend(port: int) -> subprocess.Popen[str]:
 
 
 def _start_frontend(port: int, backend_url: str) -> subprocess.Popen[str]:
-    repo_dir = Path(__file__).resolve().parents[2]
-    frontend_dir = repo_dir / "frontend"
+    frontend_dir = _frontend_dir()
+    _ensure_frontend_dependencies(frontend_dir)
     env = os.environ.copy()
     env["NEXT_PUBLIC_API_URL"] = backend_url
     return subprocess.Popen(
@@ -113,6 +114,20 @@ def _start_frontend(port: int, backend_url: str) -> subprocess.Popen[str]:
         env=env,
         text=True,
     )
+
+
+def _frontend_dir() -> Path:
+    return Path(__file__).resolve().parents[2] / "frontend"
+
+
+def _ensure_frontend_dependencies(frontend_dir: Path) -> None:
+    if shutil.which("pnpm") is None:
+        _die("pnpm is required to start the frontend. Install pnpm 10+ and run `pnpm install` in frontend/.")
+    if not (frontend_dir / "node_modules").is_dir():
+        _die(
+            "Frontend dependencies are not installed. "
+            "Run `cd frontend && pnpm install` before using `gqomb-vis view`.",
+        )
 
 
 def _wait_until(check: Callable[[], bool], description: str) -> None:

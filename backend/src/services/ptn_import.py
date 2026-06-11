@@ -12,7 +12,6 @@ from graphqomb.common import AxisMeasBasis, PlannerMeasBasis
 from graphqomb.ptn_format import loads
 
 from src.models.dto import normalize_edge_id
-from src.services.graphqomb_compat import graph_coordinates, graph_edges, graph_meas_bases, graph_nodes
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -44,11 +43,11 @@ def ptn_text_to_project(text: str, *, name: str = "Imported PTN") -> Project:
 def pattern_to_project(pattern: Pattern, *, name: str = "Imported PTN") -> Project:
     """Convert a loaded GraphQOMB Pattern to a Studio project."""
     graph = pattern.pauli_frame.graphstate
-    node_ids = sorted(graph_nodes(graph))
-    meas_bases = graph_meas_bases(graph)
-    edges = graph_edges(graph)
+    node_ids = sorted(graph.physical_nodes)
+    meas_bases = graph.meas_bases
+    edges = graph.physical_edges
 
-    coordinates = _coordinates_for_nodes(node_ids, edges, graph_coordinates(graph))
+    coordinates = _coordinates_for_nodes(node_ids, edges, graph.coordinates)
     studio_nodes = [
         _node_to_studio(
             node,

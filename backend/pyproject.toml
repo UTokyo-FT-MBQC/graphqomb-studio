@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-graphqomb-studio = "src.cli:main"
+gqomb-vis = "src.cli:main"
 
 [project.optional-dependencies]
 dev = [
