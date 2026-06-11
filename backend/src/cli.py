@@ -24,7 +24,7 @@ from src.services.ptn_import import load_ptn_project
 
 DEFAULT_BACKEND_PORT = 8000
 DEFAULT_FRONTEND_PORT = 3000
-SERVER_TIMEOUT_SECONDS = 30.0
+SERVER_TIMEOUT_SECONDS = 120.0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -125,8 +125,7 @@ def _ensure_frontend_dependencies(frontend_dir: Path) -> None:
         _die("pnpm is required to start the frontend. Install pnpm 10+ and run `pnpm install` in frontend/.")
     if not (frontend_dir / "node_modules").is_dir():
         _die(
-            "Frontend dependencies are not installed. "
-            "Run `cd frontend && pnpm install` before using `gqomb-vis view`.",
+            "Frontend dependencies are not installed. Run `cd frontend && pnpm install` before using `gqomb-vis view`.",
         )
 
 

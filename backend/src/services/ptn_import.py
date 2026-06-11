@@ -12,6 +12,7 @@ from graphqomb.common import AxisMeasBasis, PlannerMeasBasis
 from graphqomb.ptn_format import loads
 
 from src.models.dto import normalize_edge_id
+from src.services.graphqomb_api import graph_edges, graph_nodes
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -43,9 +44,9 @@ def ptn_text_to_project(text: str, *, name: str = "Imported PTN") -> Project:
 def pattern_to_project(pattern: Pattern, *, name: str = "Imported PTN") -> Project:
     """Convert a loaded GraphQOMB Pattern to a Studio project."""
     graph = pattern.pauli_frame.graphstate
-    node_ids = sorted(graph.physical_nodes)
+    node_ids = sorted(graph_nodes(graph))
     meas_bases = graph.meas_bases
-    edges = graph.physical_edges
+    edges = graph_edges(graph)
 
     coordinates = _coordinates_for_nodes(node_ids, edges, graph.coordinates)
     studio_nodes = [
@@ -106,9 +107,7 @@ def _coordinates_for_nodes(
     layout_graph.add_edges_from(edges)
 
     fixed_positions = {
-        node: (coord[0], coord[1])
-        for node, coord in source_coordinates.items()
-        if node in nodes and len(coord) >= 2
+        node: (coord[0], coord[1]) for node, coord in source_coordinates.items() if node in nodes and len(coord) >= 2
     }
     fixed_nodes = list(fixed_positions) if fixed_positions else None
     layout = nx.spring_layout(
@@ -204,11 +203,7 @@ def _edge_to_studio(node1: int, node2: int) -> GraphEdge:
 
 
 def _flow_to_studio(flow: Mapping[int, set[int]]) -> dict[str, list[str]]:
-    return {
-        _node_id(source): _node_set_to_ids(targets)
-        for source, targets in sorted(flow.items())
-        if targets
-    }
+    return {_node_id(source): _node_set_to_ids(targets) for source, targets in sorted(flow.items()) if targets}
 
 
 def _schedule_to_studio(pattern: Pattern) -> dict[str, Any]:
