@@ -4,8 +4,15 @@
  * Tests for the backend API client functions.
  */
 
-import { checkHealth, computeZFlow, isApiError, schedule, validate } from "@/lib/api";
-import type { ProjectPayload } from "@/types";
+import {
+  checkHealth,
+  computeZFlow,
+  importPtnProject,
+  isApiError,
+  schedule,
+  validate,
+} from "@/lib/api";
+import type { GraphQOMBProject, ProjectPayload } from "@/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock fetch globally
@@ -228,6 +235,33 @@ describe("API Client", () => {
       const result = await computeZFlow(emptyPayload);
 
       expect(result).toEqual({});
+    });
+  });
+
+  describe("importPtnProject", () => {
+    it("should post PTN text and return a project", async () => {
+      const mockResponse: GraphQOMBProject = {
+        $schema: "graphqomb-studio/v1",
+        name: "sample",
+        nodes: [],
+        edges: [],
+        flow: { xflow: {}, zflow: "auto" },
+      };
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      const result = await importPtnProject("N 0", "sample");
+
+      expect(result).toEqual(mockResponse);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/import-ptn"),
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ text: "N 0", name: "sample" }),
+        })
+      );
     });
   });
 

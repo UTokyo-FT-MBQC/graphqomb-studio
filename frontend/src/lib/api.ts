@@ -156,6 +156,16 @@ export async function fetchImportSession(token: string): Promise<GraphQOMBProjec
 }
 
 /**
+ * Convert PTN text into a Studio project.
+ */
+export async function importPtnProject(text: string, name: string): Promise<GraphQOMBProject> {
+  return apiRequest<GraphQOMBProject>("/api/import-ptn", {
+    method: "POST",
+    body: JSON.stringify({ text, name }),
+  });
+}
+
+/**
  * Check if the backend is healthy.
  *
  * @returns True if the backend is responding.
