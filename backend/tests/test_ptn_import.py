@@ -132,6 +132,39 @@ async def test_create_import_session_endpoint_uses_backend_session_store(
     assert read_response.json()["nodes"] == project["nodes"]
 
 
+async def test_import_ptn_endpoint_converts_text() -> None:
+    """PTN text can be imported directly through the API."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post(
+            "/api/import-ptn",
+            json={"text": simple_ptn(), "name": "browser-import"},
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["$schema"] == "graphqomb-studio/v1"
+    assert data["name"] == "browser-import"
+    assert [node["id"] for node in data["nodes"]] == ["n0", "n1", "n2"]
+
+
+async def test_import_ptn_endpoint_rejects_invalid_ptn() -> None:
+    """Invalid PTN text is reported as a bad request."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post(
+            "/api/import-ptn",
+            json={"text": "not a ptn", "name": "bad"},
+        )
+
+    assert response.status_code == 400
+    assert response.json()["detail"].startswith("Invalid PTN file:")
+
+
 async def test_import_session_endpoint_rejects_invalid_token() -> None:
     """Import session endpoint rejects non-UUID tokens."""
     async with AsyncClient(

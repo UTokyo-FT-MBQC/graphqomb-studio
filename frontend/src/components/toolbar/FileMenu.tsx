@@ -3,14 +3,15 @@
  *
  * Dropdown menu for file operations:
  * - New: Reset project
- * - Import: Load JSON file
+ * - Import: Load JSON or PTN file
  * - Export: Download JSON file
  */
 
 "use client";
 
 import { DropdownMenu, type DropdownMenuItem } from "@/components/ui/DropdownMenu";
-import { downloadProject, safeParseProject } from "@/lib/validation";
+import { importPtnProject, isApiError } from "@/lib/api";
+import { downloadProject, safeParseProject, safeValidateProject } from "@/lib/validation";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import type { ChangeEvent } from "react";
@@ -20,6 +21,10 @@ interface FileMenuProps {
   onError: (error: string) => void;
   onClearError: () => void;
   onClearValidation: () => void;
+}
+
+function projectNameFromFileName(fileName: string): string {
+  return fileName.replace(/\.[^/.]+$/, "") || "Imported PTN";
 }
 
 export function FileMenu({
@@ -61,7 +66,10 @@ export function FileMenu({
 
       try {
         const text = await file.text();
-        const result = safeParseProject(text);
+        const fileName = file.name.toLowerCase();
+        const result = fileName.endsWith(".ptn")
+          ? safeValidateProject(await importPtnProject(text, projectNameFromFileName(file.name)))
+          : safeParseProject(text);
 
         if (result.success) {
           setProject(result.data);
@@ -72,7 +80,12 @@ export function FileMenu({
           onError(`Invalid project file: ${result.error.message}`);
         }
       } catch (err) {
-        onError(`Failed to read file: ${err instanceof Error ? err.message : String(err)}`);
+        const message = isApiError(err)
+          ? err.detail
+          : err instanceof Error
+            ? err.message
+            : String(err);
+        onError(`Failed to import file: ${message}`);
       }
 
       // Reset file input
@@ -101,7 +114,7 @@ export function FileMenu({
       <input
         ref={fileInputRef}
         type="file"
-        accept=".json"
+        accept=".json,.ptn"
         onChange={handleFileChange}
         className="hidden"
       />
