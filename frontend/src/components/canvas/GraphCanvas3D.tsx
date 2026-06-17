@@ -16,8 +16,15 @@ import { WorkingPlaneGrid } from "@/components/canvas/WorkingPlaneGrid";
 import { useFTQCVisualization } from "@/hooks/useFTQCVisualization";
 import { useWorkingPlane } from "@/hooks/useWorkingPlane";
 import type { FTQCHighlight } from "@/lib/ftqcColors";
+import {
+  SCHEDULE_OPERATION_COLORS,
+  type ScheduleNodeHighlightKind,
+  getScheduleSliceHighlight,
+  isEdgeLiveAtTime,
+} from "@/lib/scheduleVisualization";
 import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
 import { useProjectStore } from "@/stores/projectStore";
+import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { GraphEdge, GraphNode, IntermediateNode, NodeRole } from "@/types";
@@ -50,6 +57,9 @@ interface Node3DProps {
   isEdgeCreationMode: boolean;
   isDragging: boolean;
   ftqcHighlight: FTQCHighlight | undefined;
+  scheduleHighlightKind: ScheduleNodeHighlightKind | undefined;
+  isDimmedBySchedule: boolean;
+  isLiveBySchedule: boolean;
   onClick: () => void;
   onDragStart: ((nodeId: string, event: ThreeEvent<PointerEvent>) => void) | undefined;
 }
@@ -61,6 +71,9 @@ function Node3DComponent({
   isEdgeCreationMode,
   isDragging,
   ftqcHighlight,
+  scheduleHighlightKind,
+  isDimmedBySchedule,
+  isLiveBySchedule,
   onClick,
   onDragStart,
 }: Node3DProps): React.ReactNode {
@@ -90,10 +103,28 @@ function Node3DComponent({
     emissiveColor = "#a855f7";
     emissiveIntensity = 0.5;
   }
+  if (isLiveBySchedule) {
+    emissiveColor = SCHEDULE_OPERATION_COLORS.live;
+    emissiveIntensity = 0.35;
+  }
+  if (scheduleHighlightKind === "prep") {
+    emissiveColor = SCHEDULE_OPERATION_COLORS.prep;
+    emissiveIntensity = 0.75;
+  } else if (scheduleHighlightKind === "meas") {
+    emissiveColor = SCHEDULE_OPERATION_COLORS.meas;
+    emissiveIntensity = 0.75;
+  } else if (scheduleHighlightKind === "prep-meas") {
+    emissiveColor = SCHEDULE_OPERATION_COLORS.entangle;
+    emissiveIntensity = 0.75;
+  }
   if (isDragging) {
     emissiveColor = "#f97316"; // orange for dragging
     emissiveIntensity = 0.5;
   }
+
+  const nodeRadius =
+    isDragging || isEdgeCreationMode || scheduleHighlightKind !== undefined ? 0.18 : 0.15;
+  const materialOpacity = isDimmedBySchedule ? 0.16 : 1;
 
   // Handle pointer down for drag initiation
   const handlePointerDown = useCallback(
@@ -110,9 +141,11 @@ function Node3DComponent({
     <group position={position}>
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: Three.js mesh elements don't support keyboard events */}
       <mesh onClick={onClick} onPointerDown={handlePointerDown}>
-        <sphereGeometry args={[isDragging ? 0.18 : isEdgeCreationMode ? 0.18 : 0.15, 32, 32]} />
+        <sphereGeometry args={[nodeRadius, 32, 32]} />
         <meshStandardMaterial
           color={color}
+          transparent={materialOpacity < 1}
+          opacity={materialOpacity}
           {...(emissiveColor !== undefined ? { emissive: emissiveColor, emissiveIntensity } : {})}
         />
       </mesh>
@@ -138,6 +171,8 @@ interface Edge3DProps {
   edge: GraphEdge;
   nodePositions: ReadonlyMap<string, THREE.Vector3>;
   isSelected: boolean;
+  isScheduleHighlighted: boolean;
+  isDimmedBySchedule: boolean;
   onClick: () => void;
 }
 
@@ -145,6 +180,8 @@ function Edge3DComponent({
   edge,
   nodePositions,
   isSelected,
+  isScheduleHighlighted,
+  isDimmedBySchedule,
   onClick,
 }: Edge3DProps): React.ReactNode {
   const points = useMemo(() => {
@@ -160,8 +197,16 @@ function Edge3DComponent({
   return (
     <Line
       points={points}
-      color={isSelected ? "#3b82f6" : "#6b7280"}
-      lineWidth={isSelected ? 3 : 2}
+      color={
+        isScheduleHighlighted
+          ? SCHEDULE_OPERATION_COLORS.entangle
+          : isSelected
+            ? "#3b82f6"
+            : "#6b7280"
+      }
+      lineWidth={isScheduleHighlighted ? 4 : isSelected ? 3 : 2}
+      transparent={isDimmedBySchedule}
+      opacity={isDimmedBySchedule ? 0.16 : 1}
       onClick={onClick}
     />
   );
@@ -204,6 +249,13 @@ function Scene(): React.ReactNode {
 
   // FTQC visualization state
   const { highlights: ftqcHighlights } = useFTQCVisualization();
+  const selectedTimelineTime = useScheduleEditorStore((state) => state.selectedTimelineTime);
+  const emphasizeLiveNodes = useScheduleEditorStore((state) => state.emphasizeLiveNodes);
+
+  const scheduleHighlight = useMemo(
+    () => getScheduleSliceHighlight(project.schedule, project.nodes, selectedTimelineTime),
+    [project.schedule, project.nodes, selectedTimelineTime]
+  );
 
   // Working plane utilities
   const { threeToGraph, threePlane } = useWorkingPlane(workingPlane, workingPlaneOffset);
@@ -408,6 +460,14 @@ function Scene(): React.ReactNode {
             isEdgeCreationMode={isEdgeCreationMode}
             isDragging={dragState.draggedNodeId === node.id}
             ftqcHighlight={ftqcHighlights.get(node.id)}
+            scheduleHighlightKind={scheduleHighlight?.nodeKinds.get(node.id)}
+            isLiveBySchedule={scheduleHighlight?.liveNodeIds.has(node.id) ?? false}
+            isDimmedBySchedule={
+              emphasizeLiveNodes &&
+              scheduleHighlight !== null &&
+              !(scheduleHighlight?.liveNodeIds.has(node.id) ?? false) &&
+              scheduleHighlight?.nodeKinds.get(node.id) === undefined
+            }
             onClick={() => handleNodeClick(node.id)}
             onDragStart={is3DEditMode ? handleDragStart : undefined}
           />
@@ -421,6 +481,13 @@ function Scene(): React.ReactNode {
           edge={edge}
           nodePositions={nodePositions}
           isSelected={edge.id === selectedEdgeId}
+          isScheduleHighlighted={scheduleHighlight?.edgeIds.has(edge.id) ?? false}
+          isDimmedBySchedule={
+            emphasizeLiveNodes &&
+            scheduleHighlight !== null &&
+            !(scheduleHighlight?.edgeIds.has(edge.id) ?? false) &&
+            !isEdgeLiveAtTime(edge, scheduleHighlight.liveNodeIds)
+          }
           onClick={() => selectEdge(edge.id)}
         />
       ))}

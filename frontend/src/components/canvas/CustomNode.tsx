@@ -16,6 +16,10 @@
 
 import { useFTQCHighlight } from "@/contexts/FTQCHighlightContext";
 import { createGlowEffect } from "@/lib/ftqcColors";
+import {
+  SCHEDULE_OPERATION_COLORS,
+  type ScheduleNodeHighlightKind,
+} from "@/lib/scheduleVisualization";
 import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
 import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -25,6 +29,9 @@ import { memo } from "react";
 
 export interface CustomNodeData {
   node: GraphNode;
+  scheduleHighlightKind?: ScheduleNodeHighlightKind | undefined;
+  isDimmedBySchedule?: boolean | undefined;
+  isLiveBySchedule?: boolean | undefined;
   [key: string]: unknown;
 }
 
@@ -58,6 +65,10 @@ const selectionGlows = {
   selected: "0 0 12px 3px rgba(255, 255, 255, 0.8), 0 0 20px 6px rgba(59, 130, 246, 0.4)",
   edgeSource: "0 0 12px 3px rgba(168, 85, 247, 0.8), 0 0 20px 6px rgba(168, 85, 247, 0.5)",
   scheduleHighlight: "0 0 12px 3px rgba(249, 115, 22, 0.8), 0 0 20px 6px rgba(249, 115, 22, 0.5)",
+  schedulePrep: "0 0 12px 3px rgba(147, 51, 234, 0.8), 0 0 20px 6px rgba(147, 51, 234, 0.5)",
+  scheduleMeas: "0 0 12px 3px rgba(22, 163, 74, 0.8), 0 0 20px 6px rgba(22, 163, 74, 0.5)",
+  schedulePrepMeas: "0 0 12px 3px rgba(147, 51, 234, 0.8), 0 0 20px 6px rgba(22, 163, 74, 0.5)",
+  scheduleLive: "0 0 7px 2px rgba(37, 99, 235, 0.45)",
 };
 
 // Node size (diameter in pixels)
@@ -89,6 +100,10 @@ function CustomNodeComponent({ data, selected }: CustomNodeProps): React.ReactNo
   const isScheduleHighlighted =
     isEditorOpen && (hoveredNodeId === node.id || selectedEntryId === node.id);
 
+  const scheduleHighlightKind = data.scheduleHighlightKind;
+  const isDimmedBySchedule = data.isDimmedBySchedule === true;
+  const isLiveBySchedule = data.isLiveBySchedule === true;
+
   // FTQC visualization state (from context, O(1) lookup)
   const ftqcHighlight = useFTQCHighlight(node.id);
 
@@ -107,15 +122,37 @@ function CustomNodeComponent({ data, selected }: CustomNodeProps): React.ReactNo
   if (isSourceNode) {
     glowEffect = selectionGlows.edgeSource;
   }
+  if (isLiveBySchedule) {
+    glowEffect = selectionGlows.scheduleLive;
+  }
+  if (scheduleHighlightKind === "prep") {
+    glowEffect = selectionGlows.schedulePrep;
+  } else if (scheduleHighlightKind === "meas") {
+    glowEffect = selectionGlows.scheduleMeas;
+  } else if (scheduleHighlightKind === "prep-meas") {
+    glowEffect = selectionGlows.schedulePrepMeas;
+  }
   if (isScheduleHighlighted) {
     glowEffect = selectionGlows.scheduleHighlight;
   }
 
   // Scale up slightly when source node in edge creation mode (matching 3D behavior)
-  const scale = isSourceNode ? 1.2 : 1;
+  const scale = isSourceNode || scheduleHighlightKind !== undefined ? 1.2 : 1;
+
+  const scheduleBorderColor =
+    scheduleHighlightKind === "prep"
+      ? SCHEDULE_OPERATION_COLORS.prep
+      : scheduleHighlightKind === "meas"
+        ? SCHEDULE_OPERATION_COLORS.meas
+        : scheduleHighlightKind === "prep-meas"
+          ? SCHEDULE_OPERATION_COLORS.entangle
+          : undefined;
 
   return (
-    <div className="relative flex flex-col items-center">
+    <div
+      className="relative flex flex-col items-center transition-opacity duration-150"
+      style={{ opacity: isDimmedBySchedule ? 0.18 : 1 }}
+    >
       {/* Node label (positioned above the node) */}
       {showNodeLabels && (
         <div
@@ -142,7 +179,10 @@ function CustomNodeComponent({ data, selected }: CustomNodeProps): React.ReactNo
           transform: `scale(${scale})`,
           background: `radial-gradient(circle at 30% 30%, ${style.lightColor}, ${style.baseColor} 50%, ${style.darkColor} 100%)`,
           boxShadow: glowEffect !== "none" ? glowEffect : `2px 4px 8px ${style.shadowColor}`,
-          border: "1px solid rgba(255, 255, 255, 0.3)",
+          border:
+            scheduleBorderColor !== undefined
+              ? `3px solid ${scheduleBorderColor}`
+              : "1px solid rgba(255, 255, 255, 0.3)",
         }}
         title={showNodeLabels ? undefined : node.id}
       />

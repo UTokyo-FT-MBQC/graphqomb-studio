@@ -8,24 +8,40 @@
 "use client";
 
 import { useProjectStore } from "@/stores/projectStore";
+import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 import type { TimeSlice } from "@/types";
 import type { ReactNode } from "react";
 
 interface TimeSliceCardProps {
   slice: TimeSlice;
+  isSelected: boolean;
+  onSelect: (time: number) => void;
 }
 
-function TimeSliceCard({ slice }: TimeSliceCardProps): ReactNode {
+function TimeSliceCard({ slice, isSelected, onSelect }: TimeSliceCardProps): ReactNode {
   const hasPrepare = slice.prepareNodes.length > 0;
   const hasEntangle = slice.entangleEdges.length > 0;
   const hasMeasure = slice.measureNodes.length > 0;
   const isEmpty = !hasPrepare && !hasEntangle && !hasMeasure;
 
   return (
-    <div className="flex-shrink-0 w-36 border border-gray-200 rounded bg-white shadow-sm">
+    <button
+      type="button"
+      onClick={() => onSelect(slice.time)}
+      aria-pressed={isSelected}
+      className={`flex-shrink-0 w-36 border rounded bg-white text-left shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+        isSelected ? "border-blue-500 bg-blue-50 shadow" : "border-gray-200 hover:border-blue-300"
+      }`}
+    >
       {/* Time Header */}
-      <div className="px-2 py-1 bg-gray-100 border-b border-gray-200 text-center">
-        <span className="text-xs font-semibold text-gray-600">T = {slice.time}</span>
+      <div
+        className={`px-2 py-1 border-b text-center ${
+          isSelected ? "bg-blue-100 border-blue-200" : "bg-gray-100 border-gray-200"
+        }`}
+      >
+        <span className={`text-xs font-semibold ${isSelected ? "text-blue-700" : "text-gray-600"}`}>
+          T = {slice.time}
+        </span>
       </div>
 
       {/* Operations */}
@@ -57,12 +73,16 @@ function TimeSliceCard({ slice }: TimeSliceCardProps): ReactNode {
         {/* Empty slice */}
         {isEmpty && <div className="text-xs text-gray-400 italic">Empty</div>}
       </div>
-    </div>
+    </button>
   );
 }
 
 export function TimelineView(): ReactNode {
   const schedule = useProjectStore((state) => state.project.schedule);
+  const selectedTimelineTime = useScheduleEditorStore((state) => state.selectedTimelineTime);
+  const emphasizeLiveNodes = useScheduleEditorStore((state) => state.emphasizeLiveNodes);
+  const selectTimelineTime = useScheduleEditorStore((state) => state.selectTimelineTime);
+  const setLiveNodeEmphasis = useScheduleEditorStore((state) => state.setLiveNodeEmphasis);
 
   // No schedule computed yet
   if (schedule === undefined) {
@@ -101,12 +121,17 @@ export function TimelineView(): ReactNode {
         {/* Time Slices */}
         <div className="flex gap-2">
           {schedule.timeline.map((slice) => (
-            <TimeSliceCard key={slice.time} slice={slice} />
+            <TimeSliceCard
+              key={slice.time}
+              slice={slice}
+              isSelected={selectedTimelineTime === slice.time}
+              onSelect={selectTimelineTime}
+            />
           ))}
         </div>
 
         {/* Summary */}
-        <div className="flex-shrink-0 w-28 pt-4 pl-4 border-l border-gray-200">
+        <div className="flex-shrink-0 w-36 pt-4 pl-4 border-l border-gray-200">
           <div className="text-xs font-medium text-gray-500 mb-2">Summary</div>
           <div className="space-y-1">
             <div className="text-xs text-gray-600">
@@ -118,6 +143,15 @@ export function TimelineView(): ReactNode {
             <div className="text-xs text-gray-600">
               <span className="text-green-600">Meas:</span> {numNodes} nodes
             </div>
+            <label className="mt-2 flex items-center gap-1.5 text-xs text-gray-600">
+              <input
+                type="checkbox"
+                checked={emphasizeLiveNodes}
+                onChange={(event) => setLiveNodeEmphasis(event.currentTarget.checked)}
+                className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-400"
+              />
+              Live nodes
+            </label>
           </div>
         </div>
       </div>

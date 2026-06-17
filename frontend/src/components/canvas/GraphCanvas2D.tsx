@@ -28,6 +28,11 @@ interface GhostNodeComputedData {
 }
 import { type EdgeWithPosition, calculateEdgeOffsets } from "@/lib/edgeUtils";
 import { SCALE, getGhostCandidateNodes, getGhostPosition } from "@/lib/geometry";
+import {
+  type ScheduleNodeHighlightKind,
+  getScheduleSliceHighlight,
+  isEdgeLiveAtTime,
+} from "@/lib/scheduleVisualization";
 import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
@@ -62,7 +67,12 @@ const edgeTypes: EdgeTypes = {
 const NODE_ORIGIN: [number, number] = [0.5, 0.5];
 
 // Convert graph node to React Flow node
-function toFlowNode(node: GraphNode): Node<CustomNodeData> {
+function toFlowNode(
+  node: GraphNode,
+  scheduleHighlightKind: ScheduleNodeHighlightKind | undefined,
+  isDimmedBySchedule: boolean,
+  isLiveBySchedule: boolean
+): Node<CustomNodeData> {
   const coord = node.coordinate;
   return {
     id: node.id,
@@ -71,12 +81,17 @@ function toFlowNode(node: GraphNode): Node<CustomNodeData> {
       x: coord.x * SCALE,
       y: coord.y * SCALE,
     },
-    data: { node },
+    data: { node, scheduleHighlightKind, isDimmedBySchedule, isLiveBySchedule },
   };
 }
 
 // Convert ghost node data to React Flow node
-function toGhostFlowNode(ghostData: GhostNodeComputedData): Node<GhostNodeData> {
+function toGhostFlowNode(
+  ghostData: GhostNodeComputedData,
+  scheduleHighlightKind: ScheduleNodeHighlightKind | undefined,
+  isDimmedBySchedule: boolean,
+  isLiveBySchedule: boolean
+): Node<GhostNodeData> {
   return {
     id: ghostData.node.id,
     type: "ghost",
@@ -84,7 +99,13 @@ function toGhostFlowNode(ghostData: GhostNodeComputedData): Node<GhostNodeData> 
       x: ghostData.position.x * SCALE,
       y: ghostData.position.y * SCALE,
     },
-    data: { node: ghostData.node, zOffset: ghostData.zOffset },
+    data: {
+      node: ghostData.node,
+      zOffset: ghostData.zOffset,
+      scheduleHighlightKind,
+      isDimmedBySchedule,
+      isLiveBySchedule,
+    },
     draggable: false,
     selectable: false,
     connectable: true,
@@ -142,6 +163,8 @@ function GraphCanvas2DInner(): React.ReactNode {
   const isScheduleEditorOpen = useScheduleEditorStore((state) => state.isEditorOpen);
   const selectScheduleEntry = useScheduleEditorStore((state) => state.selectEntry);
   const selectScheduleEdgeEntry = useScheduleEditorStore((state) => state.selectEdgeEntry);
+  const selectedTimelineTime = useScheduleEditorStore((state) => state.selectedTimelineTime);
+  const emphasizeLiveNodes = useScheduleEditorStore((state) => state.emphasizeLiveNodes);
 
   // Tiling mode
   const isTilingMode = useUIStore((state) => state.isTilingMode);
@@ -191,12 +214,48 @@ function GraphCanvas2DInner(): React.ReactNode {
     [ghostNodesData]
   );
 
+  const scheduleHighlight = useMemo(
+    () => getScheduleSliceHighlight(project.schedule, project.nodes, selectedTimelineTime),
+    [project.schedule, project.nodes, selectedTimelineTime]
+  );
+
+  const getNodeScheduleState = useCallback(
+    (nodeId: string) => {
+      const scheduleHighlightKind = scheduleHighlight?.nodeKinds.get(nodeId);
+      const isLiveBySchedule = scheduleHighlight?.liveNodeIds.has(nodeId) ?? false;
+      const isDimmedBySchedule =
+        emphasizeLiveNodes &&
+        scheduleHighlight !== null &&
+        !isLiveBySchedule &&
+        scheduleHighlightKind === undefined;
+
+      return { scheduleHighlightKind, isDimmedBySchedule, isLiveBySchedule };
+    },
+    [emphasizeLiveNodes, scheduleHighlight]
+  );
+
   // Convert project nodes/edges to React Flow format (including ghost nodes)
   const flowNodes = useMemo(() => {
-    const regularNodes = visibleNodes.map(toFlowNode);
-    const ghostNodes = ghostNodesData.map(toGhostFlowNode);
+    const regularNodes = visibleNodes.map((node) => {
+      const scheduleState = getNodeScheduleState(node.id);
+      return toFlowNode(
+        node,
+        scheduleState.scheduleHighlightKind,
+        scheduleState.isDimmedBySchedule,
+        scheduleState.isLiveBySchedule
+      );
+    });
+    const ghostNodes = ghostNodesData.map((ghost) => {
+      const scheduleState = getNodeScheduleState(ghost.node.id);
+      return toGhostFlowNode(
+        ghost,
+        scheduleState.scheduleHighlightKind,
+        scheduleState.isDimmedBySchedule,
+        scheduleState.isLiveBySchedule
+      );
+    });
     return [...regularNodes, ...ghostNodes];
-  }, [visibleNodes, ghostNodesData]);
+  }, [visibleNodes, ghostNodesData, getNodeScheduleState]);
 
   // Build node position map for offset calculation
   const nodePositions = useMemo(() => {
@@ -272,17 +331,31 @@ function GraphCanvas2DInner(): React.ReactNode {
       const offset = offsets.get(edge.id) ?? 0;
       const sourceCenter = nodePositions.get(edge.source);
       const targetCenter = nodePositions.get(edge.target);
+      const isScheduleHighlighted = scheduleHighlight?.edgeIds.has(edge.id) ?? false;
+      const isDimmedBySchedule =
+        emphasizeLiveNodes &&
+        scheduleHighlight !== null &&
+        !isScheduleHighlighted &&
+        !isEdgeLiveAtTime(edge, scheduleHighlight.liveNodeIds);
 
       return {
         id: edge.id,
         source: edge.source,
         target: edge.target,
         type: "custom",
-        data: { offset, sourceCenter, targetCenter },
+        data: { offset, sourceCenter, targetCenter, isScheduleHighlighted, isDimmedBySchedule },
         ...(isCrossZ ? { style: { strokeDasharray: "5,5", opacity: 0.5 } } : {}),
       };
     });
-  }, [project.edges, viewMode, visibleNodeIds, ghostNodeIds, nodePositions]);
+  }, [
+    project.edges,
+    viewMode,
+    visibleNodeIds,
+    ghostNodeIds,
+    nodePositions,
+    scheduleHighlight,
+    emphasizeLiveNodes,
+  ]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges);
