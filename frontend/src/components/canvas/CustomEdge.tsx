@@ -9,6 +9,7 @@
 "use client";
 
 import { getOffsetBezierPath } from "@/lib/edgeUtils";
+import { SCHEDULE_OPERATION_COLORS } from "@/lib/scheduleVisualization";
 import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 import type { EdgeProps } from "@xyflow/react";
 import type { CSSProperties } from "react";
@@ -18,6 +19,8 @@ export interface CustomEdgeData {
   offset?: number;
   sourceCenter?: { x: number; y: number };
   targetCenter?: { x: number; y: number };
+  isScheduleHighlighted?: boolean;
+  isDimmedBySchedule?: boolean;
 }
 
 function CustomEdgeComponent({
@@ -32,6 +35,8 @@ function CustomEdgeComponent({
 }: EdgeProps): React.ReactNode {
   const edgeData = data as CustomEdgeData | undefined;
   const offset = edgeData?.offset ?? 0;
+  const isTimelineHighlighted = edgeData?.isScheduleHighlighted === true;
+  const isDimmedBySchedule = edgeData?.isDimmedBySchedule === true;
 
   // Schedule editor highlight state
   const hoveredEdgeId = useScheduleEditorStore((s) => s.hoveredEdgeId);
@@ -47,7 +52,10 @@ function CustomEdgeComponent({
   let strokeColor = "#6b7280"; // Default gray
   let strokeWidth = 2;
 
-  if (isScheduleHighlighted) {
+  if (isTimelineHighlighted) {
+    strokeColor = SCHEDULE_OPERATION_COLORS.entangle;
+    strokeWidth = 4;
+  } else if (isScheduleHighlighted) {
     strokeColor = "#f97316"; // Orange for schedule highlight
     strokeWidth = 3;
   } else if (selected === true) {
@@ -61,6 +69,7 @@ function CustomEdgeComponent({
     strokeWidth,
     strokeLinecap: "round",
     strokeLinejoin: "round",
+    opacity: isDimmedBySchedule ? 0.16 : (style as CSSProperties | undefined)?.opacity,
   };
 
   const haloStyle: CSSProperties = {
@@ -69,7 +78,11 @@ function CustomEdgeComponent({
     strokeWidth: strokeWidth + 5,
     strokeLinecap: "round",
     strokeLinejoin: "round",
-    opacity: isScheduleHighlighted || selected === true ? 0.24 : 0.14,
+    opacity: isDimmedBySchedule
+      ? 0.06
+      : isTimelineHighlighted || isScheduleHighlighted || selected === true
+        ? 0.28
+        : 0.14,
     pointerEvents: "none",
   };
 

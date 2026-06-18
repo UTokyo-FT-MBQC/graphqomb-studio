@@ -6,8 +6,9 @@
 
 import { TimelineView } from "@/components/timeline/TimelineView";
 import { useProjectStore } from "@/stores/projectStore";
+import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 import type { ScheduleResult } from "@/types";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock the project store
@@ -24,6 +25,7 @@ describe("TimelineView", () => {
 
   afterEach(() => {
     cleanup();
+    useScheduleEditorStore.getState().reset();
   });
 
   it("should render placeholder when no schedule exists", () => {
@@ -107,5 +109,42 @@ describe("TimelineView", () => {
     render(<TimelineView />);
 
     expect(screen.getByText("n0-n1")).toBeDefined();
+  });
+
+  it("should select a timeline slice when clicked", () => {
+    const schedule: ScheduleResult = {
+      prepareTime: { n0: 0 },
+      measureTime: { n0: 1 },
+      entangleTime: {},
+      timeline: [
+        { time: 0, prepareNodes: ["n0"], entangleEdges: [], measureNodes: [] },
+        { time: 1, prepareNodes: [], entangleEdges: [], measureNodes: ["n0"] },
+      ],
+    };
+
+    mockUseProjectStore.mockImplementation(() => schedule);
+
+    render(<TimelineView />);
+
+    fireEvent.click(screen.getByRole("button", { name: /T = 1/i }));
+
+    expect(useScheduleEditorStore.getState().selectedTimelineTime).toBe(1);
+  });
+
+  it("should toggle live node emphasis", () => {
+    const schedule: ScheduleResult = {
+      prepareTime: { n0: 0 },
+      measureTime: { n0: 1 },
+      entangleTime: {},
+      timeline: [{ time: 0, prepareNodes: ["n0"], entangleEdges: [], measureNodes: [] }],
+    };
+
+    mockUseProjectStore.mockImplementation(() => schedule);
+
+    render(<TimelineView />);
+
+    fireEvent.click(screen.getByLabelText("Live nodes"));
+
+    expect(useScheduleEditorStore.getState().emphasizeLiveNodes).toBe(true);
   });
 });

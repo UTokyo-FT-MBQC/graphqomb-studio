@@ -43,6 +43,8 @@ interface ScheduleEditorState {
   selectedEntryId: string | null;
   hoveredEdgeId: string | null;
   selectedEdgeEntryId: string | null;
+  selectedTimelineTime: number | null;
+  emphasizeLiveNodes: boolean;
   isDirty: boolean;
 
   // Validation state
@@ -71,6 +73,9 @@ interface ScheduleEditorState {
   toggleEdgeLock: (edgeId: string) => void;
   setHoveredEdge: (edgeId: string | null) => void;
   selectEdgeEntry: (edgeId: string | null) => void;
+  selectTimelineTime: (time: number | null) => void;
+  toggleLiveNodeEmphasis: () => void;
+  setLiveNodeEmphasis: (enabled: boolean) => void;
   autoFillEdges: () => void;
   clearDraft: () => void;
   autoFillUnlocked: (schedule: ScheduleResult) => void;
@@ -88,6 +93,8 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
   selectedEntryId: null,
   hoveredEdgeId: null,
   selectedEdgeEntryId: null,
+  selectedTimelineTime: null,
+  emphasizeLiveNodes: false,
   isDirty: false,
   validationResult: null,
   isValidating: false,
@@ -212,6 +219,15 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
   setHoveredEdge: (edgeId) => set({ hoveredEdgeId: edgeId }),
 
   selectEdgeEntry: (edgeId) => set({ selectedEdgeEntryId: edgeId }),
+
+  selectTimelineTime: (time) =>
+    set((state) => ({
+      selectedTimelineTime: state.selectedTimelineTime === time ? null : time,
+    })),
+
+  toggleLiveNodeEmphasis: () => set((state) => ({ emphasizeLiveNodes: !state.emphasizeLiveNodes })),
+
+  setLiveNodeEmphasis: (enabled) => set({ emphasizeLiveNodes: enabled }),
 
   autoFillEdges: () =>
     set((state) => {
@@ -415,6 +431,8 @@ export const useScheduleEditorStore = create<ScheduleEditorState>((set, get) => 
       selectedEntryId: null,
       hoveredEdgeId: null,
       selectedEdgeEntryId: null,
+      selectedTimelineTime: null,
+      emphasizeLiveNodes: false,
       isDirty: false,
       validationResult: null,
       isValidating: false,

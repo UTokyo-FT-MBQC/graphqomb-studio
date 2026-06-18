@@ -12,6 +12,10 @@
 
 "use client";
 
+import {
+  SCHEDULE_OPERATION_COLORS,
+  type ScheduleNodeHighlightKind,
+} from "@/lib/scheduleVisualization";
 import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { GraphNode, NodeRole } from "@/types";
@@ -21,6 +25,9 @@ import { memo } from "react";
 export interface GhostNodeData {
   node: GraphNode;
   zOffset: number; // +1 for above, -1 for below current slice
+  scheduleHighlightKind?: ScheduleNodeHighlightKind | undefined;
+  isDimmedBySchedule?: boolean | undefined;
+  isLiveBySchedule?: boolean | undefined;
   [key: string]: unknown;
 }
 
@@ -67,10 +74,40 @@ function GhostNodeComponent({ data }: GhostNodeProps): React.ReactNode {
   // Highlight ghost node when in edge creation mode
   const isSourceNode = sourceNodeId === node.id;
   const showEnhanced = isEdgeCreationMode;
+  const scheduleHighlightKind = data.scheduleHighlightKind;
+  const isDimmedBySchedule = data.isDimmedBySchedule === true;
+  const isLiveBySchedule = data.isLiveBySchedule === true;
 
   // Determine opacity and glow based on state
-  const opacity = isSourceNode ? 0.9 : showEnhanced ? 0.7 : 0.5;
-  const glowEffect = isSourceNode ? "0 0 12px 3px rgba(168, 85, 247, 0.6)" : "none";
+  const opacity = isDimmedBySchedule
+    ? 0.16
+    : scheduleHighlightKind !== undefined || isLiveBySchedule
+      ? 0.9
+      : isSourceNode
+        ? 0.9
+        : showEnhanced
+          ? 0.7
+          : 0.5;
+  const glowEffect =
+    scheduleHighlightKind === "prep"
+      ? "0 0 12px 3px rgba(147, 51, 234, 0.65)"
+      : scheduleHighlightKind === "meas"
+        ? "0 0 12px 3px rgba(22, 163, 74, 0.65)"
+        : scheduleHighlightKind === "prep-meas"
+          ? "0 0 12px 3px rgba(249, 115, 22, 0.65)"
+          : isLiveBySchedule
+            ? "0 0 7px 2px rgba(37, 99, 235, 0.4)"
+            : isSourceNode
+              ? "0 0 12px 3px rgba(168, 85, 247, 0.6)"
+              : "none";
+  const borderColor =
+    scheduleHighlightKind === "prep"
+      ? SCHEDULE_OPERATION_COLORS.prep
+      : scheduleHighlightKind === "meas"
+        ? SCHEDULE_OPERATION_COLORS.meas
+        : scheduleHighlightKind === "prep-meas"
+          ? SCHEDULE_OPERATION_COLORS.entangle
+          : "rgba(156, 163, 175, 0.6)";
 
   return (
     <div className="relative flex flex-col items-center">
@@ -101,7 +138,7 @@ function GhostNodeComponent({ data }: GhostNodeProps): React.ReactNode {
           opacity,
           background: `radial-gradient(circle at 30% 30%, ${style.lightColor}, ${style.baseColor} 50%, ${style.darkColor} 100%)`,
           boxShadow: glowEffect,
-          border: "2px dashed rgba(156, 163, 175, 0.6)",
+          border: `2px dashed ${borderColor}`,
         }}
         title={`${node.id} (z=${nodeZ})${isEdgeCreationMode ? " - Click to connect" : ""}`}
       />
