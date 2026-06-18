@@ -154,7 +154,7 @@ function Node3DComponent({
         <Text
           position={[0, 0.25, 0]}
           fontSize={0.12}
-          color="#374151"
+          color={isDimmedBySchedule ? "#d1d5db" : "#374151"}
           anchorX="center"
           anchorY="bottom"
         >
