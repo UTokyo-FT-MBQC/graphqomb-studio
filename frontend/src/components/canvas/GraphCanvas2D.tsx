@@ -222,7 +222,8 @@ function GraphCanvas2DInner(): React.ReactNode {
   const getNodeScheduleState = useCallback(
     (nodeId: string) => {
       const scheduleHighlightKind = scheduleHighlight?.nodeKinds.get(nodeId);
-      const isLiveBySchedule = scheduleHighlight?.liveNodeIds.has(nodeId) ?? false;
+      const isLiveBySchedule =
+        emphasizeLiveNodes && (scheduleHighlight?.liveNodeIds.has(nodeId) ?? false);
       const isDimmedBySchedule =
         emphasizeLiveNodes &&
         scheduleHighlight !== null &&

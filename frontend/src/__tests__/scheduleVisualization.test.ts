@@ -22,6 +22,12 @@ const nodes: GraphNode[] = [
     coordinate: { x: 2, y: 0, z: 0 },
     measBasis: { type: "axis", axis: "X", sign: "PLUS" },
   },
+  {
+    id: "out0",
+    role: "output",
+    coordinate: { x: 3, y: 0, z: 0 },
+    qubitIndex: 0,
+  },
 ];
 
 const schedule: ScheduleResult = {
@@ -54,5 +60,15 @@ describe("scheduleVisualization", () => {
 
     expect(isNodeAliveAtTime(schedule, inputNode, 1)).toBe(true);
     expect(isNodeAliveAtTime(schedule, inputNode, 2)).toBe(false);
+  });
+
+  it("should treat unmeasured output nodes with no prepare time as live", () => {
+    const outputNode = nodes.find((node) => node.id === "out0");
+    expect(outputNode).toBeDefined();
+    if (outputNode === undefined) {
+      throw new Error("missing output node fixture");
+    }
+
+    expect(isNodeAliveAtTime(schedule, outputNode, 1)).toBe(true);
   });
 });

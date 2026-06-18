@@ -461,7 +461,9 @@ function Scene(): React.ReactNode {
             isDragging={dragState.draggedNodeId === node.id}
             ftqcHighlight={ftqcHighlights.get(node.id)}
             scheduleHighlightKind={scheduleHighlight?.nodeKinds.get(node.id)}
-            isLiveBySchedule={scheduleHighlight?.liveNodeIds.has(node.id) ?? false}
+            isLiveBySchedule={
+              emphasizeLiveNodes && (scheduleHighlight?.liveNodeIds.has(node.id) ?? false)
+            }
             isDimmedBySchedule={
               emphasizeLiveNodes &&
               scheduleHighlight !== null &&

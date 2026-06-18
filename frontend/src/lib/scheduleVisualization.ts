@@ -74,7 +74,8 @@ export function isNodeAliveAtTime(
   const prepareTime = schedule.prepareTime[node.id] ?? null;
   const measureTime = schedule.measureTime[node.id] ?? null;
 
-  const isPrepared = prepareTime === null ? node.role === "input" : prepareTime <= time;
+  const isPrepared =
+    prepareTime === null ? node.role === "input" || node.role === "output" : prepareTime <= time;
   const isMeasured = measureTime !== null && measureTime <= time;
 
   return isPrepared && !isMeasured;
