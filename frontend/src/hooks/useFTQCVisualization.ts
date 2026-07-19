@@ -11,18 +11,28 @@
 import { type FTQCHighlight, getObservableColor, getParityGroupColor } from "@/lib/ftqcColors";
 import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
+import type { FTQCDefinition } from "@/types";
 import { useEffect, useMemo } from "react";
+import { useCompiledFTQC } from "./useCompiledFTQC";
 
 export interface FTQCVisualizationResult {
+  displayedFTQC: FTQCDefinition | undefined;
   highlights: Map<string, FTQCHighlight>;
   hasData: boolean;
   parityGroupCount: number;
   observableKeys: string[];
+  isCompiling: boolean;
+  compilationError: string | null;
 }
 
 export function useFTQCVisualization(): FTQCVisualizationResult {
   const ftqc = useProjectStore((state) => state.project.ftqc);
   const ftqcVisualization = useUIStore((state) => state.ftqcVisualization);
+  const isCompiledMode = ftqcVisualization.displayMode === "compiled";
+  const { compiledFTQC, isLoading, error } = useCompiledFTQC(isCompiledMode);
+  const displayedFTQC = isCompiledMode ? (compiledFTQC ?? undefined) : ftqc;
+  const isCompiling = isCompiledMode && isLoading;
+  const compilationError = isCompiledMode ? error : null;
   const setSelectedParityGroupIndex = useUIStore((state) => state.setSelectedParityGroupIndex);
   const setSelectedObservableKey = useUIStore((state) => state.setSelectedObservableKey);
 
@@ -32,8 +42,10 @@ export function useFTQCVisualization(): FTQCVisualizationResult {
   // Validate and reset selection when underlying data changes
   // This prevents stale selection indices after group deletion/reordering
   useEffect(() => {
-    const parityGroupCount = ftqc?.parityCheckGroup.length ?? 0;
-    const observableKeys = Object.keys(ftqc?.logicalObservableGroup ?? {});
+    if (isCompiledMode && displayedFTQC === undefined) return;
+
+    const parityGroupCount = displayedFTQC?.parityCheckGroup.length ?? 0;
+    const observableKeys = Object.keys(displayedFTQC?.logicalObservableGroup ?? {});
 
     // Reset parity group selection if index is out of bounds
     if (selectedParityGroupIndex !== null && selectedParityGroupIndex >= parityGroupCount) {
@@ -45,7 +57,8 @@ export function useFTQCVisualization(): FTQCVisualizationResult {
       setSelectedObservableKey(null);
     }
   }, [
-    ftqc,
+    displayedFTQC,
+    isCompiledMode,
     selectedParityGroupIndex,
     selectedObservableKey,
     setSelectedParityGroupIndex,
@@ -55,17 +68,20 @@ export function useFTQCVisualization(): FTQCVisualizationResult {
   return useMemo(() => {
     const highlights = new Map<string, FTQCHighlight>();
 
-    if (ftqc === undefined) {
+    if (displayedFTQC === undefined) {
       return {
+        displayedFTQC,
         highlights,
         hasData: false,
         parityGroupCount: 0,
         observableKeys: [],
+        isCompiling,
+        compilationError,
       };
     }
 
-    const parityGroupCount = ftqc.parityCheckGroup.length;
-    const observableKeys = Object.keys(ftqc.logicalObservableGroup).sort();
+    const parityGroupCount = displayedFTQC.parityCheckGroup.length;
+    const observableKeys = Object.keys(displayedFTQC.logicalObservableGroup).sort();
     const {
       showParityGroups,
       selectedParityGroupIndex,
@@ -75,7 +91,7 @@ export function useFTQCVisualization(): FTQCVisualizationResult {
 
     // Process parity groups
     if (showParityGroups) {
-      ftqc.parityCheckGroup.forEach((group, index) => {
+      displayedFTQC.parityCheckGroup.forEach((group, index) => {
         // Skip if a specific group is selected and this isn't it
         if (selectedParityGroupIndex !== null && selectedParityGroupIndex !== index) {
           return;
@@ -105,7 +121,7 @@ export function useFTQCVisualization(): FTQCVisualizationResult {
           return;
         }
 
-        const targets = ftqc.logicalObservableGroup[key];
+        const targets = displayedFTQC.logicalObservableGroup[key];
         if (targets === undefined) return;
         const color = getObservableColor(keyIndex);
         for (const nodeId of targets) {
@@ -122,10 +138,13 @@ export function useFTQCVisualization(): FTQCVisualizationResult {
     }
 
     return {
+      displayedFTQC,
       highlights,
       hasData: true,
       parityGroupCount,
       observableKeys,
+      isCompiling,
+      compilationError,
     };
-  }, [ftqc, ftqcVisualization]);
+  }, [compilationError, displayedFTQC, ftqcVisualization, isCompiling]);
 }

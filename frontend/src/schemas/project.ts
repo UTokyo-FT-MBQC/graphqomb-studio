@@ -54,6 +54,7 @@ export const InputNodeSchema = z
     role: z.literal("input"),
     measBasis: MeasBasisSchema,
     qubitIndex: z.number().int().nonnegative(),
+    inputBasis: AxisSchema.optional(),
   })
   .strict();
 
@@ -64,6 +65,7 @@ export const OutputNodeSchema = z
     role: z.literal("output"),
     measBasis: MeasBasisSchema.optional(),
     qubitIndex: z.number().int().nonnegative(),
+    inputBasis: z.undefined().optional(),
   })
   .strict();
 
@@ -74,6 +76,7 @@ export const IntermediateNodeSchema = z
     role: z.literal("intermediate"),
     measBasis: MeasBasisSchema,
     qubitIndex: z.undefined().optional(),
+    inputBasis: z.undefined().optional(),
   })
   .strict();
 
@@ -167,6 +170,12 @@ interface ProjectReferenceInput {
     xflow: Record<string, string[]>;
     zflow: Record<string, string[]> | "auto";
   };
+  ftqc?:
+    | {
+        parityCheckGroup: string[][];
+        logicalObservableGroup: Record<string, string[]>;
+      }
+    | undefined;
 }
 
 function addFlowReferenceIssues(
@@ -239,6 +248,30 @@ function validateProjectReferences(project: ProjectReferenceInput, ctx: z.Refine
   addFlowReferenceIssues("xflow", project.flow.xflow, nodeIds, ctx);
   if (project.flow.zflow !== "auto") {
     addFlowReferenceIssues("zflow", project.flow.zflow, nodeIds, ctx);
+  }
+
+  for (const [groupIndex, group] of (project.ftqc?.parityCheckGroup ?? []).entries()) {
+    for (const [targetIndex, nodeId] of group.entries()) {
+      if (!nodeIds.has(nodeId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["ftqc", "parityCheckGroup", groupIndex, targetIndex],
+          message: `parityCheckGroup ${groupIndex} references unknown node '${nodeId}'`,
+        });
+      }
+    }
+  }
+
+  for (const [key, targets] of Object.entries(project.ftqc?.logicalObservableGroup ?? {})) {
+    for (const [targetIndex, nodeId] of targets.entries()) {
+      if (!nodeIds.has(nodeId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["ftqc", "logicalObservableGroup", key, targetIndex],
+          message: `logicalObservableGroup '${key}' references unknown node '${nodeId}'`,
+        });
+      }
+    }
   }
 }
 

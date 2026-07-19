@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Backend
 
+#### Added
+
+- GraphQOMB 0.4.0 is now required; PTN import delegates version 1/2 parsing to GraphQOMB and preserves per-input X+, Y+, and Z+ initialization bases.
+- FTQC detector and logical-observable seeds can be expanded through GraphQOMB's closure algorithm.
+
 #### Fixed
 
 - PTN import now accepts measured output nodes by preserving `role: "output"` while allowing an optional measurement basis.
@@ -17,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
+- Input-node properties can display and edit the Pauli initialization basis imported from PTN v2 files.
+- FTQC visualization can switch between original detector/logical-observable seeds and compiled closure groups.
 - Resizable property sidebar and resizable elements/details split inside the property panel, including pointer and keyboard controls with clamped dimensions.
 - Regression tests for panel resizing behavior and 2D canvas center-coordinate edge rendering.
 

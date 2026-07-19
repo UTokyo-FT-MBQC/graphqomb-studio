@@ -6,6 +6,7 @@
  * - Position (x, y, z for 3D)
  * - Role (input, output, intermediate)
  * - Qubit index (for input/output nodes)
+ * - Input basis (for input nodes)
  * - Measurement basis (for measured nodes)
  * - Flow targets (for measured nodes)
  */
@@ -16,6 +17,7 @@ import { FlowEditor } from "@/components/panels/FlowEditor";
 import { MeasBasisEditor } from "@/components/panels/MeasBasisEditor";
 import { useProjectStore } from "@/stores/projectStore";
 import type {
+  Axis,
   GraphNode,
   InputNode,
   IntermediateNode,
@@ -56,6 +58,7 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
         const updates: Partial<InputNode> = {
           role: "input",
           qubitIndex: 0,
+          inputBasis: node.role === "input" ? (node.inputBasis ?? "X") : "X",
           measBasis:
             node.measBasis !== undefined
               ? node.measBasis
@@ -67,12 +70,14 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
           role: "output",
           qubitIndex: 0,
           measBasis: undefined,
+          inputBasis: undefined,
         };
         updateNode(node.id, updates);
       } else {
         const updates: Partial<IntermediateNode> = {
           role: "intermediate",
           qubitIndex: undefined,
+          inputBasis: undefined,
           measBasis:
             node.measBasis !== undefined
               ? node.measBasis
@@ -91,6 +96,13 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
       if (!Number.isNaN(value) && value >= 0) {
         updateNode(node.id, { qubitIndex: value });
       }
+    },
+    [node.id, updateNode]
+  );
+
+  const handleInputBasisChange = useCallback(
+    (e: ChangeEvent<HTMLSelectElement>) => {
+      updateNode(node.id, { inputBasis: e.target.value as Axis });
     },
     [node.id, updateNode]
   );
@@ -201,6 +213,27 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
               onChange={handleQubitIndexChange}
               className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
             />
+          </div>
+        )}
+
+        {node.role === "input" && (
+          <div>
+            <label
+              htmlFor={`node-${node.id}-input-basis`}
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Input Basis
+            </label>
+            <select
+              id={`node-${node.id}-input-basis`}
+              value={node.inputBasis ?? "X"}
+              onChange={handleInputBasisChange}
+              className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+            >
+              <option value="X">X+</option>
+              <option value="Y">Y+</option>
+              <option value="Z">Z+</option>
+            </select>
           </div>
         )}
 

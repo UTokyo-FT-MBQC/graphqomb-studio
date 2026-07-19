@@ -68,6 +68,48 @@ describe("Project validation", () => {
     expect(result.success).toBe(true);
   });
 
+  it("should validate an input node with a Pauli input basis", () => {
+    const project = createValidProjectWithNodes();
+    const inputNode = project.nodes[0];
+    if (inputNode?.role === "input") {
+      inputNode.inputBasis = "Z";
+    }
+
+    const result = safeValidateProject(project);
+    expect(result.success).toBe(true);
+  });
+
+  it("should reject an input basis on a non-input node", () => {
+    const project = createValidProjectWithNodes() as unknown as {
+      nodes: Array<Record<string, unknown>>;
+    };
+    const outputNode = project.nodes[1];
+    if (outputNode !== undefined) {
+      outputNode.inputBasis = "Z";
+    }
+
+    const result = safeValidateProject(project);
+    expect(result.success).toBe(false);
+  });
+
+  it("should reject FTQC groups that reference an unknown node", () => {
+    const project = createValidProjectWithNodes();
+    project.ftqc = {
+      parityCheckGroup: [["missing"]],
+      logicalObservableGroup: { "0": ["missing"] },
+    };
+
+    const result = safeValidateProject(project);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map((issue) => issue.message)).toEqual([
+        "parityCheckGroup 0 references unknown node 'missing'",
+        "logicalObservableGroup '0' references unknown node 'missing'",
+      ]);
+    }
+  });
+
   it("should validate a project with intermediate node", () => {
     const projectWithIntermediate = {
       $schema: "graphqomb-studio/v1",

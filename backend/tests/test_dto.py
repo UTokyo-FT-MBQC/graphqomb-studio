@@ -98,6 +98,18 @@ class TestGraphNode:
         )
         assert node.role == "input"
 
+    def test_input_node_with_input_basis(self) -> None:
+        """Test input nodes accept a Pauli initialization basis."""
+        node = GraphNodeDTO(
+            id="n0",
+            coordinate=CoordinateDTO(x=0, y=0, z=0),
+            role="input",
+            measBasis=PlannerMeasBasisDTO(type="planner", plane="XY", angleCoeff=0),
+            qubitIndex=0,
+            inputBasis="Z",
+        )
+        assert node.inputBasis == "Z"
+
     def test_input_node_missing_meas_basis(self) -> None:
         """Test input node requires measBasis."""
         with pytest.raises(ValidationError, match="input node requires measBasis"):
@@ -139,6 +151,17 @@ class TestGraphNode:
         )
         assert node.measBasis is not None
 
+    def test_output_node_with_input_basis(self) -> None:
+        """Test output nodes reject input initialization bases."""
+        with pytest.raises(ValidationError, match="output node must not have inputBasis"):
+            GraphNodeDTO(
+                id="n0",
+                coordinate=CoordinateDTO(x=0, y=0, z=0),
+                role="output",
+                qubitIndex=0,
+                inputBasis="Z",
+            )
+
     def test_intermediate_node_valid(self) -> None:
         """Test valid intermediate node."""
         node = GraphNodeDTO(
@@ -158,6 +181,17 @@ class TestGraphNode:
                 role="intermediate",
                 measBasis=PlannerMeasBasisDTO(type="planner", plane="XY", angleCoeff=0),
                 qubitIndex=0,
+            )
+
+    def test_intermediate_node_with_input_basis(self) -> None:
+        """Test intermediate nodes reject input initialization bases."""
+        with pytest.raises(ValidationError, match="intermediate node must not have inputBasis"):
+            GraphNodeDTO(
+                id="n0",
+                coordinate=CoordinateDTO(x=0, y=0, z=0),
+                role="intermediate",
+                measBasis=PlannerMeasBasisDTO(type="planner", plane="XY", angleCoeff=0),
+                inputBasis="Y",
             )
 
 

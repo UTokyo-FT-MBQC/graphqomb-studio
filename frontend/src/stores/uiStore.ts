@@ -9,9 +9,11 @@ import { create } from "zustand";
 
 export type ViewMode = "2d-projection" | "2d-slice" | "3d-isometric";
 export type WorkingPlane = "XY" | "XZ" | "YZ";
+export type FTQCDisplayMode = "original" | "compiled";
 
 // FTQC Visualization state
 export interface FTQCVisualizationState {
+  displayMode: FTQCDisplayMode;
   showParityGroups: boolean;
   selectedParityGroupIndex: number | null; // null = show all
   showLogicalObservables: boolean;
@@ -83,6 +85,7 @@ interface UIState {
   closeFTQCModal: () => void;
 
   // FTQC visualization actions
+  setFTQCDisplayMode: (mode: FTQCDisplayMode) => void;
   setShowParityGroups: (show: boolean) => void;
   toggleShowParityGroups: () => void;
   setSelectedParityGroupIndex: (index: number | null) => void;
@@ -120,6 +123,7 @@ export const useUIStore = create<UIState>((set) => ({
 
   // FTQC visualization (default: disabled)
   ftqcVisualization: {
+    displayMode: "original",
     showParityGroups: false,
     selectedParityGroupIndex: null,
     showLogicalObservables: false,
@@ -177,6 +181,11 @@ export const useUIStore = create<UIState>((set) => ({
   closeFTQCModal: () => set({ isFTQCModalOpen: false }),
 
   // FTQC visualization actions
+  setFTQCDisplayMode: (mode) =>
+    set((state) => ({
+      ftqcVisualization: { ...state.ftqcVisualization, displayMode: mode },
+    })),
+
   setShowParityGroups: (show) =>
     set((state) => ({
       ftqcVisualization: { ...state.ftqcVisualization, showParityGroups: show },

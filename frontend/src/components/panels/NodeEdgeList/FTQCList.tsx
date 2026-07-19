@@ -15,16 +15,18 @@ import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
 
 export function FTQCList(): React.ReactNode {
-  const ftqc = useProjectStore((state) => state.project.ftqc);
-  const { parityGroupCount, observableKeys } = useFTQCVisualization();
+  const originalFTQC = useProjectStore((state) => state.project.ftqc);
+  const { displayedFTQC, parityGroupCount, observableKeys, isCompiling, compilationError } =
+    useFTQCVisualization();
 
   const ftqcVisualization = useUIStore((state) => state.ftqcVisualization);
+  const setFTQCDisplayMode = useUIStore((state) => state.setFTQCDisplayMode);
   const toggleShowParityGroups = useUIStore((state) => state.toggleShowParityGroups);
   const setSelectedParityGroupIndex = useUIStore((state) => state.setSelectedParityGroupIndex);
   const toggleShowLogicalObservables = useUIStore((state) => state.toggleShowLogicalObservables);
   const setSelectedObservableKey = useUIStore((state) => state.setSelectedObservableKey);
 
-  if (ftqc === undefined) {
+  if (originalFTQC === undefined) {
     return (
       <div className="text-sm text-gray-500 text-center py-4">
         No FTQC data defined.
@@ -37,20 +39,48 @@ export function FTQCList(): React.ReactNode {
   const hasParityGroups = parityGroupCount > 0;
   const hasObservables = observableKeys.length > 0;
 
-  if (!hasParityGroups && !hasObservables) {
-    return (
-      <div className="text-sm text-gray-500 text-center py-4">
-        No groups defined.
-        <br />
-        <span className="text-xs">Use the FTQC button to add groups.</span>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4 pr-1">
+      <div className="flex rounded bg-gray-100 p-0.5" aria-label="FTQC data display">
+        {(["original", "compiled"] as const).map((mode) => (
+          <button
+            type="button"
+            key={mode}
+            aria-pressed={ftqcVisualization.displayMode === mode}
+            onClick={() => setFTQCDisplayMode(mode)}
+            className={`flex-1 rounded px-2 py-1 text-xs font-medium capitalize transition-colors ${
+              ftqcVisualization.displayMode === mode
+                ? "bg-white text-gray-800 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            {mode}
+          </button>
+        ))}
+      </div>
+
+      {isCompiling && (
+        <div className="py-3 text-center text-sm text-gray-500">Compiling FTQC groups…</div>
+      )}
+
+      {compilationError !== null && (
+        <div className="rounded bg-red-50 p-2 text-xs text-red-700">{compilationError}</div>
+      )}
+
+      {!isCompiling &&
+        compilationError === null &&
+        displayedFTQC !== undefined &&
+        !hasParityGroups &&
+        !hasObservables && (
+          <div className="text-sm text-gray-500 text-center py-4">
+            No groups defined.
+            <br />
+            <span className="text-xs">Use the FTQC button to add groups.</span>
+          </div>
+        )}
+
       {/* Parity Check Groups Section */}
-      {hasParityGroups && (
+      {displayedFTQC !== undefined && hasParityGroups && (
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -74,7 +104,7 @@ export function FTQCList(): React.ReactNode {
               )}
           </div>
           <div className="space-y-1">
-            {ftqc.parityCheckGroup.map((group, index) => {
+            {displayedFTQC.parityCheckGroup.map((group, index) => {
               const color = getParityGroupColor(index);
               const isSelected = ftqcVisualization.selectedParityGroupIndex === index;
               const isVisible =
@@ -123,7 +153,7 @@ export function FTQCList(): React.ReactNode {
       {hasParityGroups && hasObservables && <div className="border-t border-gray-200" />}
 
       {/* Logical Observables Section */}
-      {hasObservables && (
+      {displayedFTQC !== undefined && hasObservables && (
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -148,7 +178,7 @@ export function FTQCList(): React.ReactNode {
           </div>
           <div className="space-y-1">
             {observableKeys.map((key, keyIndex) => {
-              const targets = ftqc.logicalObservableGroup[key] ?? [];
+              const targets = displayedFTQC.logicalObservableGroup[key] ?? [];
               const color = getObservableColor(keyIndex);
               const isSelected = ftqcVisualization.selectedObservableKey === key;
               const isVisible =
