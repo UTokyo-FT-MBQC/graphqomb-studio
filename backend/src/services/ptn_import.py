@@ -79,6 +79,7 @@ def pattern_to_project(pattern: Pattern, *, name: str = "Imported PTN") -> Proje
         "schedule": _schedule_to_studio(pattern),
     }
 
+
 def _strip_unsupported_correction_commands(text: str) -> str:
     """Remove legacy quantum-section X/Z correction commands before ptn_format parsing."""
     kept_lines: list[str] = []

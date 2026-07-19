@@ -22,9 +22,7 @@ def compile_ftqc(project: ProjectPayloadDTO) -> FTQCDefinitionDTO:
         zflow = compute_zflow_from_xflow(graph, xflow)
 
     try:
-        parity_check_group = [
-            {node_map[node_id] for node_id in group} for group in project.ftqc.parityCheckGroup
-        ]
+        parity_check_group = [{node_map[node_id] for node_id in group} for group in project.ftqc.parityCheckGroup]
         logical_observables = {
             int(key): {node_map[node_id] for node_id in targets}
             for key, targets in project.ftqc.logicalObservableGroup.items()
@@ -36,13 +34,9 @@ def compile_ftqc(project: ProjectPayloadDTO) -> FTQCDefinitionDTO:
             parity_check_group=parity_check_group,
             logical_observables=logical_observables,
         )
-        compiled_detectors = [
-            sorted(reverse_map[node] for node in group) for group in pauli_frame.detector_groups()
-        ]
+        compiled_detectors = [sorted(reverse_map[node] for node in group) for group in pauli_frame.detector_groups()]
         compiled_observables = {
-            str(index): sorted(
-                reverse_map[node] for node in pauli_frame.logical_observables_group(targets)
-            )
+            str(index): sorted(reverse_map[node] for node in pauli_frame.logical_observables_group(targets))
             for index, targets in sorted(logical_observables.items())
         }
     except (KeyError, ValueError) as exc:

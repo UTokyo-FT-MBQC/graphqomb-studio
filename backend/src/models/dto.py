@@ -194,9 +194,7 @@ class ProjectPayloadDTO(BaseModel):
             for group_index, group in enumerate(self.ftqc.parityCheckGroup):
                 for node_id in group:
                     if node_id not in node_id_set:
-                        raise ValueError(
-                            f"parityCheckGroup {group_index} references unknown node '{node_id}'"
-                        )
+                        raise ValueError(f"parityCheckGroup {group_index} references unknown node '{node_id}'")
             for observable_key, targets in self.ftqc.logicalObservableGroup.items():
                 for node_id in targets:
                     if node_id not in node_id_set:
