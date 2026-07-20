@@ -43,6 +43,16 @@ def measured_output_ptn() -> str:
     return simple_ptn().replace("[2]\nM 1 XY pi/2", "[2]\nM 1 XY pi/2\nM 2 X +")
 
 
+def v2_ptn() -> str:
+    """Return a v2 PTN pattern with explicit Z+ input initialization."""
+    return (
+        simple_ptn()
+        .replace("# GraphQOMB Pattern Format v1", "# GraphQOMB Pattern Format v2")
+        .replace(".version 1", ".version 2")
+        .replace(".input 0:0", ".input 0:0\n.input_basis 0:Z")
+    )
+
+
 def to_payload(project: dict[str, Any]) -> dict[str, Any]:
     """Return API payload fields from a full Studio project."""
     return {key: value for key, value in project.items() if key not in {"$schema", "schedule"}}
@@ -56,6 +66,7 @@ def test_ptn_text_to_project_imports_graph_with_layout() -> None:
     assert project["name"] == "sample"
     assert [node["id"] for node in project["nodes"]] == ["n0", "n1", "n2"]
     assert project["nodes"][0]["role"] == "input"
+    assert project["nodes"][0]["inputBasis"] == "X"
     assert project["nodes"][1]["role"] == "intermediate"
     assert project["nodes"][2]["role"] == "output"
     assert project["edges"] == [
@@ -68,6 +79,38 @@ def test_ptn_text_to_project_imports_graph_with_layout() -> None:
     }
     assert all(node["coordinate"]["z"] == 0.0 for node in project["nodes"])
     assert project["schedule"]["measureTime"] == {"n0": 1, "n1": 2, "n2": None}
+
+
+@pytest.mark.parametrize("axis", ["X", "Y", "Z"])
+def test_ptn_text_to_project_imports_v2_input_basis(axis: str) -> None:
+    """PTN v2 input initialization is preserved in the Studio project."""
+    project = ptn_text_to_project(v2_ptn().replace(".input_basis 0:Z", f".input_basis 0:{axis}"))
+
+    assert project["nodes"][0]["inputBasis"] == axis
+
+
+def test_ptn_text_to_project_rejects_v2_basis_for_non_input_node() -> None:
+    """PTN v2 input bases must reference declared input nodes."""
+    invalid_ptn = v2_ptn().replace(".input_basis 0:Z", ".input_basis 1:Y")
+
+    with pytest.raises(ValueError, match="Input basis specified for non-input node"):
+        ptn_text_to_project(invalid_ptn)
+
+
+def test_ptn_text_to_project_rejects_input_basis_in_v1() -> None:
+    """The v2 input basis directive is not accepted in a v1 file."""
+    invalid_ptn = simple_ptn().replace(".input 0:0", ".input 0:0\n.input_basis 0:Z")
+
+    with pytest.raises(ValueError, match=r"\.input_basis requires \.ptn version 2"):
+        ptn_text_to_project(invalid_ptn)
+
+
+def test_ptn_text_to_project_does_not_hide_unknown_v2_directive() -> None:
+    """The GraphQOMB v2 parser must reject unknown directives."""
+    invalid_ptn = v2_ptn().replace(".input_basis 0:Z", ".input_basis_extra 0:Z")
+
+    with pytest.raises(ValueError, match=r"Unknown directive: \.input_basis_extra"):
+        ptn_text_to_project(invalid_ptn)
 
 
 def test_ptn_text_to_project_imports_measured_output() -> None:
@@ -84,6 +127,20 @@ def test_ptn_text_to_project_imports_measured_output() -> None:
 async def test_measured_output_import_is_accepted_by_validate_api() -> None:
     """Projects imported with measured outputs are accepted by the validation API."""
     project = ptn_text_to_project(measured_output_ptn())
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post("/api/validate", json=to_payload(project))
+
+    assert response.status_code == 200
+    assert response.json() == {"valid": True, "errors": []}
+
+
+async def test_v2_input_basis_import_is_accepted_by_validate_api() -> None:
+    """Projects imported from PTN v2 remain valid API payloads."""
+    project = ptn_text_to_project(v2_ptn())
 
     async with AsyncClient(
         transport=ASGITransport(app=app),

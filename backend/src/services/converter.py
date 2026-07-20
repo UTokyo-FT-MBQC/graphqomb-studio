@@ -19,7 +19,6 @@ from src.models.dto import (
     TimeSliceDTO,
     normalize_edge_id,
 )
-from src.services.graphqomb_api import add_graph_edge, add_graph_node
 
 
 def dto_to_graphstate(project: ProjectPayloadDTO) -> tuple[GraphState, dict[str, int]]:
@@ -39,20 +38,21 @@ def dto_to_graphstate(project: ProjectPayloadDTO) -> tuple[GraphState, dict[str,
     for node_dto in project.nodes:
         coord = node_dto.coordinate
         coord_tuple = (coord.x, coord.y, coord.z)
-        node_id = add_graph_node(graph, coordinate=coord_tuple)
+        node_id = graph.add_node(coordinate=coord_tuple)
         node_map[node_dto.id] = node_id
 
     # Add edges
     for edge_dto in project.edges:
         source_id = node_map[edge_dto.source]
         target_id = node_map[edge_dto.target]
-        add_graph_edge(graph, source_id, target_id)
+        graph.add_edge(source_id, target_id)
 
     # Register inputs and outputs
     for node_dto in project.nodes:
         node_id = node_map[node_dto.id]
         if node_dto.role == "input" and node_dto.qubitIndex is not None:
-            graph.register_input(node_id, node_dto.qubitIndex)
+            init_axis = Axis.X if node_dto.inputBasis is None else Axis[node_dto.inputBasis]
+            graph.register_input(node_id, node_dto.qubitIndex, init_axis=init_axis)
         elif node_dto.role == "output" and node_dto.qubitIndex is not None:
             graph.register_output(node_id, node_dto.qubitIndex)
 

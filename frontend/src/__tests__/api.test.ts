@@ -6,6 +6,7 @@
 
 import {
   checkHealth,
+  compileFTQC,
   computeZFlow,
   importPtnProject,
   isApiError,
@@ -235,6 +236,37 @@ describe("API Client", () => {
       const result = await computeZFlow(emptyPayload);
 
       expect(result).toEqual({});
+    });
+  });
+
+  describe("compileFTQC", () => {
+    it("should post the project and return compiled FTQC groups", async () => {
+      const testPayload: ProjectPayload = {
+        name: "FTQC",
+        nodes: [],
+        edges: [],
+        flow: { xflow: {}, zflow: "auto" },
+        ftqc: { parityCheckGroup: [[]], logicalObservableGroup: { "0": [] } },
+      };
+      const mockResponse = {
+        parityCheckGroup: [["n0", "n1"]],
+        logicalObservableGroup: { "0": ["n0", "n1"] },
+      };
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      const result = await compileFTQC(testPayload);
+
+      expect(result).toEqual(mockResponse);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/compile-ftqc"),
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify(testPayload),
+        })
+      );
     });
   });
 

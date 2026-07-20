@@ -27,6 +27,7 @@ function importedProject(): GraphQOMBProject {
         role: "input",
         measBasis: { type: "axis", axis: "X", sign: "PLUS" },
         qubitIndex: 0,
+        inputBasis: "Z",
       },
       {
         id: "n1",
@@ -75,6 +76,7 @@ describe("FileMenu", () => {
       expect(useProjectStore.getState().project.name).toBe("sample");
     });
     expect(mockImportPtnProject).toHaveBeenCalledWith("ptn text", "sample");
+    expect(useProjectStore.getState().project.nodes[0]).toMatchObject({ inputBasis: "Z" });
   });
 
   it("reports PTN import API errors", async () => {

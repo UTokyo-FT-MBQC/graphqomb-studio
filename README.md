@@ -107,6 +107,7 @@ For 3D projects (dimension = 3):
 - pnpm 10+
 - Python 3.12+
 - uv (Python package manager)
+- GraphQOMB 0.4.0+ (installed by `uv` after the release is available)
 
 ### Development Setup
 
@@ -129,6 +130,10 @@ For 3D projects (dimension = 3):
    ```
 
 4. **Open a `.ptn` file with the CLI**
+
+   PTN format versions 1 and 2 are supported. Version 2 input bases are preserved
+   as X+, Y+, or Z+ input-node properties.
+
    ```bash
    cd backend
    uv run gqomb-vis view path/to/file.ptn

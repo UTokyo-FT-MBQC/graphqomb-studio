@@ -69,6 +69,7 @@ class GraphNodeDTO(BaseModel):
     - input: requires measBasis and qubitIndex
     - output: may have measBasis when the output is measured, requires qubitIndex
     - intermediate: requires measBasis, must NOT have qubitIndex
+    - inputBasis: optional for inputs (defaults to X semantics), forbidden otherwise
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -78,6 +79,7 @@ class GraphNodeDTO(BaseModel):
     role: Literal["input", "output", "intermediate"]
     measBasis: MeasBasisDTO | None = None
     qubitIndex: int | None = None
+    inputBasis: Literal["X", "Y", "Z"] | None = None
 
     @model_validator(mode="after")
     def validate_role_requirements(self) -> Self:
@@ -90,11 +92,15 @@ class GraphNodeDTO(BaseModel):
         elif self.role == "output":
             if self.qubitIndex is None:
                 raise ValueError("output node requires qubitIndex")
+            if self.inputBasis is not None:
+                raise ValueError("output node must not have inputBasis")
         elif self.role == "intermediate":
             if self.measBasis is None:
                 raise ValueError("intermediate node requires measBasis")
             if self.qubitIndex is not None:
                 raise ValueError("intermediate node must not have qubitIndex")
+            if self.inputBasis is not None:
+                raise ValueError("intermediate node must not have inputBasis")
         return self
 
 
@@ -183,6 +189,18 @@ class ProjectPayloadDTO(BaseModel):
         self._validate_flow_references("xflow", self.flow.xflow, node_id_set)
         if self.flow.zflow != "auto":
             self._validate_flow_references("zflow", self.flow.zflow, node_id_set)
+
+        if self.ftqc is not None:
+            for group_index, group in enumerate(self.ftqc.parityCheckGroup):
+                for node_id in group:
+                    if node_id not in node_id_set:
+                        raise ValueError(f"parityCheckGroup {group_index} references unknown node '{node_id}'")
+            for observable_key, targets in self.ftqc.logicalObservableGroup.items():
+                for node_id in targets:
+                    if node_id not in node_id_set:
+                        raise ValueError(
+                            f"logicalObservableGroup '{observable_key}' references unknown node '{node_id}'"
+                        )
 
         return self
 
