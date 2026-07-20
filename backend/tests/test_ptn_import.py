@@ -242,6 +242,26 @@ def test_cli_help_uses_gqomb_vis_name(capsys: pytest.CaptureFixture[str]) -> Non
     assert "usage: gqomb-vis" in captured.out
 
 
+def test_frontend_dir_falls_back_to_checkout_from_cwd(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Frontend resolution can find a checkout when the CLI runs from site-packages."""
+    frontend_dir = tmp_path / "frontend"
+    frontend_dir.mkdir()
+    (frontend_dir / "package.json").write_text("{}", encoding="utf-8")
+    (frontend_dir / "next.config.ts").write_text("export default {}\n", encoding="utf-8")
+
+    installed_cli = tmp_path / "venv" / "lib" / "python3.12" / "site-packages" / "src" / "cli.py"
+    installed_cli.parent.mkdir(parents=True)
+    installed_cli.write_text("", encoding="utf-8")
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(cli, "__file__", str(installed_cli))
+
+    assert cli._frontend_dir() == frontend_dir.resolve()
+
+
 def test_start_frontend_requires_pnpm(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

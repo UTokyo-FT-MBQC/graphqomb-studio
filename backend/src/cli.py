@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import itertools
 import shutil
 import signal
 import subprocess
@@ -147,7 +148,39 @@ def _start_frontend(port: int, backend_url: str) -> subprocess.Popen[str]:
 
 
 def _frontend_dir() -> Path:
-    return Path(__file__).resolve().parents[2] / "frontend"
+    configured_dir = os.environ.get("GQOMB_STUDIO_FRONTEND_DIR")
+    candidates = []
+    if configured_dir:
+        candidates.append(Path(configured_dir).expanduser())
+
+    cwd = Path.cwd().resolve()
+    module_path = Path(__file__).resolve()
+    search_roots = itertools.chain((cwd,), cwd.parents, module_path.parents)
+    for root in search_roots:
+        candidates.append(root)
+        candidates.append(root / "frontend")
+
+    for candidate in _unique_paths(candidates):
+        if _looks_like_frontend_dir(candidate):
+            return candidate
+
+    return module_path.parents[2] / "frontend"
+
+
+def _looks_like_frontend_dir(path: Path) -> bool:
+    return (path / "package.json").is_file() and (path / "next.config.ts").is_file()
+
+
+def _unique_paths(paths: list[Path]) -> list[Path]:
+    unique_paths: list[Path] = []
+    seen: set[Path] = set()
+    for path in paths:
+        resolved_path = path.resolve()
+        if resolved_path in seen:
+            continue
+        seen.add(resolved_path)
+        unique_paths.append(resolved_path)
+    return unique_paths
 
 
 def _ensure_frontend_dependencies(frontend_dir: Path) -> None:
