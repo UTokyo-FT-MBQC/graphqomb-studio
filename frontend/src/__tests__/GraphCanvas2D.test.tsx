@@ -197,4 +197,34 @@ describe("GraphCanvas2D", () => {
 
     expect(reactFlowState.fitView).not.toHaveBeenCalled();
   });
+
+  it("preserves the viewport when a hidden node is added", async () => {
+    useUIStore.setState({ viewMode: "2d-slice", currentZSlice: 0, ghostZRange: 0 });
+
+    render(<GraphCanvas2D />);
+
+    await waitFor(() => {
+      expect(reactFlowState.fitView).toHaveBeenCalledTimes(1);
+    });
+    reactFlowState.fitView.mockClear();
+
+    act(() => {
+      useProjectStore.getState().addNode({
+        id: "n2",
+        coordinate: { x: 5, y: 6, z: 2 },
+        role: "output",
+        qubitIndex: 1,
+      });
+    });
+
+    await waitFor(() => {
+      expect(useProjectStore.getState().project.nodes).toHaveLength(3);
+      expect(reactFlowState.props?.nodes.map((node) => node.id)).toEqual(["n0", "n1"]);
+    });
+    await act(async () => {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    });
+
+    expect(reactFlowState.fitView).not.toHaveBeenCalled();
+  });
 });
