@@ -360,6 +360,7 @@ function GraphCanvas2DInner(): React.ReactNode {
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges);
+  const projectNodeCount = project.nodes.length;
 
   // Sync React Flow state with project store
   useEffect(() => {
@@ -370,13 +371,13 @@ function GraphCanvas2DInner(): React.ReactNode {
   }, [flowNodes, flowEdges, setNodes, setEdges]);
 
   useEffect(() => {
-    if (flowNodes.length === 0) {
+    if (projectNodeCount === 0) {
       return;
     }
     requestAnimationFrame(() => {
       void fitView({ padding: 0.2, duration: 200 });
     });
-  }, [fitView, flowNodes.length]);
+  }, [fitView, projectNodeCount]);
 
   // Handle node changes (position, selection)
   const handleNodesChange = useCallback(
