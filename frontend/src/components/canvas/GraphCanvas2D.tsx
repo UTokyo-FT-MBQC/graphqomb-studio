@@ -176,6 +176,7 @@ function GraphCanvas2DInner(): React.ReactNode {
 
   // Track if we're syncing from external state changes
   const isSyncing = useRef(false);
+  const previousZSliceRef = useRef(currentZSlice);
 
   // Filter nodes based on view mode
   const visibleNodes = useMemo(() => {
@@ -370,13 +371,16 @@ function GraphCanvas2DInner(): React.ReactNode {
   }, [flowNodes, flowEdges, setNodes, setEdges]);
 
   useEffect(() => {
-    if (flowNodes.length === 0) {
+    const didZSliceChange = previousZSliceRef.current !== currentZSlice;
+    previousZSliceRef.current = currentZSlice;
+
+    if (flowNodes.length === 0 || didZSliceChange) {
       return;
     }
     requestAnimationFrame(() => {
       void fitView({ padding: 0.2, duration: 200 });
     });
-  }, [fitView, flowNodes.length]);
+  }, [currentZSlice, fitView, flowNodes.length]);
 
   // Handle node changes (position, selection)
   const handleNodesChange = useCallback(

@@ -7,7 +7,7 @@ import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { GraphQOMBProject } from "@/types";
-import { cleanup, render, waitFor } from "@testing-library/react";
+import { act, cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const reactFlowState = vi.hoisted(() => ({
@@ -120,7 +120,12 @@ describe("GraphCanvas2D", () => {
     reactFlowState.props = undefined;
     useProjectStore.getState().setProject(createProject());
     useSelectionStore.getState().clearSelection();
-    useUIStore.setState({ viewMode: "2d-projection", currentZSlice: 0, isTilingMode: false });
+    useUIStore.setState({
+      viewMode: "2d-projection",
+      currentZSlice: 0,
+      ghostZRange: 1,
+      isTilingMode: false,
+    });
   });
 
   afterEach(() => {
@@ -159,5 +164,67 @@ describe("GraphCanvas2D", () => {
     await waitFor(() => {
       expect(reactFlowState.fitView).toHaveBeenCalledWith({ padding: 0.2, duration: 200 });
     });
+  });
+
+  it("preserves the viewport when the z slice changes", async () => {
+    const project = createProject();
+    project.nodes.push({
+      id: "n2",
+      coordinate: { x: 5, y: 6, z: 1 },
+      role: "output",
+      qubitIndex: 1,
+    });
+    useProjectStore.getState().setProject(project);
+    useUIStore.setState({ viewMode: "2d-slice", currentZSlice: 0, ghostZRange: 0 });
+
+    render(<GraphCanvas2D />);
+
+    await waitFor(() => {
+      expect(reactFlowState.fitView).toHaveBeenCalledTimes(1);
+    });
+    reactFlowState.fitView.mockClear();
+
+    act(() => {
+      useUIStore.getState().setZSlice(1);
+    });
+
+    await waitFor(() => {
+      expect(reactFlowState.props?.nodes.map((node) => node.id)).toEqual(["n2"]);
+    });
+    await act(async () => {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    });
+
+    expect(reactFlowState.fitView).not.toHaveBeenCalled();
+  });
+
+  it("preserves the viewport when a hidden node is added", async () => {
+    useUIStore.setState({ viewMode: "2d-slice", currentZSlice: 0, ghostZRange: 0 });
+
+    render(<GraphCanvas2D />);
+
+    await waitFor(() => {
+      expect(reactFlowState.fitView).toHaveBeenCalledTimes(1);
+    });
+    reactFlowState.fitView.mockClear();
+
+    act(() => {
+      useProjectStore.getState().addNode({
+        id: "n2",
+        coordinate: { x: 5, y: 6, z: 2 },
+        role: "output",
+        qubitIndex: 1,
+      });
+    });
+
+    await waitFor(() => {
+      expect(useProjectStore.getState().project.nodes).toHaveLength(3);
+      expect(reactFlowState.props?.nodes.map((node) => node.id)).toEqual(["n0", "n1"]);
+    });
+    await act(async () => {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    });
+
+    expect(reactFlowState.fitView).not.toHaveBeenCalled();
   });
 });
