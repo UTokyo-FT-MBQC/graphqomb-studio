@@ -44,6 +44,9 @@ interface UIState {
   // Node label display
   showNodeLabels: boolean;
 
+  // Input/output role color display
+  showIORoleColors: boolean;
+
   // FTQC modal
   isFTQCModalOpen: boolean;
 
@@ -79,6 +82,8 @@ interface UIState {
   // Node label display actions
   setShowNodeLabels: (show: boolean) => void;
   toggleNodeLabels: () => void;
+  setShowIORoleColors: (show: boolean) => void;
+  toggleIORoleColors: () => void;
 
   // FTQC modal actions
   openFTQCModal: () => void;
@@ -117,6 +122,9 @@ export const useUIStore = create<UIState>((set) => ({
 
   // Node label display (default: show labels)
   showNodeLabels: true,
+
+  // Input/output role colors (default: enabled for backwards compatibility)
+  showIORoleColors: true,
 
   // FTQC modal (default: closed)
   isFTQCModalOpen: false,
@@ -174,6 +182,10 @@ export const useUIStore = create<UIState>((set) => ({
   setShowNodeLabels: (show) => set({ showNodeLabels: show }),
 
   toggleNodeLabels: () => set((state) => ({ showNodeLabels: !state.showNodeLabels })),
+
+  setShowIORoleColors: (show) => set({ showIORoleColors: show }),
+
+  toggleIORoleColors: () => set((state) => ({ showIORoleColors: !state.showIORoleColors })),
 
   // FTQC modal actions
   openFTQCModal: () => set({ isFTQCModalOpen: true }),

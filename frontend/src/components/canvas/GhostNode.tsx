@@ -62,11 +62,12 @@ const CENTER_HANDLE_CLASS =
 
 function GhostNodeComponent({ data }: GhostNodeProps): React.ReactNode {
   const { node } = data;
-  const style = ghostStyles[node.role];
   const nodeZ = node.coordinate.z;
 
-  // Node label visibility
+  // Node display settings
   const showNodeLabels = useUIStore((s) => s.showNodeLabels);
+  const showIORoleColors = useUIStore((s) => s.showIORoleColors);
+  const style = ghostStyles[showIORoleColors ? node.role : "intermediate"];
 
   const isEdgeCreationMode = useEdgeCreationStore((state) => state.isEdgeCreationMode);
   const sourceNodeId = useEdgeCreationStore((state) => state.sourceNodeId);

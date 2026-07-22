@@ -83,10 +83,11 @@ interface CustomNodeProps {
 
 function CustomNodeComponent({ data, selected }: CustomNodeProps): React.ReactNode {
   const { node } = data;
-  const style = roleStyles[node.role];
 
-  // Node label visibility
+  // Node display settings
   const showNodeLabels = useUIStore((s) => s.showNodeLabels);
+  const showIORoleColors = useUIStore((s) => s.showIORoleColors);
+  const style = roleStyles[showIORoleColors ? node.role : "intermediate"];
 
   // Edge creation state
   const isEdgeCreationMode = useEdgeCreationStore((s) => s.isEdgeCreationMode);
