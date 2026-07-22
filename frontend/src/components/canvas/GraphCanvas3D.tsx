@@ -78,10 +78,11 @@ function Node3DComponent({
   onDragStart,
 }: Node3DProps): React.ReactNode {
   const position = useMemo(() => getPosition(node), [node]);
-  const color = ROLE_COLORS[node.role];
 
-  // Node label visibility
+  // Node display settings
   const showNodeLabels = useUIStore((s) => s.showNodeLabels);
+  const showIORoleColors = useUIStore((s) => s.showIORoleColors);
+  const color = ROLE_COLORS[showIORoleColors ? node.role : "intermediate"];
 
   // Determine emissive effect based on state priority (lowest to highest):
   // 1. FTQC group highlight (lowest priority)

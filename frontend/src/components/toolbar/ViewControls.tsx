@@ -19,6 +19,8 @@ export function ViewControls(): React.ReactNode {
   const toggleZFlow = useUIStore((state) => state.toggleZFlow);
   const showNodeLabels = useUIStore((state) => state.showNodeLabels);
   const toggleNodeLabels = useUIStore((state) => state.toggleNodeLabels);
+  const showIORoleColors = useUIStore((state) => state.showIORoleColors);
+  const toggleIORoleColors = useUIStore((state) => state.toggleIORoleColors);
 
   return (
     <div className="flex items-center gap-3">
@@ -70,6 +72,19 @@ export function ViewControls(): React.ReactNode {
           className="w-4 h-4 accent-gray-500"
         />
         <span className="text-sm text-gray-600">Labels</span>
+      </label>
+
+      <label
+        className="flex items-center gap-1.5 cursor-pointer"
+        title="Color input and output nodes by role"
+      >
+        <input
+          type="checkbox"
+          checked={showIORoleColors}
+          onChange={toggleIORoleColors}
+          className="w-4 h-4 accent-green-500"
+        />
+        <span className="text-sm text-gray-600">I/O Colors</span>
       </label>
 
       <div className="h-4 w-px bg-gray-300" />
