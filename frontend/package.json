@@ -39,7 +39,7 @@
     "@types/three": "^0.185.1",
     "@vitejs/plugin-react": "^6.0.5",
     "autoprefixer": "^10.5.4",
-    "jsdom": "^25.0.0",
+    "jsdom": "^30.0.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.7.0",
