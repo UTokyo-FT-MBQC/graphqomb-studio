@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import os
-import itertools
 import shutil
 import signal
 import subprocess
@@ -149,7 +149,7 @@ def _start_frontend(port: int, backend_url: str) -> subprocess.Popen[str]:
 
 def _frontend_dir() -> Path:
     configured_dir = os.environ.get("GQOMB_STUDIO_FRONTEND_DIR")
-    candidates = []
+    candidates: list[Path] = []
     if configured_dir:
         candidates.append(Path(configured_dir).expanduser())
 

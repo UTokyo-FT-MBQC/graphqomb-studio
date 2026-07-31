@@ -259,7 +259,7 @@ def test_frontend_dir_falls_back_to_checkout_from_cwd(
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(cli, "__file__", str(installed_cli))
 
-    assert cli._frontend_dir() == frontend_dir.resolve()
+    assert cli._frontend_dir() == frontend_dir.resolve()  # pyright: ignore[reportPrivateUsage]
 
 
 def test_start_frontend_requires_pnpm(
