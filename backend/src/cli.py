@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import os
 import shutil
@@ -29,6 +30,8 @@ DEFAULT_FRONTEND_PORT = 3000
 LOCAL_HOST = "localhost"
 SERVER_TIMEOUT_SECONDS = 120.0
 IMPORT_SESSION_RESPONSE_ADAPTER = TypeAdapter(dict[str, str])
+FRONTEND_PACKAGE_NAME = "graphqomb-studio-frontend"
+FRONTEND_PACKAGE_ADAPTER = TypeAdapter(dict[str, Any])
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -147,7 +150,46 @@ def _start_frontend(port: int, backend_url: str) -> subprocess.Popen[str]:
 
 
 def _frontend_dir() -> Path:
-    return Path(__file__).resolve().parents[2] / "frontend"
+    configured_dir = os.environ.get("GQOMB_STUDIO_FRONTEND_DIR")
+    candidates: list[Path] = []
+    if configured_dir:
+        candidates.append(Path(configured_dir).expanduser())
+
+    cwd = Path.cwd().resolve()
+    module_path = Path(__file__).resolve()
+    search_roots = itertools.chain((cwd,), cwd.parents, module_path.parents)
+    for root in search_roots:
+        candidates.append(root)
+        candidates.append(root / "frontend")
+
+    for candidate in _unique_paths(candidates):
+        if _looks_like_frontend_dir(candidate):
+            return candidate
+
+    return module_path.parents[2] / "frontend"
+
+
+def _looks_like_frontend_dir(path: Path) -> bool:
+    if not (path / "next.config.ts").is_file():
+        return False
+
+    try:
+        package = FRONTEND_PACKAGE_ADAPTER.validate_json((path / "package.json").read_bytes())
+    except (OSError, ValidationError):
+        return False
+    return package.get("name") == FRONTEND_PACKAGE_NAME
+
+
+def _unique_paths(paths: list[Path]) -> list[Path]:
+    unique_paths: list[Path] = []
+    seen: set[Path] = set()
+    for path in paths:
+        resolved_path = path.resolve()
+        if resolved_path in seen:
+            continue
+        seen.add(resolved_path)
+        unique_paths.append(resolved_path)
+    return unique_paths
 
 
 def _ensure_frontend_dependencies(frontend_dir: Path) -> None:
