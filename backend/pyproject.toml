@@ -4,10 +4,10 @@ version = "0.3.0"
 description = "Backend API for GraphQOMB Studio"
 requires-python = ">=3.12"
 dependencies = [
-    "fastapi>=0.115.0",
+    "fastapi>=0.140.7",
     "uvicorn[standard]>=0.32.0",
-    "pydantic>=2.10.0",
-    "graphqomb>=0.4.0",
+    "pydantic>=2.13.4",
+    "graphqomb>=0.4.2",
     "networkx>=3.0",
 ]
 
@@ -16,12 +16,12 @@ gqomb-vis = "src.cli:main"
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.24.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
     "httpx>=0.28.0",
-    "ruff>=0.8.0",
+    "ruff>=0.16.0",
     "mypy>=1.13.0",
-    "pyright>=1.1.390",
+    "pyright>=1.1.411",
 ]
 
 [build-system]
