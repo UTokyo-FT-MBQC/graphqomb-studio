@@ -85,7 +85,7 @@ For 3D projects (dimension = 3):
 ## Tech Stack
 
 ### Frontend
-- Next.js 15 (App Router)
+- Next.js 16 (App Router)
 - React 19
 - TypeScript 5.7+ (strict mode)
 - Tailwind CSS 3.4
@@ -103,7 +103,7 @@ For 3D projects (dimension = 3):
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 20.19+ or 22.12+
 - pnpm 10+
 - Python 3.12+
 - uv (Python package manager)
