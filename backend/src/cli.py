@@ -30,6 +30,8 @@ DEFAULT_FRONTEND_PORT = 3000
 LOCAL_HOST = "localhost"
 SERVER_TIMEOUT_SECONDS = 120.0
 IMPORT_SESSION_RESPONSE_ADAPTER = TypeAdapter(dict[str, str])
+FRONTEND_PACKAGE_NAME = "graphqomb-studio-frontend"
+FRONTEND_PACKAGE_ADAPTER = TypeAdapter(dict[str, Any])
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -168,7 +170,14 @@ def _frontend_dir() -> Path:
 
 
 def _looks_like_frontend_dir(path: Path) -> bool:
-    return (path / "package.json").is_file() and (path / "next.config.ts").is_file()
+    if not (path / "next.config.ts").is_file():
+        return False
+
+    try:
+        package = FRONTEND_PACKAGE_ADAPTER.validate_json((path / "package.json").read_bytes())
+    except (OSError, ValidationError):
+        return False
+    return package.get("name") == FRONTEND_PACKAGE_NAME
 
 
 def _unique_paths(paths: list[Path]) -> list[Path]:
