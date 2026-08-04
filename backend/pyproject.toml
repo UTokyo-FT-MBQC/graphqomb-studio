@@ -7,7 +7,7 @@ dependencies = [
     "fastapi>=0.140.13",
     "uvicorn[standard]>=0.51.0",
     "pydantic>=2.13.4",
-    "graphqomb>=0.5.1",
+    "graphqomb>=0.5.2",
     "networkx>=3.0",
 ]
 

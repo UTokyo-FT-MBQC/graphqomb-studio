@@ -58,6 +58,13 @@ class AxisMeasBasisDTO(BaseModel):
 
 
 MeasBasisDTO = PlannerMeasBasisDTO | AxisMeasBasisDTO
+type AxisName = Literal["X", "Y", "Z"]
+type PlaneName = Literal["XY", "YZ", "XZ"]
+type DetectorMismatchReason = Literal[
+    "axis-mismatch",
+    "missing-stabilizer-support",
+    "missing-measurement-support",
+]
 
 
 # === Node DTOs ===
@@ -160,6 +167,30 @@ class FTQCDefinitionDTO(BaseModel):
         if self.parityCheckTags and len(self.parityCheckTags) != len(self.parityCheckGroup):
             raise ValueError("parityCheckTags must be empty or match parityCheckGroup length")
         return self
+
+
+class DetectorMismatchDTO(BaseModel):
+    """Node-level difference between detector stabilizer and measurement support."""
+
+    nodeId: str
+    stabilizerAxis: AxisName | None
+    detectorMeasurementAxis: AxisName | None
+    measurementPlane: PlaneName | None
+    measurementAngleCoeff: float | None
+    reason: DetectorMismatchReason
+
+
+class DetectorDiagnosticDTO(BaseModel):
+    """Determinism result and mismatched nodes for one detector."""
+
+    deterministic: bool
+    mismatches: list[DetectorMismatchDTO]
+
+
+class CompiledFTQCResponseDTO(FTQCDefinitionDTO):
+    """Compiled FTQC groups with detector determinism diagnostics."""
+
+    detectorDiagnostics: list[DetectorDiagnosticDTO]
 
 
 # === Project DTO ===

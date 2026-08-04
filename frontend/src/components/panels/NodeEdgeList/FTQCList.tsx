@@ -14,11 +14,47 @@ import { isFlagDetector } from "@/lib/detectorTags";
 import { getObservableColor, getParityGroupColor } from "@/lib/ftqcColors";
 import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
+import type { DetectorMismatch } from "@/types";
+
+function formatMeasurementAngle(angleCoeff: number | null): string {
+  if (angleCoeff === null) return "unassigned";
+
+  const piMultiple = angleCoeff * 2;
+  for (const denominator of [1, 2, 4, 8, 16]) {
+    const numerator = Math.round(piMultiple * denominator);
+    if (Math.abs(piMultiple - numerator / denominator) < 1e-9) {
+      if (numerator === 0) return "0";
+      const sign = numerator < 0 ? "-" : "";
+      const absoluteNumerator = Math.abs(numerator);
+      const numeratorLabel = absoluteNumerator === 1 ? "" : String(absoluteNumerator);
+      return denominator === 1
+        ? `${sign}${numeratorLabel}π`
+        : `${sign}${numeratorLabel}π/${denominator}`;
+    }
+  }
+  return `${Number(piMultiple.toFixed(6))}π`;
+}
+
+function mismatchDescription(mismatch: DetectorMismatch): string {
+  const stabilizerSupport = mismatch.stabilizerAxis ?? "I";
+  const measurementSupport = mismatch.detectorMeasurementAxis ?? "I";
+  const basis =
+    mismatch.measurementPlane === null
+      ? "measurement unassigned"
+      : `${mismatch.measurementPlane}, angle ${formatMeasurementAngle(mismatch.measurementAngleCoeff)}`;
+  return `${mismatch.nodeId}: support ${stabilizerSupport} ≠ measurement ${measurementSupport} (${basis})`;
+}
 
 export function FTQCList(): React.ReactNode {
   const originalFTQC = useProjectStore((state) => state.project.ftqc);
-  const { displayedFTQC, parityGroupCount, observableKeys, isCompiling, compilationError } =
-    useFTQCVisualization();
+  const {
+    displayedFTQC,
+    parityGroupCount,
+    observableKeys,
+    isCompiling,
+    compilationError,
+    detectorDiagnostics,
+  } = useFTQCVisualization();
 
   const ftqcVisualization = useUIStore((state) => state.ftqcVisualization);
   const setFTQCDisplayMode = useUIStore((state) => state.setFTQCDisplayMode);
@@ -48,10 +84,14 @@ export function FTQCList(): React.ReactNode {
         index,
         detectorTag,
         isFlag: isFlagDetector(detectorTag),
+        diagnostic: detectorDiagnostics[index],
       };
     }) ?? [];
   const flagGroupCount = parityGroupOptions.filter((option) => option.isFlag).length;
   const nonFlagGroupCount = parityGroupOptions.length - flagGroupCount;
+  const nonDeterministicCount = detectorDiagnostics.filter(
+    (diagnostic) => !diagnostic.deterministic
+  ).length;
   const filteredParityGroupOptions = parityGroupOptions.filter((option) =>
     ftqcVisualization.detectorTypeFilter === "flag" ? option.isFlag : !option.isFlag
   );
@@ -85,7 +125,7 @@ export function FTQCList(): React.ReactNode {
       </div>
 
       {isCompiling && (
-        <div className="py-3 text-center text-sm text-gray-500">Compiling FTQC groups…</div>
+        <div className="py-2 text-center text-xs text-gray-500">Checking detector determinism…</div>
       )}
 
       {compilationError !== null && (
@@ -116,6 +156,11 @@ export function FTQCList(): React.ReactNode {
                 className="w-4 h-4 accent-orange-500"
               />
               <span className="text-sm font-medium text-gray-700">Parity Groups</span>
+              {!isCompiling && nonDeterministicCount > 0 && (
+                <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
+                  {nonDeterministicCount} non-deterministic
+                </span>
+              )}
             </label>
           </div>
           <div className="mb-2 flex rounded bg-gray-100 p-0.5" aria-label="Detector type filter">
@@ -149,7 +194,7 @@ export function FTQCList(): React.ReactNode {
                   : "No detectors."}
               </div>
             )}
-            {filteredParityGroupOptions.map(({ group, index, detectorTag, isFlag }) => {
+            {filteredParityGroupOptions.map(({ group, index, detectorTag, isFlag, diagnostic }) => {
               const color = getParityGroupColor(index);
               const isSelected = ftqcVisualization.selectedParityGroupIndex === index;
               const isVisible = ftqcVisualization.showParityGroups && isSelected;
@@ -191,6 +236,17 @@ export function FTQCList(): React.ReactNode {
                         {detectorTag}
                       </span>
                     )}
+                    {diagnostic !== undefined && (
+                      <span
+                        className={`ml-auto rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                          diagnostic.deterministic
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {diagnostic.deterministic ? "Deterministic" : "Non-deterministic"}
+                      </span>
+                    )}
                   </div>
                   <div
                     className="ml-5 mt-0.5 text-xs text-gray-500 truncate"
@@ -198,6 +254,14 @@ export function FTQCList(): React.ReactNode {
                   >
                     {group.length > 0 ? group.join(", ") : "(empty)"}
                   </div>
+                  {diagnostic !== undefined && !diagnostic.deterministic && (
+                    <div className="ml-5 mt-1 space-y-0.5 rounded bg-red-50 px-2 py-1 text-[11px] text-red-700">
+                      <div className="font-medium">Support / measurement mismatch</div>
+                      {diagnostic.mismatches.map((mismatch) => (
+                        <div key={mismatch.nodeId}>{mismatchDescription(mismatch)}</div>
+                      ))}
+                    </div>
+                  )}
                 </button>
               );
             })}

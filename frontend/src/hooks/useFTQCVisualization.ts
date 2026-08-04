@@ -12,7 +12,7 @@ import { isFlagDetector } from "@/lib/detectorTags";
 import { type FTQCHighlight, getObservableColor, getParityGroupColor } from "@/lib/ftqcColors";
 import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
-import type { FTQCDefinition } from "@/types";
+import type { DetectorDiagnostic, FTQCDefinition } from "@/types";
 import { useEffect, useMemo } from "react";
 import { useCompiledFTQC } from "./useCompiledFTQC";
 
@@ -24,16 +24,18 @@ export interface FTQCVisualizationResult {
   observableKeys: string[];
   isCompiling: boolean;
   compilationError: string | null;
+  detectorDiagnostics: DetectorDiagnostic[];
 }
 
 export function useFTQCVisualization(): FTQCVisualizationResult {
   const ftqc = useProjectStore((state) => state.project.ftqc);
   const ftqcVisualization = useUIStore((state) => state.ftqcVisualization);
   const isCompiledMode = ftqcVisualization.displayMode === "compiled";
-  const { compiledFTQC, isLoading, error } = useCompiledFTQC(isCompiledMode);
+  const { compiledFTQC, isLoading, error } = useCompiledFTQC(ftqc !== undefined);
   const displayedFTQC = isCompiledMode ? (compiledFTQC ?? undefined) : ftqc;
-  const isCompiling = isCompiledMode && isLoading;
-  const compilationError = isCompiledMode ? error : null;
+  const isCompiling = isLoading;
+  const compilationError = error;
+  const detectorDiagnostics = compiledFTQC?.detectorDiagnostics ?? [];
   const setSelectedParityGroupIndex = useUIStore((state) => state.setSelectedParityGroupIndex);
   const setSelectedObservableKey = useUIStore((state) => state.setSelectedObservableKey);
 
@@ -92,6 +94,7 @@ export function useFTQCVisualization(): FTQCVisualizationResult {
         observableKeys: [],
         isCompiling,
         compilationError,
+        detectorDiagnostics,
       };
     }
 
@@ -169,6 +172,7 @@ export function useFTQCVisualization(): FTQCVisualizationResult {
       observableKeys,
       isCompiling,
       compilationError,
+      detectorDiagnostics,
     };
-  }, [compilationError, displayedFTQC, ftqcVisualization, isCompiling]);
+  }, [compilationError, detectorDiagnostics, displayedFTQC, ftqcVisualization, isCompiling]);
 }

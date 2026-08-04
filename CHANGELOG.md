@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Backend
+
+#### Added
+
+- FTQC compilation now uses GraphQOMB 0.5.2 to report detector determinism and node-level stabilizer-support/measurement-basis mismatches.
+
+### Frontend
+
+#### Added
+
+- The FTQC detector list now marks deterministic and non-deterministic detectors and shows each mismatched node, expected support, measurement axis, plane, and angle.
+
 ## [v0.4.0] - 2026-08-04
 
 ### Backend
