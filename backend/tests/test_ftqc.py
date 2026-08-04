@@ -41,6 +41,7 @@ def closure_project() -> dict[str, Any]:
         },
         "ftqc": {
             "parityCheckGroup": [["n1"]],
+            "parityCheckTags": ["type=flag"],
             "logicalObservableGroup": {"0": ["n1"]},
         },
     }
@@ -54,6 +55,7 @@ async def test_compile_ftqc_expands_detectors_and_logical_observables() -> None:
     assert response.status_code == 200
     assert response.json() == {
         "parityCheckGroup": [["n0", "n1"]],
+        "parityCheckTags": ["type=flag"],
         "logicalObservableGroup": {"0": ["n0", "n1"]},
     }
 
@@ -85,6 +87,17 @@ async def test_compile_ftqc_rejects_unknown_logical_observable_node() -> None:
     """Invalid logical-observable node references are rejected at the request boundary."""
     project = closure_project()
     project["ftqc"]["logicalObservableGroup"] = {"0": ["missing"]}
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/compile-ftqc", json=project)
+
+    assert response.status_code == 422
+
+
+async def test_compile_ftqc_rejects_misaligned_detector_tags() -> None:
+    """Detector tags must stay aligned with parity check groups."""
+    project = closure_project()
+    project["ftqc"]["parityCheckTags"] = ["type=flag", ""]
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post("/api/compile-ftqc", json=project)

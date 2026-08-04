@@ -7,7 +7,7 @@ with strict validation (extra="forbid") to prevent schema drift.
 from collections.abc import Mapping, Sequence, Set
 from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 # === Utility Functions ===
 
@@ -144,13 +144,22 @@ class FTQCDefinitionDTO(BaseModel):
     """FTQC (Fault-Tolerant Quantum Computing) configuration.
 
     - parityCheckGroup: List of node ID groups for parity check (error detection)
+    - parityCheckTags: Optional detector tags aligned with parityCheckGroup
     - logicalObservableGroup: Mapping of observable index to target node IDs
     """
 
     model_config = ConfigDict(extra="forbid")
 
     parityCheckGroup: list[list[str]]
+    parityCheckTags: list[str] = Field(default_factory=list)
     logicalObservableGroup: dict[str, list[str]]
+
+    @model_validator(mode="after")
+    def validate_parity_check_tags(self) -> Self:
+        """Require supplied detector tags to align with parity check groups."""
+        if self.parityCheckTags and len(self.parityCheckTags) != len(self.parityCheckGroup):
+            raise ValueError("parityCheckTags must be empty or match parityCheckGroup length")
+        return self
 
 
 # === Project DTO ===

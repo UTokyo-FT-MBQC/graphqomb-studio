@@ -107,7 +107,7 @@ For 3D projects (dimension = 3):
 - pnpm 10+
 - Python 3.12+
 - uv (Python package manager)
-- GraphQOMB 0.4.0+ (installed by `uv` after the release is available)
+- GraphQOMB 0.5.1+ (installed by `uv`)
 
 ### Development Setup
 
@@ -131,8 +131,9 @@ For 3D projects (dimension = 3):
 
 4. **Open a `.ptn` file with the CLI**
 
-   PTN format versions 1 and 2 are supported. Version 2 input bases are preserved
-   as X+, Y+, or Z+ input-node properties.
+   PTN format versions 1, 2, and 3 are supported. Version 2 input bases are preserved
+   as X+, Y+, or Z+ input-node properties. Version 3 detector tags are preserved,
+   and `type=flag` detectors can be highlighted separately from non-flag detectors.
 
    ```bash
    cd backend

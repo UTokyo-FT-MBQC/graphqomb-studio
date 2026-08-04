@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api", tags=["ftqc"])
 def compile_ftqc(project: ProjectPayloadDTO) -> FTQCDefinitionDTO:
     """Expand detector and logical-observable seeds with GraphQOMB's closure algorithm."""
     if project.ftqc is None:
-        return FTQCDefinitionDTO(parityCheckGroup=[], logicalObservableGroup={})
+        return FTQCDefinitionDTO(parityCheckGroup=[], parityCheckTags=[], logicalObservableGroup={})
 
     graph, node_map = dto_to_graphstate(project)
     reverse_map = {node: node_id for node_id, node in node_map.items()}
@@ -23,6 +23,7 @@ def compile_ftqc(project: ProjectPayloadDTO) -> FTQCDefinitionDTO:
 
     try:
         parity_check_group = [{node_map[node_id] for node_id in group} for group in project.ftqc.parityCheckGroup]
+        parity_check_tags = project.ftqc.parityCheckTags or [""] * len(parity_check_group)
         logical_observables = {
             int(key): {node_map[node_id] for node_id in targets}
             for key, targets in project.ftqc.logicalObservableGroup.items()
@@ -32,6 +33,7 @@ def compile_ftqc(project: ProjectPayloadDTO) -> FTQCDefinitionDTO:
             xflow,
             zflow,
             parity_check_group=parity_check_group,
+            parity_check_tags=parity_check_tags,
             logical_observables=logical_observables,
         )
         compiled_detectors = [sorted(reverse_map[node] for node in group) for group in pauli_frame.detector_groups()]
@@ -44,5 +46,6 @@ def compile_ftqc(project: ProjectPayloadDTO) -> FTQCDefinitionDTO:
 
     return FTQCDefinitionDTO(
         parityCheckGroup=compiled_detectors,
+        parityCheckTags=parity_check_tags,
         logicalObservableGroup=compiled_observables,
     )

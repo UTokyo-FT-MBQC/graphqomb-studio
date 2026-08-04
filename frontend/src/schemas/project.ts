@@ -125,9 +125,18 @@ export const ResolvedFlowSchema = z
 export const FTQCDefinitionSchema = z
   .object({
     parityCheckGroup: z.array(z.array(z.string())),
+    parityCheckTags: z.array(z.string()).optional(),
     logicalObservableGroup: z.record(z.string(), z.array(z.string())),
   })
-  .strict();
+  .strict()
+  .refine(
+    ({ parityCheckGroup, parityCheckTags }) =>
+      parityCheckTags === undefined || parityCheckTags.length === parityCheckGroup.length,
+    {
+      path: ["parityCheckTags"],
+      message: "parityCheckTags must match parityCheckGroup length",
+    }
+  );
 
 // === Schedule Schema ===
 
@@ -173,6 +182,7 @@ interface ProjectReferenceInput {
   ftqc?:
     | {
         parityCheckGroup: string[][];
+        parityCheckTags?: string[] | undefined;
         logicalObservableGroup: Record<string, string[]>;
       }
     | undefined;
