@@ -121,8 +121,8 @@ export function FTQCList(): React.ReactNode {
           <div className="mb-2 flex rounded bg-gray-100 p-0.5" aria-label="Detector type filter">
             {(
               [
+                ["non-flag", `Detectors (${nonFlagGroupCount})`],
                 ["flag", `Flags (${flagGroupCount})`],
-                ["non-flag", `Non-flags (${nonFlagGroupCount})`],
               ] as const
             ).map(([filter, label]) => (
               <button
@@ -144,7 +144,9 @@ export function FTQCList(): React.ReactNode {
           <div className="space-y-1">
             {filteredParityGroupOptions.length === 0 && (
               <div className="rounded bg-gray-50 p-3 text-sm text-gray-400">
-                No {ftqcVisualization.detectorTypeFilter === "flag" ? "flag" : "non-flag"} groups.
+                {ftqcVisualization.detectorTypeFilter === "flag"
+                  ? "No flag groups."
+                  : "No detectors."}
               </div>
             )}
             {filteredParityGroupOptions.map(({ group, index, detectorTag, isFlag }) => {
@@ -176,13 +178,9 @@ export function FTQCList(): React.ReactNode {
                       style={{ backgroundColor: color.hex }}
                     />
                     <span className="font-medium text-gray-700">Group {index}</span>
-                    {isFlag ? (
+                    {isFlag && (
                       <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-red-700">
                         Flag
-                      </span>
-                    ) : (
-                      <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
-                        Non-flag
                       </span>
                     )}
                     {detectorTag !== undefined && detectorTag !== "" && !isFlag && (

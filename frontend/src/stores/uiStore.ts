@@ -136,7 +136,7 @@ export const useUIStore = create<UIState>((set) => ({
   ftqcVisualization: {
     displayMode: "original",
     showParityGroups: false,
-    detectorTypeFilter: "flag",
+    detectorTypeFilter: "non-flag",
     selectedParityGroupIndex: null,
     showLogicalObservables: false,
     selectedObservableKey: null,

@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
-- Parity groups can be browsed as flag (`type=flag`) or non-flag choices and highlighted individually.
+- Parity groups list regular detectors by default, with `type=flag` detectors available in a separate Flags tab.
 - Input-node properties can display and edit the Pauli initialization basis imported from PTN v2 files.
 - Input/output role coloring can be disabled from the view controls in 2D, Z-slice, and 3D views.
 - FTQC visualization can switch between original detector/logical-observable seeds and compiled closure groups.

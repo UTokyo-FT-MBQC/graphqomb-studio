@@ -64,7 +64,7 @@ describe("useFTQCVisualization", () => {
     useProjectStore.getState().reset();
     useUIStore.getState().setFTQCDisplayMode("original");
     useUIStore.getState().setShowParityGroups(false);
-    useUIStore.getState().setDetectorTypeFilter("flag");
+    useUIStore.getState().setDetectorTypeFilter("non-flag");
     useUIStore.getState().setSelectedParityGroupIndex(null);
     useUIStore.getState().setShowLogicalObservables(false);
   });
@@ -109,10 +109,10 @@ describe("useFTQCVisualization", () => {
     useUIStore.getState().setShowParityGroups(true);
     const { result } = renderHook(() => useFTQCVisualization());
 
-    await waitFor(() => expect([...result.current.highlights.keys()]).toEqual(["n0"]));
+    await waitFor(() => expect([...result.current.highlights.keys()]).toEqual(["n1"]));
 
     act(() => useUIStore.getState().setDetectorTypeFilter("flag"));
-    expect([...result.current.highlights.keys()]).toEqual(["n0"]);
+    await waitFor(() => expect([...result.current.highlights.keys()]).toEqual(["n0"]));
 
     act(() => useUIStore.getState().setSelectedParityGroupIndex(2));
     expect([...result.current.highlights.keys()]).toEqual(["n2"]);

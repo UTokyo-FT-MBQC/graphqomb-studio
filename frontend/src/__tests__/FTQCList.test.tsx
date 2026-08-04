@@ -27,7 +27,7 @@ describe("FTQCList", () => {
     cleanup();
     useProjectStore.getState().reset();
     useUIStore.getState().setFTQCDisplayMode("original");
-    useUIStore.getState().setDetectorTypeFilter("flag");
+    useUIStore.getState().setDetectorTypeFilter("non-flag");
     useUIStore.getState().setShowParityGroups(false);
   });
 
@@ -47,7 +47,7 @@ describe("FTQCList", () => {
     expect(useUIStore.getState().ftqcVisualization.displayMode).toBe("compiled");
   });
 
-  it("lists flag and non-flag groups as separate selectable choices", () => {
+  it("lists regular detectors by default and flags separately", () => {
     useProjectStore.getState().updateFTQC({
       parityCheckGroup: [["n0"], ["n1"], ["n2"]],
       parityCheckTags: ["type=flag", "", "type=flag"],
@@ -56,20 +56,20 @@ describe("FTQCList", () => {
     useUIStore.getState().setShowParityGroups(true);
     render(<FTQCList />);
 
+    const detectorsButton = screen.getByRole("button", { name: "Detectors (1)" });
     const flagsButton = screen.getByRole("button", { name: "Flags (2)" });
-    const nonFlagsButton = screen.getByRole("button", { name: "Non-flags (1)" });
-    expect(flagsButton).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: /Group 0/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Group 2/ })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Group 1/ })).not.toBeInTheDocument();
-
-    fireEvent.click(nonFlagsButton);
-
-    expect(nonFlagsButton).toHaveAttribute("aria-pressed", "true");
-    expect(useUIStore.getState().ftqcVisualization.detectorTypeFilter).toBe("non-flag");
-    expect(useUIStore.getState().ftqcVisualization.selectedParityGroupIndex).toBe(1);
+    expect(detectorsButton).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByRole("button", { name: /Group 0/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Group 2/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Group 1/ })).toBeInTheDocument();
+
+    fireEvent.click(flagsButton);
+
+    expect(flagsButton).toHaveAttribute("aria-pressed", "true");
+    expect(useUIStore.getState().ftqcVisualization.detectorTypeFilter).toBe("flag");
+    expect(useUIStore.getState().ftqcVisualization.selectedParityGroupIndex).toBe(0);
+    expect(screen.getByRole("button", { name: /Group 0/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Group 2/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Group 1/ })).not.toBeInTheDocument();
   });
 });
