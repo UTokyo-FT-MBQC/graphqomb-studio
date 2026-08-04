@@ -64,6 +64,8 @@ describe("useFTQCVisualization", () => {
     useProjectStore.getState().reset();
     useUIStore.getState().setFTQCDisplayMode("original");
     useUIStore.getState().setShowParityGroups(false);
+    useUIStore.getState().setDetectorTypeFilter("non-flag");
+    useUIStore.getState().setSelectedParityGroupIndex(null);
     useUIStore.getState().setShowLogicalObservables(false);
   });
 
@@ -73,6 +75,7 @@ describe("useFTQCVisualization", () => {
     useUIStore.getState().setShowLogicalObservables(true);
     mockCompileFTQC.mockResolvedValueOnce({
       parityCheckGroup: [["n0", "n1"]],
+      parityCheckTags: ["type=flag"],
       logicalObservableGroup: { "0": ["n0", "n1"] },
     });
     const { result } = renderHook(() => ({
@@ -88,9 +91,33 @@ describe("useFTQCVisualization", () => {
     await waitFor(() =>
       expect(result.current.list.displayedFTQC).toEqual({
         parityCheckGroup: [["n0", "n1"]],
+        parityCheckTags: ["type=flag"],
         logicalObservableGroup: { "0": ["n0", "n1"] },
       })
     );
     expect([...result.current.canvas.highlights.keys()]).toEqual(["n0", "n1"]);
+  });
+
+  it("selects one parity group from the active detector category", async () => {
+    const project = createProject();
+    project.ftqc = {
+      parityCheckGroup: [["n0"], ["n1"], ["n2"]],
+      parityCheckTags: ["type=flag", "", "type=flag"],
+      logicalObservableGroup: {},
+    };
+    useProjectStore.getState().setProject(project);
+    useUIStore.getState().setShowParityGroups(true);
+    const { result } = renderHook(() => useFTQCVisualization());
+
+    await waitFor(() => expect([...result.current.highlights.keys()]).toEqual(["n1"]));
+
+    act(() => useUIStore.getState().setDetectorTypeFilter("flag"));
+    await waitFor(() => expect([...result.current.highlights.keys()]).toEqual(["n0"]));
+
+    act(() => useUIStore.getState().setSelectedParityGroupIndex(2));
+    expect([...result.current.highlights.keys()]).toEqual(["n2"]);
+
+    act(() => useUIStore.getState().setDetectorTypeFilter("non-flag"));
+    await waitFor(() => expect([...result.current.highlights.keys()]).toEqual(["n1"]));
   });
 });

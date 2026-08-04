@@ -124,6 +124,7 @@ export interface FlowDefinition {
 
 export interface FTQCDefinition {
   parityCheckGroup: string[][]; // list of node ID groups for parity check
+  parityCheckTags?: string[] | undefined; // detector tags aligned with parityCheckGroup
   logicalObservableGroup: Record<string, string[]>; // observable index -> target node IDs
 }
 

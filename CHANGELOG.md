@@ -7,11 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.4.0] - 2026-08-04
+
 ### Backend
 
 #### Added
 
-- GraphQOMB 0.4.0 is now required; PTN import delegates version 1/2 parsing to GraphQOMB and preserves per-input X+, Y+, and Z+ initialization bases.
+- GraphQOMB 0.5.1 is now required; PTN import supports versions 1–3, preserves v2 input bases, and preserves v3 detector tags through FTQC compilation.
 - FTQC detector and logical-observable seeds can be expanded through GraphQOMB's closure algorithm.
 
 #### Fixed
@@ -22,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
+- Parity groups list regular detectors by default, with `type=flag` detectors available in a separate Flags tab.
 - Input-node properties can display and edit the Pauli initialization basis imported from PTN v2 files.
 - Input/output role coloring can be disabled from the view controls in 2D, Z-slice, and 3D views.
 - FTQC visualization can switch between original detector/logical-observable seeds and compiled closure groups.

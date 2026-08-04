@@ -117,16 +117,18 @@ export const useProjectStore = create<ProjectState>()(
           // Remove node from FTQC entries
           let newFtqc: FTQCDefinition | undefined;
           if (state.project.ftqc !== undefined) {
-            const newParityCheckGroup = state.project.ftqc.parityCheckGroup
-              .map((group) => group.filter((nodeId) => nodeId !== id))
-              .filter((group, index) => {
-                // Only remove groups that became empty due to this deletion
-                // Keep empty placeholder groups that didn't contain the deleted node
-                const originalGroup = state.project.ftqc?.parityCheckGroup[index];
-                if (originalGroup === undefined) return true;
-                const containedDeletedNode = originalGroup.includes(id);
-                return group.length > 0 || !containedDeletedNode;
-              });
+            const newParityCheckGroup: string[][] = [];
+            const newParityCheckTags: string[] = [];
+            state.project.ftqc.parityCheckGroup.forEach((originalGroup, index) => {
+              const group = originalGroup.filter((nodeId) => nodeId !== id);
+              const containedDeletedNode = originalGroup.includes(id);
+              // Only remove groups that became empty due to this deletion.
+              // Keep empty placeholder groups that did not contain the deleted node.
+              if (group.length > 0 || !containedDeletedNode) {
+                newParityCheckGroup.push(group);
+                newParityCheckTags.push(state.project.ftqc?.parityCheckTags?.[index] ?? "");
+              }
+            });
 
             const newLogicalObservableGroup: Record<string, string[]> = {};
             for (const [key, targets] of Object.entries(
@@ -145,6 +147,7 @@ export const useProjectStore = create<ProjectState>()(
             ) {
               newFtqc = {
                 parityCheckGroup: newParityCheckGroup,
+                parityCheckTags: newParityCheckTags,
                 logicalObservableGroup: newLogicalObservableGroup,
               };
             }
@@ -239,6 +242,7 @@ export const useProjectStore = create<ProjectState>()(
         set((state) => {
           const currentFtqc = state.project.ftqc ?? {
             parityCheckGroup: [],
+            parityCheckTags: [],
             logicalObservableGroup: {},
           };
           return {
@@ -247,6 +251,10 @@ export const useProjectStore = create<ProjectState>()(
               ftqc: {
                 ...currentFtqc,
                 parityCheckGroup: [...currentFtqc.parityCheckGroup, group],
+                parityCheckTags: [
+                  ...(currentFtqc.parityCheckTags ?? currentFtqc.parityCheckGroup.map(() => "")),
+                  "",
+                ],
               },
             },
           };
@@ -257,6 +265,9 @@ export const useProjectStore = create<ProjectState>()(
         set((state) => {
           if (state.project.ftqc === undefined) return state;
           const newGroups = state.project.ftqc.parityCheckGroup.filter((_, i) => i !== index);
+          const newTags = (
+            state.project.ftqc.parityCheckTags ?? state.project.ftqc.parityCheckGroup.map(() => "")
+          ).filter((_, i) => i !== index);
           // If no more data, set ftqc to undefined
           if (
             newGroups.length === 0 &&
@@ -267,7 +278,11 @@ export const useProjectStore = create<ProjectState>()(
           return {
             project: {
               ...state.project,
-              ftqc: { ...state.project.ftqc, parityCheckGroup: newGroups },
+              ftqc: {
+                ...state.project.ftqc,
+                parityCheckGroup: newGroups,
+                parityCheckTags: newTags,
+              },
             },
           };
         });
@@ -291,6 +306,7 @@ export const useProjectStore = create<ProjectState>()(
         set((state) => {
           const currentFtqc = state.project.ftqc ?? {
             parityCheckGroup: [],
+            parityCheckTags: [],
             logicalObservableGroup: {},
           };
           return {
