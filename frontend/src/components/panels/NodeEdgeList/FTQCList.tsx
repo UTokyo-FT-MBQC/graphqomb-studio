@@ -40,6 +40,29 @@ export function FTQCList(): React.ReactNode {
 
   const hasParityGroups = parityGroupCount > 0;
   const hasObservables = observableKeys.length > 0;
+  const parityGroupOptions =
+    displayedFTQC?.parityCheckGroup.map((group, index) => {
+      const detectorTag = displayedFTQC.parityCheckTags?.[index];
+      return {
+        group,
+        index,
+        detectorTag,
+        isFlag: isFlagDetector(detectorTag),
+      };
+    }) ?? [];
+  const flagGroupCount = parityGroupOptions.filter((option) => option.isFlag).length;
+  const nonFlagGroupCount = parityGroupOptions.length - flagGroupCount;
+  const filteredParityGroupOptions = parityGroupOptions.filter((option) =>
+    ftqcVisualization.detectorTypeFilter === "flag" ? option.isFlag : !option.isFlag
+  );
+
+  const selectDetectorType = (filter: "flag" | "non-flag"): void => {
+    setDetectorTypeFilter(filter);
+    const firstMatchingIndex = parityGroupOptions.find((option) =>
+      filter === "flag" ? option.isFlag : !option.isFlag
+    )?.index;
+    setSelectedParityGroupIndex(firstMatchingIndex ?? null);
+  };
 
   return (
     <div className="space-y-4 pr-1">
@@ -84,7 +107,7 @@ export function FTQCList(): React.ReactNode {
       {/* Parity Check Groups Section */}
       {displayedFTQC !== undefined && hasParityGroups && (
         <div>
-          <div className="flex items-center justify-between mb-2">
+          <div className="mb-2 flex items-center justify-between">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -94,30 +117,19 @@ export function FTQCList(): React.ReactNode {
               />
               <span className="text-sm font-medium text-gray-700">Parity Groups</span>
             </label>
-            {ftqcVisualization.showParityGroups &&
-              ftqcVisualization.selectedParityGroupIndex !== null && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedParityGroupIndex(null)}
-                  className="text-xs text-orange-600 hover:text-orange-800"
-                >
-                  Show All
-                </button>
-              )}
           </div>
           <div className="mb-2 flex rounded bg-gray-100 p-0.5" aria-label="Detector type filter">
             {(
               [
-                ["all", "All"],
-                ["flag", "Flags"],
-                ["non-flag", "Non-flags"],
+                ["flag", `Flags (${flagGroupCount})`],
+                ["non-flag", `Non-flags (${nonFlagGroupCount})`],
               ] as const
             ).map(([filter, label]) => (
               <button
                 type="button"
                 key={filter}
                 aria-pressed={ftqcVisualization.detectorTypeFilter === filter}
-                onClick={() => setDetectorTypeFilter(filter)}
+                onClick={() => selectDetectorType(filter)}
                 disabled={!ftqcVisualization.showParityGroups}
                 className={`flex-1 rounded px-1 py-1 text-xs font-medium transition-colors ${
                   ftqcVisualization.detectorTypeFilter === filter
@@ -130,19 +142,15 @@ export function FTQCList(): React.ReactNode {
             ))}
           </div>
           <div className="space-y-1">
-            {displayedFTQC.parityCheckGroup.map((group, index) => {
+            {filteredParityGroupOptions.length === 0 && (
+              <div className="rounded bg-gray-50 p-3 text-sm text-gray-400">
+                No {ftqcVisualization.detectorTypeFilter === "flag" ? "flag" : "non-flag"} groups.
+              </div>
+            )}
+            {filteredParityGroupOptions.map(({ group, index, detectorTag, isFlag }) => {
               const color = getParityGroupColor(index);
-              const detectorTag = displayedFTQC.parityCheckTags?.[index];
-              const isFlag = isFlagDetector(detectorTag);
-              const matchesTypeFilter =
-                ftqcVisualization.detectorTypeFilter === "all" ||
-                (ftqcVisualization.detectorTypeFilter === "flag" && isFlag) ||
-                (ftqcVisualization.detectorTypeFilter === "non-flag" && !isFlag);
               const isSelected = ftqcVisualization.selectedParityGroupIndex === index;
-              const isVisible =
-                ftqcVisualization.showParityGroups &&
-                matchesTypeFilter &&
-                (ftqcVisualization.selectedParityGroupIndex === null || isSelected);
+              const isVisible = ftqcVisualization.showParityGroups && isSelected;
 
               return (
                 <button
@@ -150,7 +158,7 @@ export function FTQCList(): React.ReactNode {
                   key={`parity-${index}`}
                   onClick={() => {
                     if (ftqcVisualization.showParityGroups) {
-                      setSelectedParityGroupIndex(isSelected ? null : index);
+                      setSelectedParityGroupIndex(index);
                     }
                   }}
                   disabled={!ftqcVisualization.showParityGroups}

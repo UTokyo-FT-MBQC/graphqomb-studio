@@ -39,18 +39,30 @@ export function useFTQCVisualization(): FTQCVisualizationResult {
 
   const selectedParityGroupIndex = ftqcVisualization.selectedParityGroupIndex;
   const selectedObservableKey = ftqcVisualization.selectedObservableKey;
+  const detectorTypeFilter = ftqcVisualization.detectorTypeFilter;
+  const showParityGroups = ftqcVisualization.showParityGroups;
 
   // Validate and reset selection when underlying data changes
   // This prevents stale selection indices after group deletion/reordering
   useEffect(() => {
     if (isCompiledMode && displayedFTQC === undefined) return;
 
-    const parityGroupCount = displayedFTQC?.parityCheckGroup.length ?? 0;
     const observableKeys = Object.keys(displayedFTQC?.logicalObservableGroup ?? {});
+    const matchingParityGroupIndices =
+      displayedFTQC?.parityCheckGroup.flatMap((_group, index) => {
+        const isFlag = isFlagDetector(displayedFTQC.parityCheckTags?.[index]);
+        const matches = detectorTypeFilter === "flag" ? isFlag : !isFlag;
+        return matches ? [index] : [];
+      }) ?? [];
 
-    // Reset parity group selection if index is out of bounds
-    if (selectedParityGroupIndex !== null && selectedParityGroupIndex >= parityGroupCount) {
-      setSelectedParityGroupIndex(null);
+    // Select the first group in the active category when the current selection
+    // is absent, stale, or belongs to the other detector category.
+    if (
+      showParityGroups &&
+      (selectedParityGroupIndex === null ||
+        !matchingParityGroupIndices.includes(selectedParityGroupIndex))
+    ) {
+      setSelectedParityGroupIndex(matchingParityGroupIndices[0] ?? null);
     }
 
     // Reset observable selection if key no longer exists
@@ -59,11 +71,13 @@ export function useFTQCVisualization(): FTQCVisualizationResult {
     }
   }, [
     displayedFTQC,
+    detectorTypeFilter,
     isCompiledMode,
     selectedParityGroupIndex,
     selectedObservableKey,
     setSelectedParityGroupIndex,
     setSelectedObservableKey,
+    showParityGroups,
   ]);
 
   return useMemo(() => {
@@ -102,8 +116,8 @@ export function useFTQCVisualization(): FTQCVisualizationResult {
           return;
         }
 
-        // Skip if a specific group is selected and this isn't it
-        if (selectedParityGroupIndex !== null && selectedParityGroupIndex !== index) {
+        // Category tabs expose individual choices; only the chosen group is highlighted.
+        if (selectedParityGroupIndex === null || selectedParityGroupIndex !== index) {
           return;
         }
 

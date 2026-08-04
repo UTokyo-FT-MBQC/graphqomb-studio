@@ -64,7 +64,8 @@ describe("useFTQCVisualization", () => {
     useProjectStore.getState().reset();
     useUIStore.getState().setFTQCDisplayMode("original");
     useUIStore.getState().setShowParityGroups(false);
-    useUIStore.getState().setDetectorTypeFilter("all");
+    useUIStore.getState().setDetectorTypeFilter("flag");
+    useUIStore.getState().setSelectedParityGroupIndex(null);
     useUIStore.getState().setShowLogicalObservables(false);
   });
 
@@ -97,23 +98,26 @@ describe("useFTQCVisualization", () => {
     expect([...result.current.canvas.highlights.keys()]).toEqual(["n0", "n1"]);
   });
 
-  it("filters parity highlights by flag detector status", () => {
+  it("selects one parity group from the active detector category", async () => {
     const project = createProject();
     project.ftqc = {
-      parityCheckGroup: [["n0"], ["n1"]],
-      parityCheckTags: ["type=flag", ""],
+      parityCheckGroup: [["n0"], ["n1"], ["n2"]],
+      parityCheckTags: ["type=flag", "", "type=flag"],
       logicalObservableGroup: {},
     };
     useProjectStore.getState().setProject(project);
     useUIStore.getState().setShowParityGroups(true);
     const { result } = renderHook(() => useFTQCVisualization());
 
-    expect([...result.current.highlights.keys()]).toEqual(["n0", "n1"]);
+    await waitFor(() => expect([...result.current.highlights.keys()]).toEqual(["n0"]));
 
     act(() => useUIStore.getState().setDetectorTypeFilter("flag"));
     expect([...result.current.highlights.keys()]).toEqual(["n0"]);
 
+    act(() => useUIStore.getState().setSelectedParityGroupIndex(2));
+    expect([...result.current.highlights.keys()]).toEqual(["n2"]);
+
     act(() => useUIStore.getState().setDetectorTypeFilter("non-flag"));
-    expect([...result.current.highlights.keys()]).toEqual(["n1"]);
+    await waitFor(() => expect([...result.current.highlights.keys()]).toEqual(["n1"]));
   });
 });
