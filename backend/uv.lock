@@ -194,7 +194,7 @@ wheels = [
 
 [[package]]
 name = "fastapi"
-version = "0.140.7"
+version = "0.140.13"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-doc" },
@@ -203,9 +203,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e1/33/e0dfa29ccce4eb8c9a073f9e557b0d6bacbb3aa32e7ad595f678de4d036a/fastapi-0.140.7.tar.gz", hash = "sha256:09a640af2d29006345e1f28e4f031fa60f89b1a75d29f26070f3afa677d66cce", size = 422051, upload-time = "2026-07-27T17:34:45.908Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2f/cb/7a4d2c2eb5a5d8a91763c05b7383d72917862e32f780daa0e27ffbb34cc6/fastapi-0.140.13.tar.gz", hash = "sha256:500172a08cf1459901f90b05c37d93060dada3b573fec8f0862445db52ba6b4b", size = 424843, upload-time = "2026-07-28T15:37:00.805Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7b/0e/00cddd6b8668884e9c7588ab0eeb73becbd1efa3eaead34397f2e9a8de49/fastapi-0.140.7-py3-none-any.whl", hash = "sha256:960bb9696d8fd19dff488aa4f67f276364542cfcce9f7e68a82fe49dce126626", size = 131085, upload-time = "2026-07-27T17:34:47.036Z" },
+    { url = "https://files.pythonhosted.org/packages/84/4e/f9e8c762ef5e05c40482131e3d5e8b36bca13fa127578261f1d6b35a25d4/fastapi-0.140.13-py3-none-any.whl", hash = "sha256:8b017110e1e9f30a95e8bdb8f71fbe2f0fe3af5717109e5b14f9e069df54f6d4", size = 131222, upload-time = "2026-07-28T15:37:02.124Z" },
 ]
 
 [[package]]
@@ -251,7 +251,7 @@ wheels = [
 
 [[package]]
 name = "graphqomb"
-version = "0.4.2"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "matplotlib" },
@@ -261,9 +261,9 @@ dependencies = [
     { name = "scipy" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d4/42/8bc098155e5b354e17687894d81153432056b1e07ee623f86549ab396e35/graphqomb-0.4.2.tar.gz", hash = "sha256:b5ddb25cecdc2988b251aa796afba804136f2b5975b3229e57b1265df0d760e7", size = 167575, upload-time = "2026-07-24T02:51:55.082Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/08/a0/a7af5b215535d9632d413c346077866c1dfc5cee5e25f25f3987832b1f2a/graphqomb-0.5.0.tar.gz", hash = "sha256:3aa875a76f2eb11978cac5cc091ab63d63ff546955f85b9e35b9b151572e897c", size = 195684, upload-time = "2026-07-28T03:16:11.179Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c0/1b/67f50d80270eb3d36b9b53d8501ae517c80d954e647297f0b3589a23dd72/graphqomb-0.4.2-py3-none-any.whl", hash = "sha256:c410bd1af5c8f7d668a40af1a3cdf11384da7af04e84d29d4ed74121375039e5", size = 114603, upload-time = "2026-07-24T02:51:53.569Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/74/a0fb763673f2e3b3cfb8756777390ec79980a971cdc758027b3f74eb01ca/graphqomb-0.5.0-py3-none-any.whl", hash = "sha256:2f1a7b6a0ae2753a3b07c7ae083467ebe6da91f012ef001d4e3b6add3b543c17", size = 135164, upload-time = "2026-07-28T03:16:09.652Z" },
 ]
 
 [[package]]
@@ -290,8 +290,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "fastapi", specifier = ">=0.140.7" },
-    { name = "graphqomb", specifier = ">=0.4.2" },
+    { name = "fastapi", specifier = ">=0.140.13" },
+    { name = "graphqomb", specifier = ">=0.5.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=2.3.0" },
     { name = "networkx", specifier = ">=3.0" },
