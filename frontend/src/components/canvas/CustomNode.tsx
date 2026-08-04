@@ -14,6 +14,8 @@
 
 "use client";
 
+import { Handle, Position } from "@xyflow/react";
+import { memo } from "react";
 import { useFTQCHighlight } from "@/contexts/FTQCHighlightContext";
 import { createGlowEffect } from "@/lib/ftqcColors";
 import {
@@ -24,8 +26,6 @@ import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
 import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { GraphNode, NodeRole } from "@/types";
-import { Handle, Position } from "@xyflow/react";
-import { memo } from "react";
 
 export interface CustomNodeData {
   node: GraphNode;

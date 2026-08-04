@@ -2,10 +2,10 @@
  * Layout resizing interaction tests.
  */
 
-import Home from "@/app/page";
-import { useProjectStore } from "@/stores/projectStore";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import Home from "@/app/page";
+import { useProjectStore } from "@/stores/projectStore";
 
 function dispatchPointerDown(
   target: Element,

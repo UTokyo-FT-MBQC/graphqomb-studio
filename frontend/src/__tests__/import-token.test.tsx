@@ -2,11 +2,11 @@
  * CLI import token loading tests.
  */
 
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Home from "@/app/page";
 import { useProjectStore } from "@/stores/projectStore";
 import type { GraphQOMBProject } from "@/types";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/canvas/GraphCanvas2D", () => ({
   GraphCanvas2D: () => <div data-testid="graph-canvas-2d" />,

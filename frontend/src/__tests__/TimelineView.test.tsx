@@ -4,12 +4,12 @@
  * Tests for the schedule timeline visualization.
  */
 
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TimelineView } from "@/components/timeline/TimelineView";
 import { useProjectStore } from "@/stores/projectStore";
 import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 import type { ScheduleResult } from "@/types";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock the project store
 vi.mock("@/stores/projectStore", () => ({

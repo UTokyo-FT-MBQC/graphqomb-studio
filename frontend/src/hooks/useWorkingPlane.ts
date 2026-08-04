@@ -7,9 +7,9 @@
 
 "use client";
 
-import type { WorkingPlane } from "@/stores/uiStore";
 import { useCallback, useMemo } from "react";
 import * as THREE from "three";
+import type { WorkingPlane } from "@/stores/uiStore";
 
 // Coordinate system mapping:
 // Graph X -> Three.js X

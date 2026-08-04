@@ -7,10 +7,10 @@
 
 "use client";
 
+import { useViewport } from "@xyflow/react";
 import { SCALE } from "@/lib/geometry";
 import { useTilingStore } from "@/stores/tilingStore";
 import type { GeneratedEdge, GeneratedNode } from "@/types/tiling";
-import { useViewport } from "@xyflow/react";
 
 /**
  * Convert graph coordinate to screen position.

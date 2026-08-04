@@ -2,10 +2,10 @@
  * View control regression tests.
  */
 
-import { ViewControls } from "@/components/toolbar/ViewControls";
-import { useUIStore } from "@/stores/uiStore";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
+import { ViewControls } from "@/components/toolbar/ViewControls";
+import { useUIStore } from "@/stores/uiStore";
 
 describe("ViewControls", () => {
   beforeEach(() => {

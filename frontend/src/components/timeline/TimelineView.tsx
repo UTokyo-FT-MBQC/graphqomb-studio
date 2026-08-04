@@ -7,10 +7,10 @@
 
 "use client";
 
+import type { ReactNode } from "react";
 import { useProjectStore } from "@/stores/projectStore";
 import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 import type { TimeSlice } from "@/types";
-import type { ReactNode } from "react";
 
 interface TimeSliceCardProps {
   slice: TimeSlice;

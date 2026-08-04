@@ -7,8 +7,8 @@
 
 "use client";
 
-import type { FTQCHighlight } from "@/lib/ftqcColors";
 import { createContext, useContext } from "react";
+import type { FTQCHighlight } from "@/lib/ftqcColors";
 
 export type FTQCHighlightMap = Map<string, FTQCHighlight>;
 

@@ -1,7 +1,7 @@
 /** Cached GraphQOMB closure results for the current FTQC definition. */
 
-import type { FTQCDefinition } from "@/types";
 import { create } from "zustand";
+import type { FTQCDefinition } from "@/types";
 
 interface CompiledFTQCState {
   compiledFTQC: FTQCDefinition | null;

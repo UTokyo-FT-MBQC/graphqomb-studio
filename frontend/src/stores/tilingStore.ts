@@ -5,13 +5,14 @@
  * Handles pattern selection, cell range, preview generation, and applying to project.
  */
 
+import { create } from "zustand";
 import {
-  type GenerateTilingOptions,
-  MAX_RECOMMENDED_NODES,
   estimateNodeCount,
+  type GenerateTilingOptions,
   generateTiling,
+  MAX_RECOMMENDED_NODES,
 } from "@/lib/tiling/generator";
-import { TILING_PRESETS_2D, getPresetById } from "@/lib/tiling/presets";
+import { getPresetById, TILING_PRESETS_2D } from "@/lib/tiling/presets";
 import {
   estimateCubicEdgeCount,
   estimateCubicNodeCount,
@@ -26,7 +27,6 @@ import type { Coordinate, GraphEdge, GraphNode, IntermediateNode } from "@/types
 import { normalizeEdgeId } from "@/types";
 import { DEFAULT_TILING_3D_PARAMS, RHG_BOUNDARY_PRESETS, type Tiling3DParams } from "@/types/rhg";
 import type { CellRange, GeneratedGraph, TilingPattern } from "@/types/tiling";
-import { create } from "zustand";
 import { useProjectStore } from "./projectStore";
 
 /**

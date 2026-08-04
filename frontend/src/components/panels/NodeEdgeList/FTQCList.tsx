@@ -41,7 +41,8 @@ export function FTQCList(): React.ReactNode {
 
   return (
     <div className="space-y-4 pr-1">
-      <div className="flex rounded bg-gray-100 p-0.5" aria-label="FTQC data display">
+      <fieldset className="flex rounded bg-gray-100 p-0.5">
+        <legend className="sr-only">FTQC data display</legend>
         {(["original", "compiled"] as const).map((mode) => (
           <button
             type="button"
@@ -57,7 +58,7 @@ export function FTQCList(): React.ReactNode {
             {mode}
           </button>
         ))}
-      </div>
+      </fieldset>
 
       {isCompiling && (
         <div className="py-3 text-center text-sm text-gray-500">Compiling FTQC groups…</div>

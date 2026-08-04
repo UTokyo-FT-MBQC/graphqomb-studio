@@ -9,10 +9,10 @@
 
 "use client";
 
-import type { Axis, MeasBasis, Plane, Sign } from "@/types";
-import { getAngle } from "@/types";
 import type { ChangeEvent } from "react";
 import { useCallback, useId, useMemo } from "react";
+import type { Axis, MeasBasis, Plane, Sign } from "@/types";
+import { getAngle } from "@/types";
 
 interface MeasBasisEditorProps {
   basis: MeasBasis;

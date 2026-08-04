@@ -2,11 +2,11 @@
  * FileMenu tests.
  */
 
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FileMenu } from "@/components/toolbar/FileMenu";
 import { useProjectStore } from "@/stores/projectStore";
 import type { GraphQOMBProject } from "@/types";
-import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockImportPtnProject = vi.hoisted(() => vi.fn());
 

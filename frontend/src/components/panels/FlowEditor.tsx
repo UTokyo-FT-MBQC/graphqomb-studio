@@ -8,9 +8,9 @@
 
 "use client";
 
-import { useFlowOperations } from "@/hooks/useFlowOperations";
 import type { ChangeEvent } from "react";
 import { useCallback, useId, useState } from "react";
+import { useFlowOperations } from "@/hooks/useFlowOperations";
 
 interface FlowEditorProps {
   nodeId: string;

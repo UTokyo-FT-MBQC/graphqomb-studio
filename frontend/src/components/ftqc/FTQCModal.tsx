@@ -8,10 +8,10 @@
 
 "use client";
 
-import { useFTQCOperations } from "@/hooks/useFTQCOperations";
-import { useUIStore } from "@/stores/uiStore";
 import type { ChangeEvent } from "react";
 import { useCallback, useId, useState } from "react";
+import { useFTQCOperations } from "@/hooks/useFTQCOperations";
+import { useUIStore } from "@/stores/uiStore";
 
 interface NodeChipProps {
   nodeId: string;
