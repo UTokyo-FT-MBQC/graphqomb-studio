@@ -38,7 +38,7 @@
     "@types/react-dom": "^19.0.0",
     "@types/three": "^0.185.1",
     "@vitejs/plugin-react": "^6.0.5",
-    "autoprefixer": "^10.5.4",
+    "@tailwindcss/postcss": "^4.3.3",
     "jsdom": "^25.0.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^4.3.3",
