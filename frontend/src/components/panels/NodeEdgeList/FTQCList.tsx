@@ -10,6 +10,7 @@
 "use client";
 
 import { useFTQCVisualization } from "@/hooks/useFTQCVisualization";
+import { isFlagDetector } from "@/lib/detectorTags";
 import { getObservableColor, getParityGroupColor } from "@/lib/ftqcColors";
 import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -22,6 +23,7 @@ export function FTQCList(): React.ReactNode {
   const ftqcVisualization = useUIStore((state) => state.ftqcVisualization);
   const setFTQCDisplayMode = useUIStore((state) => state.setFTQCDisplayMode);
   const toggleShowParityGroups = useUIStore((state) => state.toggleShowParityGroups);
+  const setDetectorTypeFilter = useUIStore((state) => state.setDetectorTypeFilter);
   const setSelectedParityGroupIndex = useUIStore((state) => state.setSelectedParityGroupIndex);
   const toggleShowLogicalObservables = useUIStore((state) => state.toggleShowLogicalObservables);
   const setSelectedObservableKey = useUIStore((state) => state.setSelectedObservableKey);
@@ -103,12 +105,43 @@ export function FTQCList(): React.ReactNode {
                 </button>
               )}
           </div>
+          <div className="mb-2 flex rounded bg-gray-100 p-0.5" aria-label="Detector type filter">
+            {(
+              [
+                ["all", "All"],
+                ["flag", "Flags"],
+                ["non-flag", "Non-flags"],
+              ] as const
+            ).map(([filter, label]) => (
+              <button
+                type="button"
+                key={filter}
+                aria-pressed={ftqcVisualization.detectorTypeFilter === filter}
+                onClick={() => setDetectorTypeFilter(filter)}
+                disabled={!ftqcVisualization.showParityGroups}
+                className={`flex-1 rounded px-1 py-1 text-xs font-medium transition-colors ${
+                  ftqcVisualization.detectorTypeFilter === filter
+                    ? "bg-white text-gray-800 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                } disabled:cursor-not-allowed disabled:opacity-50`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <div className="space-y-1">
             {displayedFTQC.parityCheckGroup.map((group, index) => {
               const color = getParityGroupColor(index);
+              const detectorTag = displayedFTQC.parityCheckTags?.[index];
+              const isFlag = isFlagDetector(detectorTag);
+              const matchesTypeFilter =
+                ftqcVisualization.detectorTypeFilter === "all" ||
+                (ftqcVisualization.detectorTypeFilter === "flag" && isFlag) ||
+                (ftqcVisualization.detectorTypeFilter === "non-flag" && !isFlag);
               const isSelected = ftqcVisualization.selectedParityGroupIndex === index;
               const isVisible =
                 ftqcVisualization.showParityGroups &&
+                matchesTypeFilter &&
                 (ftqcVisualization.selectedParityGroupIndex === null || isSelected);
 
               return (
@@ -135,6 +168,23 @@ export function FTQCList(): React.ReactNode {
                       style={{ backgroundColor: color.hex }}
                     />
                     <span className="font-medium text-gray-700">Group {index}</span>
+                    {isFlag ? (
+                      <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-red-700">
+                        Flag
+                      </span>
+                    ) : (
+                      <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
+                        Non-flag
+                      </span>
+                    )}
+                    {detectorTag !== undefined && detectorTag !== "" && !isFlag && (
+                      <span
+                        className="min-w-0 truncate text-[10px] text-gray-400"
+                        title={detectorTag}
+                      >
+                        {detectorTag}
+                      </span>
+                    )}
                   </div>
                   <div
                     className="ml-5 mt-0.5 text-xs text-gray-500 truncate"

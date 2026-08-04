@@ -71,6 +71,7 @@ def pattern_to_project(pattern: Pattern, *, name: str = "Imported PTN") -> Proje
         "flow": {"xflow": xflow, "zflow": zflow},
         "ftqc": {
             "parityCheckGroup": [_node_set_to_ids(group) for group in pattern.pauli_frame.parity_check_group],
+            "parityCheckTags": list(pattern.pauli_frame.parity_check_tags),
             "logicalObservableGroup": {
                 str(index): _node_set_to_ids(nodes)
                 for index, nodes in sorted(pattern.pauli_frame.logical_observables.items())

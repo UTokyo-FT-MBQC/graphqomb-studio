@@ -8,6 +8,7 @@
  * Use FTQCHighlightContext to pass highlights to individual node components.
  */
 
+import { isFlagDetector } from "@/lib/detectorTags";
 import { type FTQCHighlight, getObservableColor, getParityGroupColor } from "@/lib/ftqcColors";
 import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -84,6 +85,7 @@ export function useFTQCVisualization(): FTQCVisualizationResult {
     const observableKeys = Object.keys(displayedFTQC.logicalObservableGroup).sort();
     const {
       showParityGroups,
+      detectorTypeFilter,
       selectedParityGroupIndex,
       showLogicalObservables,
       selectedObservableKey,
@@ -92,6 +94,14 @@ export function useFTQCVisualization(): FTQCVisualizationResult {
     // Process parity groups
     if (showParityGroups) {
       displayedFTQC.parityCheckGroup.forEach((group, index) => {
+        const isFlag = isFlagDetector(displayedFTQC.parityCheckTags?.[index]);
+        if (
+          (detectorTypeFilter === "flag" && !isFlag) ||
+          (detectorTypeFilter === "non-flag" && isFlag)
+        ) {
+          return;
+        }
+
         // Skip if a specific group is selected and this isn't it
         if (selectedParityGroupIndex !== null && selectedParityGroupIndex !== index) {
           return;

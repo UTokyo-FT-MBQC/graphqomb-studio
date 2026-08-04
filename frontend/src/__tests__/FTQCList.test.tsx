@@ -10,6 +10,7 @@ vi.mock("@/hooks/useFTQCVisualization", () => ({
   useFTQCVisualization: () => ({
     displayedFTQC: {
       parityCheckGroup: [["n0"]],
+      parityCheckTags: ["type=flag"],
       logicalObservableGroup: {},
     },
     highlights: new Map(),
@@ -26,6 +27,7 @@ describe("FTQCList", () => {
     cleanup();
     useProjectStore.getState().reset();
     useUIStore.getState().setFTQCDisplayMode("original");
+    useUIStore.getState().setDetectorTypeFilter("all");
   });
 
   it("allows switching from original to compiled FTQC data", () => {
@@ -42,5 +44,24 @@ describe("FTQCList", () => {
 
     expect(compiledButton).toHaveAttribute("aria-pressed", "true");
     expect(useUIStore.getState().ftqcVisualization.displayMode).toBe("compiled");
+  });
+
+  it("allows filtering highlights to flag or non-flag detectors", () => {
+    useProjectStore.getState().updateFTQC({
+      parityCheckGroup: [["n0"]],
+      parityCheckTags: ["type=flag"],
+      logicalObservableGroup: {},
+    });
+    useUIStore.getState().setShowParityGroups(true);
+    render(<FTQCList />);
+
+    const flagsButton = screen.getByRole("button", { name: "Flags" });
+    expect(flagsButton).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(flagsButton);
+
+    expect(flagsButton).toHaveAttribute("aria-pressed", "true");
+    expect(useUIStore.getState().ftqcVisualization.detectorTypeFilter).toBe("flag");
+    expect(screen.getByText("Flag")).toBeInTheDocument();
   });
 });

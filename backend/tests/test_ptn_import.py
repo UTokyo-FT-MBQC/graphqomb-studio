@@ -53,6 +53,16 @@ def v2_ptn() -> str:
     )
 
 
+def v3_ptn() -> str:
+    """Return a v3 PTN pattern with flag and non-flag detectors."""
+    return (
+        simple_ptn()
+        .replace("# GraphQOMB Pattern Format v1", "# GraphQOMB Pattern Format v3")
+        .replace(".version 1", ".version 3")
+        + "\n.detector[type=flag] 0\n.detector 1\n"
+    )
+
+
 def to_payload(project: dict[str, Any]) -> dict[str, Any]:
     """Return API payload fields from a full Studio project."""
     return {key: value for key, value in project.items() if key not in {"$schema", "schedule"}}
@@ -87,6 +97,14 @@ def test_ptn_text_to_project_imports_v2_input_basis(axis: str) -> None:
     project = ptn_text_to_project(v2_ptn().replace(".input_basis 0:Z", f".input_basis 0:{axis}"))
 
     assert project["nodes"][0]["inputBasis"] == axis
+
+
+def test_ptn_text_to_project_imports_v3_detector_tags() -> None:
+    """PTN v3 detector tags remain aligned with imported parity groups."""
+    project = ptn_text_to_project(v3_ptn())
+
+    assert project["ftqc"]["parityCheckGroup"] == [["n0"], ["n1"]]
+    assert project["ftqc"]["parityCheckTags"] == ["type=flag", ""]
 
 
 def test_ptn_text_to_project_rejects_v2_basis_for_non_input_node() -> None:
@@ -141,6 +159,20 @@ async def test_measured_output_import_is_accepted_by_validate_api() -> None:
 async def test_v2_input_basis_import_is_accepted_by_validate_api() -> None:
     """Projects imported from PTN v2 remain valid API payloads."""
     project = ptn_text_to_project(v2_ptn())
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post("/api/validate", json=to_payload(project))
+
+    assert response.status_code == 200
+    assert response.json() == {"valid": True, "errors": []}
+
+
+async def test_v3_detector_tags_import_is_accepted_by_validate_api() -> None:
+    """Projects imported from PTN v3 remain valid API payloads."""
+    project = ptn_text_to_project(v3_ptn())
 
     async with AsyncClient(
         transport=ASGITransport(app=app),
