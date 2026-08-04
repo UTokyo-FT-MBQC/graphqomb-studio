@@ -202,7 +202,7 @@ graphqomb-studio/
 
 This project uses [Semantic Versioning](https://semver.org/). Frontend and backend are versioned independently.
 
-- **Current versions**: Frontend v0.1.0 / Backend v0.1.0
+- **Current versions**: Frontend v0.4.0 / Backend v0.4.0
 - **Changelog**: See [CHANGELOG.md](./CHANGELOG.md) for release history
 - **Git tags**: `frontend/vX.Y.Z` and `backend/vX.Y.Z`
 
