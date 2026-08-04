@@ -107,7 +107,7 @@ For 3D projects (dimension = 3):
 - pnpm 10+
 - Python 3.12+
 - uv (Python package manager)
-- GraphQOMB 0.4.0+ (installed by `uv` after the release is available)
+- GraphQOMB 0.5.1+ (installed by `uv`)
 
 ### Development Setup
 
@@ -131,8 +131,9 @@ For 3D projects (dimension = 3):
 
 4. **Open a `.ptn` file with the CLI**
 
-   PTN format versions 1 and 2 are supported. Version 2 input bases are preserved
-   as X+, Y+, or Z+ input-node properties.
+   PTN format versions 1, 2, and 3 are supported. Version 2 input bases are preserved
+   as X+, Y+, or Z+ input-node properties. Version 3 detector tags are preserved,
+   and `type=flag` detectors can be highlighted separately from non-flag detectors.
 
    ```bash
    cd backend
@@ -201,7 +202,7 @@ graphqomb-studio/
 
 This project uses [Semantic Versioning](https://semver.org/). Frontend and backend are versioned independently.
 
-- **Current versions**: Frontend v0.1.0 / Backend v0.1.0
+- **Current versions**: Frontend v0.4.0 / Backend v0.4.0
 - **Changelog**: See [CHANGELOG.md](./CHANGELOG.md) for release history
 - **Git tags**: `frontend/vX.Y.Z` and `backend/vX.Y.Z`
 
