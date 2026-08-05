@@ -137,6 +137,7 @@ export interface DetectorMismatch {
   nodeId: string;
   stabilizerAxis: Axis | null;
   detectorMeasurementAxis: Axis | null;
+  configuredMeasurementAxis: Axis | null;
   measurementPlane: Plane | null;
   measurementAngleCoeff: number | null; // a in 2πa
   reason: DetectorMismatchReason;

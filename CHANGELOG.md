@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
-- The FTQC detector list now marks deterministic and non-deterministic detectors and shows each mismatched node, expected support, measurement axis, plane, and angle.
+- The FTQC detector list now marks deterministic and non-deterministic detectors and shows each mismatched node using Pauli axes when available, with plane and angle details for non-Pauli bases.
 
 ## [v0.4.0] - 2026-08-04
 

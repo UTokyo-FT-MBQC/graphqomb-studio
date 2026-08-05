@@ -37,12 +37,17 @@ function formatMeasurementAngle(angleCoeff: number | null): string {
 
 function mismatchDescription(mismatch: DetectorMismatch): string {
   const stabilizerSupport = mismatch.stabilizerAxis ?? "I";
-  const measurementSupport = mismatch.detectorMeasurementAxis ?? "I";
-  const basis =
-    mismatch.measurementPlane === null
-      ? "measurement unassigned"
-      : `${mismatch.measurementPlane}, angle ${formatMeasurementAngle(mismatch.measurementAngleCoeff)}`;
-  return `${mismatch.nodeId}: support ${stabilizerSupport} ≠ measurement ${measurementSupport} (${basis})`;
+  if (mismatch.detectorMeasurementAxis !== null) {
+    return `${mismatch.nodeId}: support ${stabilizerSupport} ≠ measurement ${mismatch.detectorMeasurementAxis}`;
+  }
+
+  const configuredBasis =
+    mismatch.configuredMeasurementAxis !== null
+      ? `node basis ${mismatch.configuredMeasurementAxis} is outside detector group`
+      : mismatch.measurementPlane === null
+        ? "measurement unassigned"
+        : `${mismatch.measurementPlane}, angle ${formatMeasurementAngle(mismatch.measurementAngleCoeff)}`;
+  return `${mismatch.nodeId}: support ${stabilizerSupport} ≠ measurement I (${configuredBasis})`;
 }
 
 export function FTQCList(): React.ReactNode {

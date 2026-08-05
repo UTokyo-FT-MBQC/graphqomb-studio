@@ -95,9 +95,8 @@ def _detector_diagnostics(
             stabilizer_axis = stabilizer.get(node)
             in_detector_group = node in group
             meas_basis = graph.meas_bases.get(node)
-            measurement_axis = (
-                determine_pauli_axis(meas_basis) if in_detector_group and meas_basis is not None else None
-            )
+            configured_measurement_axis = determine_pauli_axis(meas_basis) if meas_basis is not None else None
+            measurement_axis = configured_measurement_axis if in_detector_group else None
 
             reason: DetectorMismatchReason | None = None
             if stabilizer_axis is None and measurement_axis is not None:
@@ -115,6 +114,9 @@ def _detector_diagnostics(
                     nodeId=reverse_map[node],
                     stabilizerAxis=AXIS_NAMES[stabilizer_axis] if stabilizer_axis is not None else None,
                     detectorMeasurementAxis=AXIS_NAMES[measurement_axis] if measurement_axis is not None else None,
+                    configuredMeasurementAxis=(
+                        AXIS_NAMES[configured_measurement_axis] if configured_measurement_axis is not None else None
+                    ),
                     measurementPlane=PLANE_NAMES[meas_basis.plane] if meas_basis is not None else None,
                     measurementAngleCoeff=meas_basis.angle / (2 * math.pi) if meas_basis is not None else None,
                     reason=reason,

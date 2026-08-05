@@ -175,6 +175,7 @@ class DetectorMismatchDTO(BaseModel):
     nodeId: str
     stabilizerAxis: AxisName | None
     detectorMeasurementAxis: AxisName | None
+    configuredMeasurementAxis: AxisName | None
     measurementPlane: PlaneName | None
     measurementAngleCoeff: float | None
     reason: DetectorMismatchReason

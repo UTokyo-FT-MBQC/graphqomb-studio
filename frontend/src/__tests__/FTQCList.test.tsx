@@ -28,9 +28,19 @@ vi.mock("@/hooks/useFTQCVisualization", () => ({
             nodeId: "n1",
             stabilizerAxis: "X",
             detectorMeasurementAxis: "Y",
+            configuredMeasurementAxis: "Y",
             measurementPlane: "XY",
             measurementAngleCoeff: 0.25,
             reason: "axis-mismatch",
+          },
+          {
+            nodeId: "n3",
+            stabilizerAxis: "Z",
+            detectorMeasurementAxis: null,
+            configuredMeasurementAxis: "X",
+            measurementPlane: "XY",
+            measurementAngleCoeff: 0,
+            reason: "missing-measurement-support",
           },
         ],
       },
@@ -102,6 +112,9 @@ describe("FTQCList", () => {
     expect(screen.getByText("1 non-deterministic")).toBeInTheDocument();
     expect(screen.getByText("Non-deterministic")).toBeInTheDocument();
     expect(screen.getByText("Support / measurement mismatch")).toBeInTheDocument();
-    expect(screen.getByText("n1: support X ≠ measurement Y (XY, angle π/2)")).toBeInTheDocument();
+    expect(screen.getByText("n1: support X ≠ measurement Y")).toBeInTheDocument();
+    expect(
+      screen.getByText("n3: support Z ≠ measurement I (node basis X is outside detector group)")
+    ).toBeInTheDocument();
   });
 });
