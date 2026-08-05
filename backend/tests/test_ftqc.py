@@ -126,14 +126,14 @@ async def test_compile_ftqc_reports_z_measurement_support_mismatch() -> None:
 
 
 async def test_compile_ftqc_reports_stabilizer_support_outside_detector_group() -> None:
-    """Stabilizer support missing from the detector product identifies the affected node."""
+    """A Pauli-equivalent planner basis outside the detector is reported as its Pauli axis."""
     project = single_node_project({"type": "axis", "axis": "X", "sign": "PLUS"})
     project["nodes"].append(
         {
             "id": "n1",
             "coordinate": {"x": 1, "y": 0, "z": 0},
             "role": "intermediate",
-            "measBasis": {"type": "axis", "axis": "X", "sign": "PLUS"},
+            "measBasis": {"type": "planner", "plane": "XY", "angleCoeff": 0},
         }
     )
     project["edges"] = [{"id": "n0-n1", "source": "n0", "target": "n1"}]

@@ -8,6 +8,8 @@ import { useProjectStore } from "@/stores/projectStore";
 import { type CompiledFTQCDefinition, toPayload } from "@/types";
 import { useEffect, useMemo } from "react";
 
+const FTQC_COMPILATION_CACHE_VERSION = 2;
+
 export function useCompiledFTQC(enabled: boolean): {
   compiledFTQC: CompiledFTQCDefinition | null;
   isLoading: boolean;
@@ -25,6 +27,7 @@ export function useCompiledFTQC(enabled: boolean): {
   const sourceKey = useMemo(
     () =>
       JSON.stringify({
+        cacheVersion: FTQC_COMPILATION_CACHE_VERSION,
         nodes: project.nodes.map(({ id, role, measBasis, inputBasis }) => ({
           id,
           role,
