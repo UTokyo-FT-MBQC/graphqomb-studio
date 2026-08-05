@@ -6,10 +6,12 @@ import { useEffect, useMemo } from "react";
 import { compileFTQC, isApiError } from "@/lib/api";
 import { useCompiledFTQCStore } from "@/stores/compiledFTQCStore";
 import { useProjectStore } from "@/stores/projectStore";
-import { type FTQCDefinition, toPayload } from "@/types";
+import { type CompiledFTQCDefinition, toPayload } from "@/types";
+
+const FTQC_COMPILATION_CACHE_VERSION = 2;
 
 export function useCompiledFTQC(enabled: boolean): {
-  compiledFTQC: FTQCDefinition | null;
+  compiledFTQC: CompiledFTQCDefinition | null;
   isLoading: boolean;
   error: string | null;
 } {
@@ -25,7 +27,13 @@ export function useCompiledFTQC(enabled: boolean): {
   const sourceKey = useMemo(
     () =>
       JSON.stringify({
-        nodes: project.nodes.map(({ id, role, measBasis }) => ({ id, role, measBasis })),
+        cacheVersion: FTQC_COMPILATION_CACHE_VERSION,
+        nodes: project.nodes.map(({ id, role, measBasis, inputBasis }) => ({
+          id,
+          role,
+          measBasis,
+          inputBasis,
+        })),
         edges: project.edges,
         flow: project.flow,
         ftqc: project.ftqc,

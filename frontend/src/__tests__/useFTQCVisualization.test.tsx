@@ -77,6 +77,7 @@ describe("useFTQCVisualization", () => {
       parityCheckGroup: [["n0", "n1"]],
       parityCheckTags: ["type=flag"],
       logicalObservableGroup: { "0": ["n0", "n1"] },
+      detectorDiagnostics: [{ deterministic: true, mismatches: [] }],
     });
     const { result } = renderHook(() => ({
       canvas: useFTQCVisualization(),
@@ -93,8 +94,12 @@ describe("useFTQCVisualization", () => {
         parityCheckGroup: [["n0", "n1"]],
         parityCheckTags: ["type=flag"],
         logicalObservableGroup: { "0": ["n0", "n1"] },
+        detectorDiagnostics: [{ deterministic: true, mismatches: [] }],
       })
     );
+    expect(result.current.list.detectorDiagnostics).toEqual([
+      { deterministic: true, mismatches: [] },
+    ]);
     expect([...result.current.canvas.highlights.keys()]).toEqual(["n0", "n1"]);
   });
 
@@ -107,6 +112,16 @@ describe("useFTQCVisualization", () => {
     };
     useProjectStore.getState().setProject(project);
     useUIStore.getState().setShowParityGroups(true);
+    mockCompileFTQC.mockResolvedValueOnce({
+      parityCheckGroup: [["n0"], ["n1"], ["n2"]],
+      parityCheckTags: ["type=flag", "", "type=flag"],
+      logicalObservableGroup: {},
+      detectorDiagnostics: [
+        { deterministic: true, mismatches: [] },
+        { deterministic: true, mismatches: [] },
+        { deterministic: true, mismatches: [] },
+      ],
+    });
     const { result } = renderHook(() => useFTQCVisualization());
 
     await waitFor(() => expect([...result.current.highlights.keys()]).toEqual(["n1"]));
@@ -119,5 +134,54 @@ describe("useFTQCVisualization", () => {
 
     act(() => useUIStore.getState().setDetectorTypeFilter("non-flag"));
     await waitFor(() => expect([...result.current.highlights.keys()]).toEqual(["n1"]));
+  });
+
+  it("rechecks detector determinism when an input initialization basis changes", async () => {
+    const project = createProject();
+    useProjectStore.getState().setProject(project);
+    mockCompileFTQC
+      .mockResolvedValueOnce({
+        parityCheckGroup: [["n0", "n1"]],
+        logicalObservableGroup: { "0": ["n0", "n1"] },
+        detectorDiagnostics: [{ deterministic: false, mismatches: [] }],
+      })
+      .mockResolvedValueOnce({
+        parityCheckGroup: [["n0", "n1"]],
+        logicalObservableGroup: { "0": ["n0", "n1"] },
+        detectorDiagnostics: [{ deterministic: true, mismatches: [] }],
+      });
+    const { result } = renderHook(() => useFTQCVisualization());
+
+    await waitFor(() => expect(result.current.detectorDiagnostics[0]?.deterministic).toBe(false));
+
+    const updatedProject = createProject();
+    const inputNode = updatedProject.nodes[0];
+    if (inputNode?.role !== "input") throw new Error("Expected input node");
+    inputNode.inputBasis = "Z";
+    act(() => useProjectStore.getState().setProject(updatedProject));
+
+    await waitFor(() => expect(mockCompileFTQC).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.detectorDiagnostics[0]?.deterministic).toBe(true));
+  });
+
+  it("clears compiled groups after the final FTQC entry is removed", async () => {
+    useProjectStore.getState().setProject(createProject());
+    useUIStore.getState().setFTQCDisplayMode("compiled");
+    useUIStore.getState().setShowParityGroups(true);
+    mockCompileFTQC.mockResolvedValueOnce({
+      parityCheckGroup: [["n0", "n1"]],
+      logicalObservableGroup: { "0": ["n0", "n1"] },
+      detectorDiagnostics: [{ deterministic: true, mismatches: [] }],
+    });
+    const { result } = renderHook(() => useFTQCVisualization());
+
+    await waitFor(() => expect(result.current.displayedFTQC).toBeDefined());
+    expect([...result.current.highlights.keys()]).toEqual(["n0", "n1"]);
+
+    act(() => useProjectStore.getState().updateFTQC(undefined));
+
+    await waitFor(() => expect(result.current.displayedFTQC).toBeUndefined());
+    expect(result.current.highlights.size).toBe(0);
+    expect(useCompiledFTQCStore.getState().compiledFTQC).toBeNull();
   });
 });

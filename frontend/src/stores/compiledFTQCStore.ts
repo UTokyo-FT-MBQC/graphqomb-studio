@@ -1,15 +1,15 @@
 /** Cached GraphQOMB closure results for the current FTQC definition. */
 
 import { create } from "zustand";
-import type { FTQCDefinition } from "@/types";
+import type { CompiledFTQCDefinition } from "@/types";
 
 interface CompiledFTQCState {
-  compiledFTQC: FTQCDefinition | null;
+  compiledFTQC: CompiledFTQCDefinition | null;
   sourceKey: string | null;
   isLoading: boolean;
   error: string | null;
   beginCompilation: (sourceKey: string) => boolean;
-  setCompiledFTQC: (sourceKey: string, ftqc: FTQCDefinition) => void;
+  setCompiledFTQC: (sourceKey: string, ftqc: CompiledFTQCDefinition) => void;
   setError: (sourceKey: string, error: string) => void;
   clear: () => void;
 }

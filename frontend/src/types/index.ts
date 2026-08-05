@@ -128,6 +128,31 @@ export interface FTQCDefinition {
   logicalObservableGroup: Record<string, string[]>; // observable index -> target node IDs
 }
 
+export type DetectorMismatchReason =
+  | "axis-mismatch"
+  | "missing-stabilizer-support"
+  | "missing-measurement-support"
+  | "non-pauli-measurement";
+
+export interface DetectorMismatch {
+  nodeId: string;
+  stabilizerAxis: Axis | null;
+  detectorMeasurementAxis: Axis | null;
+  configuredMeasurementAxis: Axis | null;
+  measurementPlane: Plane | null;
+  measurementAngleCoeff: number | null; // a in 2πa
+  reason: DetectorMismatchReason;
+}
+
+export interface DetectorDiagnostic {
+  deterministic: boolean;
+  mismatches: DetectorMismatch[];
+}
+
+export interface CompiledFTQCDefinition extends FTQCDefinition {
+  detectorDiagnostics: DetectorDiagnostic[]; // aligned with parityCheckGroup
+}
+
 export interface ResolvedFlow {
   xflow: Record<string, string[]>;
   zflow: Record<string, string[]>; // Always concrete values (auto is resolved)

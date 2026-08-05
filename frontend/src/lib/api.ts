@@ -4,7 +4,12 @@
  * Functions for communicating with the FastAPI backend.
  */
 
-import type { FTQCDefinition, GraphQOMBProject, ProjectPayload, ScheduleResult } from "@/types";
+import type {
+  CompiledFTQCDefinition,
+  GraphQOMBProject,
+  ProjectPayload,
+  ScheduleResult,
+} from "@/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -132,10 +137,10 @@ export async function computeZFlow(payload: ProjectPayload): Promise<Record<stri
 }
 
 /**
- * Expand FTQC detector and logical-observable seeds with GraphQOMB's closure algorithm.
+ * Compile FTQC groups and return GraphQOMB detector determinism diagnostics.
  */
-export async function compileFTQC(payload: ProjectPayload): Promise<FTQCDefinition> {
-  return apiRequest<FTQCDefinition>("/api/compile-ftqc", {
+export async function compileFTQC(payload: ProjectPayload): Promise<CompiledFTQCDefinition> {
+  return apiRequest<CompiledFTQCDefinition>("/api/compile-ftqc", {
     method: "POST",
     body: JSON.stringify(payload),
   });

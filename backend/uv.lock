@@ -251,7 +251,7 @@ wheels = [
 
 [[package]]
 name = "graphqomb"
-version = "0.5.1"
+version = "0.5.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "matplotlib" },
@@ -261,9 +261,9 @@ dependencies = [
     { name = "scipy" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5d/38/9df5d3990d5dbde5196cd094e1c83e6ba3a76cbc6f8caeee0712ecf6c6f7/graphqomb-0.5.1.tar.gz", hash = "sha256:5ca62ca76b9b437aa378e9d239fd9173eb01e20677f4ef2f7f64ea120e2e134e", size = 206712, upload-time = "2026-08-03T13:14:33.121Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5b/a8/33612385ca6883204520e4c8714e145e55a9ea110d9e164a39ee76195963/graphqomb-0.5.2.tar.gz", hash = "sha256:cd872ad306644993a96dab59b8ae15145ce8c68b293b406ffcbe115f07159f2d", size = 213322, upload-time = "2026-08-04T13:32:01.497Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0b/74/c2915275e59e8f43e495d156f29fc1260c71b83374f8ed00fbf51bbb2d7c/graphqomb-0.5.1-py3-none-any.whl", hash = "sha256:a52b8bd382d4a47ccc6de51ef750c841ca21c507bbad8333d5e945024c65c975", size = 141325, upload-time = "2026-08-03T13:14:31.559Z" },
+    { url = "https://files.pythonhosted.org/packages/38/40/9738eb3990a139cadbe924374fa49b390420a45798b2dcd524cd63a8ace0/graphqomb-0.5.2-py3-none-any.whl", hash = "sha256:fef408a5fb9b9a44e609cbf697cb8a9f52d53496de8bc731f261a07a32ab186b", size = 144777, upload-time = "2026-08-04T13:31:59.696Z" },
 ]
 
 [[package]]
@@ -291,7 +291,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.140.13" },
-    { name = "graphqomb", specifier = ">=0.5.1" },
+    { name = "graphqomb", specifier = ">=0.5.2" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=2.3.0" },
     { name = "networkx", specifier = ">=3.0" },
