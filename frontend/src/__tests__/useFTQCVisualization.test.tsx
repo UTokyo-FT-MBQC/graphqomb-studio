@@ -163,4 +163,25 @@ describe("useFTQCVisualization", () => {
     await waitFor(() => expect(mockCompileFTQC).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(result.current.detectorDiagnostics[0]?.deterministic).toBe(true));
   });
+
+  it("clears compiled groups after the final FTQC entry is removed", async () => {
+    useProjectStore.getState().setProject(createProject());
+    useUIStore.getState().setFTQCDisplayMode("compiled");
+    useUIStore.getState().setShowParityGroups(true);
+    mockCompileFTQC.mockResolvedValueOnce({
+      parityCheckGroup: [["n0", "n1"]],
+      logicalObservableGroup: { "0": ["n0", "n1"] },
+      detectorDiagnostics: [{ deterministic: true, mismatches: [] }],
+    });
+    const { result } = renderHook(() => useFTQCVisualization());
+
+    await waitFor(() => expect(result.current.displayedFTQC).toBeDefined());
+    expect([...result.current.highlights.keys()]).toEqual(["n0", "n1"]);
+
+    act(() => useProjectStore.getState().updateFTQC(undefined));
+
+    await waitFor(() => expect(result.current.displayedFTQC).toBeUndefined());
+    expect(result.current.highlights.size).toBe(0);
+    expect(useCompiledFTQCStore.getState().compiledFTQC).toBeNull();
+  });
 });

@@ -131,7 +131,8 @@ export interface FTQCDefinition {
 export type DetectorMismatchReason =
   | "axis-mismatch"
   | "missing-stabilizer-support"
-  | "missing-measurement-support";
+  | "missing-measurement-support"
+  | "non-pauli-measurement";
 
 export interface DetectorMismatch {
   nodeId: string;

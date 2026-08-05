@@ -2,6 +2,9 @@
 
 from typing import Any
 
+import pytest
+from graphqomb.common import Axis
+from graphqomb.pauli_frame import PauliFrame
 from httpx import ASGITransport, AsyncClient
 from src.main import app
 
@@ -154,6 +157,47 @@ async def test_compile_ftqc_reports_stabilizer_support_outside_detector_group() 
                     "measurementPlane": "XY",
                     "measurementAngleCoeff": 0.0,
                     "reason": "missing-measurement-support",
+                }
+            ],
+        }
+    ]
+
+
+async def test_compile_ftqc_distinguishes_non_pauli_measurement(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A present non-Pauli basis is not reported as missing detector support."""
+    project = single_node_project({"type": "planner", "plane": "XY", "angleCoeff": 0.125})
+
+    def detector_groups(_pauli_frame: PauliFrame) -> list[set[int]]:
+        return [{0}]
+
+    def detector_determinism(_pauli_frame: PauliFrame) -> list[bool]:
+        return [False]
+
+    def detector_stabilizers(_pauli_frame: PauliFrame) -> list[dict[int, Axis]]:
+        return [{0: Axis.X}]
+
+    monkeypatch.setattr(PauliFrame, "detector_groups", detector_groups)
+    monkeypatch.setattr(PauliFrame, "detector_determinism", detector_determinism)
+    monkeypatch.setattr(PauliFrame, "detector_stabilizers", detector_stabilizers)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/compile-ftqc", json=project)
+
+    assert response.status_code == 200
+    assert response.json()["detectorDiagnostics"] == [
+        {
+            "deterministic": False,
+            "mismatches": [
+                {
+                    "nodeId": "n0",
+                    "stabilizerAxis": "X",
+                    "detectorMeasurementAxis": None,
+                    "configuredMeasurementAxis": None,
+                    "measurementPlane": "XY",
+                    "measurementAngleCoeff": 0.125,
+                    "reason": "non-pauli-measurement",
                 }
             ],
         }

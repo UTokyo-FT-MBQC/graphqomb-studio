@@ -99,7 +99,9 @@ def _detector_diagnostics(
             measurement_axis = configured_measurement_axis if in_detector_group else None
 
             reason: DetectorMismatchReason | None = None
-            if stabilizer_axis is None and measurement_axis is not None:
+            if in_detector_group and meas_basis is not None and configured_measurement_axis is None:
+                reason = "non-pauli-measurement"
+            elif stabilizer_axis is None and measurement_axis is not None:
                 reason = "missing-stabilizer-support"
             elif stabilizer_axis is not None and measurement_axis is None:
                 reason = "missing-measurement-support"

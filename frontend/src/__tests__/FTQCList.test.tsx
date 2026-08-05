@@ -42,6 +42,15 @@ vi.mock("@/hooks/useFTQCVisualization", () => ({
             measurementAngleCoeff: 0,
             reason: "missing-measurement-support",
           },
+          {
+            nodeId: "n4",
+            stabilizerAxis: "X",
+            detectorMeasurementAxis: null,
+            configuredMeasurementAxis: null,
+            measurementPlane: "XY",
+            measurementAngleCoeff: 0.125,
+            reason: "non-pauli-measurement",
+          },
         ],
       },
       { deterministic: true, mismatches: [] },
@@ -117,6 +126,9 @@ describe("FTQCList", () => {
       screen.getByText(
         "n3: required support Z, but node is not included in detector (node measurement: X)"
       )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("n4: required support X, but node measurement is non-Pauli (XY, angle π/4)")
     ).toBeInTheDocument();
   });
 });

@@ -64,6 +64,7 @@ type DetectorMismatchReason = Literal[
     "axis-mismatch",
     "missing-stabilizer-support",
     "missing-measurement-support",
+    "non-pauli-measurement",
 ]
 
 

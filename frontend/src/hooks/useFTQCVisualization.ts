@@ -31,7 +31,7 @@ export function useFTQCVisualization(): FTQCVisualizationResult {
   const ftqc = useProjectStore((state) => state.project.ftqc);
   const ftqcVisualization = useUIStore((state) => state.ftqcVisualization);
   const isCompiledMode = ftqcVisualization.displayMode === "compiled";
-  const { compiledFTQC, isLoading, error } = useCompiledFTQC(ftqc !== undefined);
+  const { compiledFTQC, isLoading, error } = useCompiledFTQC(true);
   const displayedFTQC = isCompiledMode ? (compiledFTQC ?? undefined) : ftqc;
   const isCompiling = isLoading;
   const compilationError = error;

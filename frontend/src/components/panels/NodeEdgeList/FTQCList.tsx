@@ -36,6 +36,16 @@ function formatMeasurementAngle(angleCoeff: number | null): string {
 }
 
 function mismatchDescription(mismatch: DetectorMismatch): string {
+  if (mismatch.reason === "non-pauli-measurement") {
+    const nodeMeasurement =
+      mismatch.measurementPlane === null
+        ? "unassigned"
+        : `${mismatch.measurementPlane}, angle ${formatMeasurementAngle(mismatch.measurementAngleCoeff)}`;
+    return mismatch.stabilizerAxis === null
+      ? `${mismatch.nodeId}: detector includes a non-Pauli measurement (${nodeMeasurement}), but stabilizer has no support`
+      : `${mismatch.nodeId}: required support ${mismatch.stabilizerAxis}, but node measurement is non-Pauli (${nodeMeasurement})`;
+  }
+
   if (mismatch.reason === "missing-measurement-support") {
     const nodeMeasurement =
       mismatch.configuredMeasurementAxis ??
