@@ -12,6 +12,8 @@
 
 "use client";
 
+import { Handle, Position } from "@xyflow/react";
+import { memo } from "react";
 import {
   SCHEDULE_OPERATION_COLORS,
   type ScheduleNodeHighlightKind,
@@ -19,8 +21,6 @@ import {
 import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { GraphNode, NodeRole } from "@/types";
-import { Handle, Position } from "@xyflow/react";
-import { memo } from "react";
 
 export interface GhostNodeData {
   node: GraphNode;

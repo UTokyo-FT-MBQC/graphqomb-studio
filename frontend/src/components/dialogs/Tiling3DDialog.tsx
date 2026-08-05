@@ -9,11 +9,11 @@
 
 "use client";
 
+import { useCallback, useEffect } from "react";
 import { MAX_RECOMMENDED_NODES } from "@/lib/tiling/generator";
 import { useTilingStore } from "@/stores/tilingStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { RHGBoundaryPresetId, Tiling3DPatternId } from "@/types/rhg";
-import { useCallback, useEffect } from "react";
 
 /**
  * Pattern information for display.

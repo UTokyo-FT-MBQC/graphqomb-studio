@@ -7,8 +7,8 @@
 
 "use client";
 
-import { useUIStore } from "@/stores/uiStore";
 import { useCallback } from "react";
+import { useUIStore } from "@/stores/uiStore";
 
 export function GhostRangeSlider(): React.ReactNode {
   const ghostZRange = useUIStore((state) => state.ghostZRange);

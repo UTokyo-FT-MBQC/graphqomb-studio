@@ -8,12 +8,12 @@
 
 "use client";
 
-import { getOffsetBezierPath } from "@/lib/edgeUtils";
-import { SCHEDULE_OPERATION_COLORS } from "@/lib/scheduleVisualization";
-import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 import type { EdgeProps } from "@xyflow/react";
 import type { CSSProperties } from "react";
 import { memo } from "react";
+import { getOffsetBezierPath } from "@/lib/edgeUtils";
+import { SCHEDULE_OPERATION_COLORS } from "@/lib/scheduleVisualization";
+import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 
 export interface CustomEdgeData {
   offset?: number;

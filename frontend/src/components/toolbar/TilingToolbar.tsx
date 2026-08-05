@@ -10,9 +10,9 @@
 
 "use client";
 
+import { useCallback, useMemo } from "react";
 import { getAvailable2DPresets, useTilingStore } from "@/stores/tilingStore";
 import { useUIStore } from "@/stores/uiStore";
-import { useCallback, useMemo } from "react";
 
 export function TilingToolbar(): React.ReactNode {
   const isTilingMode = useUIStore((state) => state.isTilingMode);

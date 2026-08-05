@@ -2,11 +2,11 @@
  * Node properties tests.
  */
 
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { NodeProperties } from "@/components/panels/NodeProperties";
 import { useProjectStore } from "@/stores/projectStore";
 import type { GraphQOMBProject, InputNode } from "@/types";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 function projectWithZInput(): GraphQOMBProject {
   return {

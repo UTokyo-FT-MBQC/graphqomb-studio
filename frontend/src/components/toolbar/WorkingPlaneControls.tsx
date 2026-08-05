@@ -10,7 +10,7 @@
 
 "use client";
 
-import { type WorkingPlane, useUIStore } from "@/stores/uiStore";
+import { useUIStore, type WorkingPlane } from "@/stores/uiStore";
 
 interface AxisRange {
   min: number;

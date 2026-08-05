@@ -8,6 +8,8 @@
 
 "use client";
 
+import type { ChangeEvent } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { FTQCModal } from "@/components/ftqc/FTQCModal";
 import { EdgeCreationToolbar } from "@/components/toolbar/EdgeCreationToolbar";
 import { FileMenu } from "@/components/toolbar/FileMenu";
@@ -19,9 +21,9 @@ import { ViewControls } from "@/components/toolbar/ViewControls";
 import { WorkingPlaneControls } from "@/components/toolbar/WorkingPlaneControls";
 import { ZSliceSlider } from "@/components/toolbar/ZSliceSlider";
 import {
+  isApiError,
   type ScheduleOptions,
   type ScheduleStrategy,
-  isApiError,
   schedule,
   validate,
 } from "@/lib/api";
@@ -29,8 +31,6 @@ import { getAxisRange, getZRange } from "@/lib/geometry";
 import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
 import { toPayload } from "@/types";
-import type { ChangeEvent } from "react";
-import { useCallback, useMemo, useState } from "react";
 
 interface ValidationState {
   valid: boolean;

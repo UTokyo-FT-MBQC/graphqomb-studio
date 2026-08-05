@@ -13,6 +13,8 @@
 
 "use client";
 
+import type { ChangeEvent } from "react";
+import { useCallback, useMemo } from "react";
 import { FlowEditor } from "@/components/panels/FlowEditor";
 import { MeasBasisEditor } from "@/components/panels/MeasBasisEditor";
 import { useProjectStore } from "@/stores/projectStore";
@@ -25,8 +27,6 @@ import type {
   NodeRole,
   OutputNode,
 } from "@/types";
-import type { ChangeEvent } from "react";
-import { useCallback, useMemo } from "react";
 
 interface NodePropertiesProps {
   node: GraphNode;

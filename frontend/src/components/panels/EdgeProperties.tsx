@@ -8,10 +8,10 @@
 
 "use client";
 
+import { useCallback } from "react";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import type { GraphEdge } from "@/types";
-import { useCallback } from "react";
 
 interface EdgePropertiesProps {
   edge: GraphEdge;

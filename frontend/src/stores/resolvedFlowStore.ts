@@ -6,8 +6,8 @@
  * Phase 3 will implement the actual API integration.
  */
 
-import type { ResolvedFlow } from "@/types";
 import { create } from "zustand";
+import type { ResolvedFlow } from "@/types";
 
 interface ResolvedFlowState {
   resolvedFlow: ResolvedFlow | null;

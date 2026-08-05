@@ -1,10 +1,10 @@
 /** FTQC list display-mode controls. */
 
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { FTQCList } from "@/components/panels/NodeEdgeList/FTQCList";
 import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/hooks/useFTQCVisualization", () => ({
   useFTQCVisualization: () => ({

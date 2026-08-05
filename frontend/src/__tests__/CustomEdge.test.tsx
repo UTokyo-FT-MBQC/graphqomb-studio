@@ -2,11 +2,11 @@
  * CustomEdge regression tests.
  */
 
-import { CustomEdge } from "@/components/canvas/CustomEdge";
 import { render } from "@testing-library/react";
-import { Position } from "@xyflow/react";
 import type { EdgeProps } from "@xyflow/react";
+import { Position } from "@xyflow/react";
 import { describe, expect, it } from "vitest";
+import { CustomEdge } from "@/components/canvas/CustomEdge";
 
 describe("CustomEdge", () => {
   it("renders the path from live React Flow endpoints during drag", () => {

@@ -1,6 +1,6 @@
+import { describe, expect, it } from "vitest";
 import { getScheduleSliceHighlight, isNodeAliveAtTime } from "@/lib/scheduleVisualization";
 import type { GraphNode, ScheduleResult } from "@/types";
-import { describe, expect, it } from "vitest";
 
 const nodes: GraphNode[] = [
   {

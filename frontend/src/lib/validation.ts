@@ -4,11 +4,11 @@
  * Functions for validating and parsing project data.
  */
 
-import { safeValidateProject, validateProject } from "@/schemas/project";
 import type { Project } from "@/schemas/project";
+import { safeValidateProject, validateProject } from "@/schemas/project";
 import type { GraphQOMBProject } from "@/types";
 
-export { validateProject, safeValidateProject };
+export { safeValidateProject, validateProject };
 
 /**
  * Parse JSON string to Project

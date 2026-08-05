@@ -8,12 +8,12 @@
  * Use FTQCHighlightContext to pass highlights to individual node components.
  */
 
+import { useEffect, useMemo } from "react";
 import { isFlagDetector } from "@/lib/detectorTags";
 import { type FTQCHighlight, getObservableColor, getParityGroupColor } from "@/lib/ftqcColors";
 import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { FTQCDefinition } from "@/types";
-import { useEffect, useMemo } from "react";
 import { useCompiledFTQC } from "./useCompiledFTQC";
 
 export interface FTQCVisualizationResult {

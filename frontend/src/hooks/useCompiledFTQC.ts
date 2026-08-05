@@ -2,11 +2,11 @@
 
 "use client";
 
+import { useEffect, useMemo } from "react";
 import { compileFTQC, isApiError } from "@/lib/api";
 import { useCompiledFTQCStore } from "@/stores/compiledFTQCStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { type FTQCDefinition, toPayload } from "@/types";
-import { useEffect, useMemo } from "react";
 
 export function useCompiledFTQC(enabled: boolean): {
   compiledFTQC: FTQCDefinition | null;
