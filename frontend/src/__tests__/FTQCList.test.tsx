@@ -112,9 +112,11 @@ describe("FTQCList", () => {
     expect(screen.getByText("1 non-deterministic")).toBeInTheDocument();
     expect(screen.getByText("Non-deterministic")).toBeInTheDocument();
     expect(screen.getByText("Support / measurement mismatch")).toBeInTheDocument();
-    expect(screen.getByText("n1: support X ≠ measurement Y")).toBeInTheDocument();
+    expect(screen.getByText("n1: required support X ≠ measurement Y")).toBeInTheDocument();
     expect(
-      screen.getByText("n3: support Z ≠ measurement I (node basis X is outside detector group)")
+      screen.getByText(
+        "n3: required support Z, but node is not included in detector (node measurement: X)"
+      )
     ).toBeInTheDocument();
   });
 });

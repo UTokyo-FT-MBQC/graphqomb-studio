@@ -36,18 +36,20 @@ function formatMeasurementAngle(angleCoeff: number | null): string {
 }
 
 function mismatchDescription(mismatch: DetectorMismatch): string {
-  const stabilizerSupport = mismatch.stabilizerAxis ?? "I";
-  if (mismatch.detectorMeasurementAxis !== null) {
-    return `${mismatch.nodeId}: support ${stabilizerSupport} ≠ measurement ${mismatch.detectorMeasurementAxis}`;
+  if (mismatch.reason === "missing-measurement-support") {
+    const nodeMeasurement =
+      mismatch.configuredMeasurementAxis ??
+      (mismatch.measurementPlane === null
+        ? "unassigned"
+        : `${mismatch.measurementPlane}, angle ${formatMeasurementAngle(mismatch.measurementAngleCoeff)}`);
+    return `${mismatch.nodeId}: required support ${mismatch.stabilizerAxis}, but node is not included in detector (node measurement: ${nodeMeasurement})`;
   }
 
-  const configuredBasis =
-    mismatch.configuredMeasurementAxis !== null
-      ? `node basis ${mismatch.configuredMeasurementAxis} is outside detector group`
-      : mismatch.measurementPlane === null
-        ? "measurement unassigned"
-        : `${mismatch.measurementPlane}, angle ${formatMeasurementAngle(mismatch.measurementAngleCoeff)}`;
-  return `${mismatch.nodeId}: support ${stabilizerSupport} ≠ measurement I (${configuredBasis})`;
+  if (mismatch.reason === "missing-stabilizer-support") {
+    return `${mismatch.nodeId}: detector measures ${mismatch.detectorMeasurementAxis}, but stabilizer has no support`;
+  }
+
+  return `${mismatch.nodeId}: required support ${mismatch.stabilizerAxis} ≠ measurement ${mismatch.detectorMeasurementAxis}`;
 }
 
 export function FTQCList(): React.ReactNode {
@@ -260,10 +262,12 @@ export function FTQCList(): React.ReactNode {
                     {group.length > 0 ? group.join(", ") : "(empty)"}
                   </div>
                   {diagnostic !== undefined && !diagnostic.deterministic && (
-                    <div className="ml-5 mt-1 space-y-0.5 rounded bg-red-50 px-2 py-1 text-[11px] text-red-700">
+                    <div className="ml-5 mt-1 space-y-1 rounded bg-red-50 px-2 py-1.5 text-[11px] leading-relaxed text-red-700">
                       <div className="font-medium">Support / measurement mismatch</div>
                       {diagnostic.mismatches.map((mismatch) => (
-                        <div key={mismatch.nodeId}>{mismatchDescription(mismatch)}</div>
+                        <div key={mismatch.nodeId} className="break-words">
+                          {mismatchDescription(mismatch)}
+                        </div>
                       ))}
                     </div>
                   )}
