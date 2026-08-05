@@ -4,9 +4,9 @@
  * Tests for the manual schedule editing state management.
  */
 
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
 import type { GraphEdge, ScheduleResult } from "@/types";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // Helper edges for testing
 const testEdges: GraphEdge[] = [

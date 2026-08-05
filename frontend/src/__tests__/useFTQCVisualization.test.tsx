@@ -1,13 +1,13 @@
 /** FTQC original/compiled visualization tests. */
 
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { useFTQCVisualization } from "@/hooks/useFTQCVisualization";
 import { compileFTQC } from "@/lib/api";
 import { useCompiledFTQCStore } from "@/stores/compiledFTQCStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { GraphQOMBProject } from "@/types";
-import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();

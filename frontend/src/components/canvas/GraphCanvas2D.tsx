@@ -26,20 +26,8 @@ interface GhostNodeComputedData {
   position: { x: number; y: number };
   zOffset: number;
 }
-import { type EdgeWithPosition, calculateEdgeOffsets } from "@/lib/edgeUtils";
-import { SCALE, getGhostCandidateNodes, getGhostPosition } from "@/lib/geometry";
-import {
-  type ScheduleNodeHighlightKind,
-  getScheduleSliceHighlight,
-  isEdgeLiveAtTime,
-} from "@/lib/scheduleVisualization";
-import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
-import { useProjectStore } from "@/stores/projectStore";
-import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
-import { useSelectionStore } from "@/stores/selectionStore";
-import { useUIStore } from "@/stores/uiStore";
-import type { Coordinate, GraphNode, IntermediateNode } from "@/types";
-import { createEdge } from "@/types";
+
+import type { Connection, Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
 import {
   Background,
   Controls,
@@ -51,7 +39,20 @@ import {
   useNodesState,
   useReactFlow,
 } from "@xyflow/react";
-import type { Connection, Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
+import { calculateEdgeOffsets, type EdgeWithPosition } from "@/lib/edgeUtils";
+import { getGhostCandidateNodes, getGhostPosition, SCALE } from "@/lib/geometry";
+import {
+  getScheduleSliceHighlight,
+  isEdgeLiveAtTime,
+  type ScheduleNodeHighlightKind,
+} from "@/lib/scheduleVisualization";
+import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
+import { useSelectionStore } from "@/stores/selectionStore";
+import { useUIStore } from "@/stores/uiStore";
+import type { Coordinate, GraphNode, IntermediateNode } from "@/types";
+import { createEdge } from "@/types";
 import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
@@ -580,6 +581,7 @@ function GraphCanvas2DInner(): React.ReactNode {
 
   return (
     <FTQCHighlightProvider highlights={ftqcHighlights}>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: This wrapper tracks pointer drag state for the canvas. */}
       <div
         className="w-full h-full relative"
         onMouseDown={tilingDrag.isActive ? tilingDrag.handleMouseDown : undefined}

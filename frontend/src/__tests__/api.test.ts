@@ -4,6 +4,7 @@
  * Tests for the backend API client functions.
  */
 
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   checkHealth,
   compileFTQC,
@@ -14,7 +15,6 @@ import {
   validate,
 } from "@/lib/api";
 import type { GraphQOMBProject, ProjectPayload } from "@/types";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock fetch globally
 const mockFetch = vi.fn();

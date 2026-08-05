@@ -9,11 +9,11 @@
 
 "use client";
 
-import type { WorkingPlane } from "@/stores/uiStore";
 import { Grid } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import { memo, useMemo } from "react";
 import * as THREE from "three";
+import type { WorkingPlane } from "@/stores/uiStore";
 
 interface WorkingPlaneGridProps {
   plane: WorkingPlane;

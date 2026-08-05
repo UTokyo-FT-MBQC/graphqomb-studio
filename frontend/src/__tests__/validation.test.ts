@@ -4,9 +4,9 @@
  * Tests for Zod schema validation and project parsing.
  */
 
+import { describe, expect, it } from "vitest";
 import { safeValidateProject } from "@/schemas/project";
 import type { GraphQOMBProject } from "@/types";
-import { describe, expect, it } from "vitest";
 
 function createValidProjectWithNodes(): GraphQOMBProject {
   return {

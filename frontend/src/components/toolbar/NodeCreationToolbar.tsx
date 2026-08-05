@@ -9,10 +9,10 @@
 
 "use client";
 
+import { useCallback, useState } from "react";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import type { IntermediateNode } from "@/types";
-import { useCallback, useState } from "react";
 
 // Generate unique node ID
 function generateNodeId(existingIds: string[]): string {

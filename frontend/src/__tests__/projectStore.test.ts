@@ -1,8 +1,8 @@
 /** Project-store detector tag alignment tests. */
 
+import { afterEach, describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/projectStore";
 import type { GraphQOMBProject } from "@/types";
-import { afterEach, describe, expect, it } from "vitest";
 
 function taggedProject(): GraphQOMBProject {
   return {

@@ -9,12 +9,12 @@
 
 "use client";
 
+import { useCallback, useMemo, useRef, useState } from "react";
 import { EdgeProperties } from "@/components/panels/EdgeProperties";
 import { NodeEdgeList } from "@/components/panels/NodeEdgeList";
 import { NodeProperties } from "@/components/panels/NodeProperties";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
-import { useCallback, useMemo, useRef, useState } from "react";
 
 const MIN_ELEMENTS_HEIGHT = 180;
 const MIN_DETAILS_HEIGHT = 180;
@@ -108,10 +108,14 @@ export function PropertyPanel(): React.ReactNode {
       </div>
 
       {isElementsExpanded && (
+        // biome-ignore lint/a11y/useSemanticElements: This is an interactive resize separator, not thematic content.
         <div
           role="separator"
           aria-orientation="horizontal"
           aria-label="Resize elements list"
+          aria-valuemin={MIN_ELEMENTS_HEIGHT}
+          aria-valuemax={getMaxElementsHeight()}
+          aria-valuenow={elementsHeight}
           tabIndex={0}
           onPointerDown={handleElementsResizeStart}
           onKeyDown={handleElementsResizeKeyDown}

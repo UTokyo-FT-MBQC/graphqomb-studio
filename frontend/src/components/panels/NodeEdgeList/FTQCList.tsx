@@ -123,7 +123,8 @@ export function FTQCList(): React.ReactNode {
 
   return (
     <div className="space-y-4 pr-1">
-      <div className="flex rounded bg-gray-100 p-0.5" aria-label="FTQC data display">
+      <fieldset className="flex rounded bg-gray-100 p-0.5">
+        <legend className="sr-only">FTQC data display</legend>
         {(["original", "compiled"] as const).map((mode) => (
           <button
             type="button"
@@ -139,7 +140,7 @@ export function FTQCList(): React.ReactNode {
             {mode}
           </button>
         ))}
-      </div>
+      </fieldset>
 
       {isCompiling && (
         <div className="py-2 text-center text-xs text-gray-500">Checking detector determinism…</div>
@@ -180,7 +181,8 @@ export function FTQCList(): React.ReactNode {
               )}
             </label>
           </div>
-          <div className="mb-2 flex rounded bg-gray-100 p-0.5" aria-label="Detector type filter">
+          <fieldset className="mb-2 flex rounded bg-gray-100 p-0.5">
+            <legend className="sr-only">Detector type filter</legend>
             {(
               [
                 ["non-flag", `Detectors (${nonFlagGroupCount})`],
@@ -202,7 +204,7 @@ export function FTQCList(): React.ReactNode {
                 {label}
               </button>
             ))}
-          </div>
+          </fieldset>
           <div className="space-y-1">
             {filteredParityGroupOptions.length === 0 && (
               <div className="rounded bg-gray-50 p-3 text-sm text-gray-400">

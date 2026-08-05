@@ -2,11 +2,11 @@
 
 "use client";
 
+import { useEffect, useMemo } from "react";
 import { compileFTQC, isApiError } from "@/lib/api";
 import { useCompiledFTQCStore } from "@/stores/compiledFTQCStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { type CompiledFTQCDefinition, toPayload } from "@/types";
-import { useEffect, useMemo } from "react";
 
 const FTQC_COMPILATION_CACHE_VERSION = 2;
 

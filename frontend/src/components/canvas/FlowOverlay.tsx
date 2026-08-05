@@ -10,11 +10,11 @@
 
 "use client";
 
+import { Panel, useNodes, useViewport } from "@xyflow/react";
+import { useMemo } from "react";
 import { useResolvedFlow } from "@/hooks/useResolvedFlow";
 import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
-import { Panel, useNodes, useViewport } from "@xyflow/react";
-import { useMemo } from "react";
 
 // Arrow offset from node center (to avoid overlapping with node)
 const ARROW_OFFSET = 20;

@@ -10,12 +10,12 @@
 
 "use client";
 
-import { useResolvedFlow } from "@/hooks/useResolvedFlow";
-import { useProjectStore } from "@/stores/projectStore";
-import { useUIStore } from "@/stores/uiStore";
 import { Line } from "@react-three/drei";
 import { memo, useMemo } from "react";
 import * as THREE from "three";
+import { useResolvedFlow } from "@/hooks/useResolvedFlow";
+import { useProjectStore } from "@/stores/projectStore";
+import { useUIStore } from "@/stores/uiStore";
 
 // Arrow configuration
 const ARROW_OFFSET = 0.2; // Offset from node center (node radius is 0.15)

@@ -2,13 +2,13 @@
  * GraphCanvas2D coordinate contract tests.
  */
 
+import { act, cleanup, render, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GraphCanvas2D } from "@/components/canvas/GraphCanvas2D";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { GraphQOMBProject } from "@/types";
-import { act, cleanup, render, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const reactFlowState = vi.hoisted(() => ({
   fitView: vi.fn(),
