@@ -63,6 +63,16 @@ def v3_ptn() -> str:
     )
 
 
+def v4_ptn() -> str:
+    """Return a v4 PTN pattern with an input initialization tag."""
+    return (
+        v2_ptn()
+        .replace("# GraphQOMB Pattern Format v2", "# GraphQOMB Pattern Format v4")
+        .replace(".version 2", ".version 4")
+        .replace(".input_basis 0:Z", ".input_basis 0:Z\n.input_tag[init_data] 0")
+    )
+
+
 def to_payload(project: dict[str, Any]) -> dict[str, Any]:
     """Return API payload fields from a full Studio project."""
     return {key: value for key, value in project.items() if key not in {"$schema", "schedule"}}
@@ -105,6 +115,14 @@ def test_ptn_text_to_project_imports_v3_detector_tags() -> None:
 
     assert project["ftqc"]["parityCheckGroup"] == [["n0"], ["n1"]]
     assert project["ftqc"]["parityCheckTags"] == ["type=flag", ""]
+
+
+def test_ptn_text_to_project_imports_v4_input_initialization() -> None:
+    """PTN v4 input axes and tags remain aligned in the Studio project."""
+    project = ptn_text_to_project(v4_ptn())
+
+    assert project["nodes"][0]["inputBasis"] == "Z"
+    assert project["nodes"][0]["inputTag"] == "init_data"
 
 
 def test_ptn_text_to_project_rejects_v2_basis_for_non_input_node() -> None:
@@ -173,6 +191,20 @@ async def test_v2_input_basis_import_is_accepted_by_validate_api() -> None:
 async def test_v3_detector_tags_import_is_accepted_by_validate_api() -> None:
     """Projects imported from PTN v3 remain valid API payloads."""
     project = ptn_text_to_project(v3_ptn())
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post("/api/validate", json=to_payload(project))
+
+    assert response.status_code == 200
+    assert response.json() == {"valid": True, "errors": []}
+
+
+async def test_v4_input_tag_import_is_accepted_by_validate_api() -> None:
+    """Projects imported from PTN v4 remain valid API payloads."""
+    project = ptn_text_to_project(v4_ptn())
 
     async with AsyncClient(
         transport=ASGITransport(app=app),

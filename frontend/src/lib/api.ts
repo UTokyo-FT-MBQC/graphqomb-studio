@@ -107,8 +107,8 @@ export async function schedule(
     strategy: scheduleOptions.strategy ?? "MINIMIZE_SPACE",
   });
 
-  if (scheduleOptions.useGreedy === true) {
-    params.set("use_greedy", "true");
+  if (scheduleOptions.useGreedy !== undefined) {
+    params.set("use_greedy", String(scheduleOptions.useGreedy));
   }
   if (scheduleOptions.maxTime !== undefined) {
     params.set("max_time", String(scheduleOptions.maxTime));

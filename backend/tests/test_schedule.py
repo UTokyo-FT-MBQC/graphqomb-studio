@@ -3,7 +3,7 @@
 from typing import Any
 
 import pytest
-from graphqomb.schedule_solver import ScheduleConfig
+from graphqomb.scheduler import ScheduleConfig
 from httpx import ASGITransport, AsyncClient
 from src.main import app
 from src.routers import schedule as schedule_router
@@ -156,6 +156,7 @@ async def test_schedule_passes_max_qubit_count_to_solver(monkeypatch: pytest.Mon
 
     assert response.status_code == 200
     assert captured_config["config"].max_qubit_count == 1
+    assert captured_config["config"].use_greedy is True
 
 
 async def test_schedule_rejects_invalid_performance_limits() -> None:

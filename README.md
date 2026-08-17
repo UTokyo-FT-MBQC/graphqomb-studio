@@ -5,7 +5,7 @@ A web application for visually editing Graph, Flow, and Schedule for Measurement
 ## Features
 
 - **Graph Editor**: Create and edit MBQC resource graphs with an intuitive 2D canvas
-- **Node Management**: Define input, output, and intermediate nodes with qubit indices
+- **Node Management**: Define input, output, and intermediate nodes with qubit indices and tagged input initializations
 - **Edge Connections**: Connect nodes to build quantum graph states
 - **Measurement Basis Editor**: Configure measurement basis (Planner/Axis mode) for each node
 - **Flow Editor**: Configure X-flow targets and Z-flow mode (Auto/Manual) per node
@@ -35,6 +35,7 @@ Select a node to open the Property Panel on the right side:
 
 - **Role**: Set as Input, Output, or Intermediate
 - **Qubit Index**: Assign qubit indices for input/output nodes
+- **Input Initialization**: Select X+, Y+, or Z+ and optionally set a Stim reset tag for input nodes
 - **Measurement Basis**:
   - *Planner Mode*: Select plane (XY, YZ, XZ) and angle coefficient
   - *Axis Mode*: Select axis (X, Y, Z) and sign (PLUS, MINUS)
@@ -107,7 +108,7 @@ For 3D projects (dimension = 3):
 - pnpm 10+
 - Python 3.12+
 - uv (Python package manager)
-- GraphQOMB 0.5.1+ (installed by `uv`)
+- GraphQOMB 0.5.3+ (installed by `uv`)
 
 ### Development Setup
 
@@ -131,9 +132,10 @@ For 3D projects (dimension = 3):
 
 4. **Open a `.ptn` file with the CLI**
 
-   PTN format versions 1, 2, and 3 are supported. Version 2 input bases are preserved
+   PTN format versions 1 through 4 are supported. Version 2 input bases are preserved
    as X+, Y+, or Z+ input-node properties. Version 3 detector tags are preserved,
    and `type=flag` detectors can be highlighted separately from non-flag detectors.
+   Version 4 input initialization tags are preserved and can be edited in node properties.
 
    ```bash
    cd backend

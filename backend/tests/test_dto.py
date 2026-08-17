@@ -110,6 +110,18 @@ class TestGraphNode:
         )
         assert node.inputBasis == "Z"
 
+    def test_input_node_with_input_tag(self) -> None:
+        """Test input nodes accept a Stim-style initialization tag."""
+        node = GraphNodeDTO(
+            id="n0",
+            coordinate=CoordinateDTO(x=0, y=0, z=0),
+            role="input",
+            measBasis=PlannerMeasBasisDTO(type="planner", plane="XY", angleCoeff=0),
+            qubitIndex=0,
+            inputTag="init_data",
+        )
+        assert node.inputTag == "init_data"
+
     def test_input_node_missing_meas_basis(self) -> None:
         """Test input node requires measBasis."""
         with pytest.raises(ValidationError, match="input node requires measBasis"):
@@ -162,6 +174,17 @@ class TestGraphNode:
                 inputBasis="Z",
             )
 
+    def test_output_node_with_input_tag(self) -> None:
+        """Test output nodes reject input initialization tags."""
+        with pytest.raises(ValidationError, match="output node must not have inputTag"):
+            GraphNodeDTO(
+                id="n0",
+                coordinate=CoordinateDTO(x=0, y=0, z=0),
+                role="output",
+                qubitIndex=0,
+                inputTag="init_data",
+            )
+
     def test_intermediate_node_valid(self) -> None:
         """Test valid intermediate node."""
         node = GraphNodeDTO(
@@ -192,6 +215,17 @@ class TestGraphNode:
                 role="intermediate",
                 measBasis=PlannerMeasBasisDTO(type="planner", plane="XY", angleCoeff=0),
                 inputBasis="Y",
+            )
+
+    def test_intermediate_node_with_input_tag(self) -> None:
+        """Test intermediate nodes reject input initialization tags."""
+        with pytest.raises(ValidationError, match="intermediate node must not have inputTag"):
+            GraphNodeDTO(
+                id="n0",
+                coordinate=CoordinateDTO(x=0, y=0, z=0),
+                role="intermediate",
+                measBasis=PlannerMeasBasisDTO(type="planner", plane="XY", angleCoeff=0),
+                inputTag="init_data",
             )
 
 
