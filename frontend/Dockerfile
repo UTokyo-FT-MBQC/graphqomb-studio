@@ -1,5 +1,5 @@
 # Development Dockerfile for Next.js frontend
-FROM node:20-slim
+FROM node:22-slim
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@10.27.0 --activate

@@ -104,7 +104,7 @@ For 3D projects (dimension = 3):
 
 ### Prerequisites
 
-- Node.js 20.19+ or 22.12+
+- Node.js 22.22.2+ (22.x)
 - pnpm 10+
 - Python 3.12+
 - uv (Python package manager)
