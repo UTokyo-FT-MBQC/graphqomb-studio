@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Fixed
 
 - Removing the final FTQC entry now clears cached compiled groups and canvas highlights.
+- Frontend lint now supports Tailwind CSS v4 directives in `src/app/globals.css`, fixing CI parse failures in the frontend workflow.
 
 ## [v0.4.0] - 2026-08-04
 
