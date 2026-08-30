@@ -7,8 +7,7 @@ POST /api/validate-schedule - Validate a manually edited schedule.
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, HTTPException, Query
-from graphqomb.schedule_solver import ScheduleConfig, Strategy
-from graphqomb.scheduler import Scheduler
+from graphqomb.scheduler import ScheduleConfig, Scheduler, Strategy
 
 from src.models.dto import (
     ProjectPayloadDTO,
@@ -35,7 +34,7 @@ def compute_schedule(
         description="Schedule optimization strategy",
     ),
     use_greedy: bool = Query(
-        default=False,
+        default=True,
         description="Use fast greedy scheduling instead of the optimal CP-SAT solver",
     ),
     max_time: Annotated[

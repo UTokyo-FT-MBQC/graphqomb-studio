@@ -188,6 +188,17 @@ describe("API Client", () => {
       expect(params.get("max_qubit_count")).toBe("5");
     });
 
+    it("should explicitly request the optimal solver when greedy scheduling is disabled", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}),
+      });
+
+      await schedule(testPayload, { useGreedy: false });
+
+      expect(getLastFetchUrl().searchParams.get("use_greedy")).toBe("false");
+    });
+
     it("should throw ApiError on failure", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,

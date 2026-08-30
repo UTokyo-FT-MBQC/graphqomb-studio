@@ -63,7 +63,7 @@ export function Toolbar(): React.ReactNode {
   const [isScheduling, setIsScheduling] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidationState | null>(null);
   const [scheduleStrategy, setScheduleStrategy] = useState<ScheduleStrategy>("MINIMIZE_SPACE");
-  const [useGreedySchedule, setUseGreedySchedule] = useState(false);
+  const [useGreedySchedule, setUseGreedySchedule] = useState(true);
   const [maxTimeInput, setMaxTimeInput] = useState("");
   const [maxQubitCountInput, setMaxQubitCountInput] = useState("");
 

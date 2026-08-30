@@ -55,6 +55,7 @@ export const InputNodeSchema = z
     measBasis: MeasBasisSchema,
     qubitIndex: z.number().int().nonnegative(),
     inputBasis: AxisSchema.optional(),
+    inputTag: z.string().optional(),
   })
   .strict();
 
@@ -66,6 +67,7 @@ export const OutputNodeSchema = z
     measBasis: MeasBasisSchema.optional(),
     qubitIndex: z.number().int().nonnegative(),
     inputBasis: z.undefined().optional(),
+    inputTag: z.undefined().optional(),
   })
   .strict();
 
@@ -77,6 +79,7 @@ export const IntermediateNodeSchema = z
     measBasis: MeasBasisSchema,
     qubitIndex: z.undefined().optional(),
     inputBasis: z.undefined().optional(),
+    inputTag: z.undefined().optional(),
   })
   .strict();
 

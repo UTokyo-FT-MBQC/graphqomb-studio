@@ -55,6 +55,7 @@ export interface InputNode {
   measBasis: MeasBasis;
   qubitIndex: number;
   inputBasis?: Axis | undefined;
+  inputTag?: string | undefined;
 }
 
 export interface OutputNode {
@@ -64,6 +65,7 @@ export interface OutputNode {
   measBasis?: MeasBasis | undefined;
   qubitIndex: number;
   inputBasis?: undefined;
+  inputTag?: undefined;
 }
 
 export interface IntermediateNode {
@@ -73,6 +75,7 @@ export interface IntermediateNode {
   measBasis: MeasBasis;
   qubitIndex?: undefined;
   inputBasis?: undefined;
+  inputTag?: undefined;
 }
 
 export type GraphNode = InputNode | OutputNode | IntermediateNode;

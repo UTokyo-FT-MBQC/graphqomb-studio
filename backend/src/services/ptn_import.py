@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 import networkx as nx
 from graphqomb.command import TICK, E, N
-from graphqomb.common import Axis, AxisMeasBasis, PlannerMeasBasis
+from graphqomb.common import AxisMeasBasis, Initialization, PlannerMeasBasis
 from graphqomb.ptn_format import loads
 
 from src.models.dto import normalize_edge_id
@@ -55,7 +55,7 @@ def pattern_to_project(pattern: Pattern, *, name: str = "Imported PTN") -> Proje
             input_indices=graph.input_node_indices,
             output_indices=graph.output_node_indices,
             meas_bases=meas_bases,
-            input_initialization_axes=pattern.input_initialization_axes,
+            input_initializations=pattern.input_initializations,
         )
         for node in node_ids
     ]
@@ -147,7 +147,7 @@ def _node_to_studio(
     input_indices: Mapping[int, int],
     output_indices: Mapping[int, int],
     meas_bases: Mapping[int, MeasBasis],
-    input_initialization_axes: Mapping[int, Axis],
+    input_initializations: Mapping[int, Initialization],
 ) -> GraphNode:
     node_id = _node_id(node)
     if node in output_indices:
@@ -173,8 +173,11 @@ def _node_to_studio(
         "measBasis": _meas_basis_to_studio(meas_basis),
     }
     if node in input_indices:
+        initialization = input_initializations.get(node, Initialization())
         result["qubitIndex"] = input_indices[node]
-        result["inputBasis"] = input_initialization_axes.get(node, Axis.X).name
+        result["inputBasis"] = initialization.axis.name
+        if initialization.tag:
+            result["inputTag"] = initialization.tag
     return result
 
 

@@ -8,7 +8,7 @@ import math
 from collections.abc import Sequence
 from typing import Any
 
-from graphqomb.common import Axis, AxisMeasBasis, Plane, PlannerMeasBasis, Sign
+from graphqomb.common import Axis, AxisMeasBasis, Initialization, Plane, PlannerMeasBasis, Sign
 from graphqomb.graphstate import GraphState
 
 from src.models.dto import (
@@ -52,7 +52,11 @@ def dto_to_graphstate(project: ProjectPayloadDTO) -> tuple[GraphState, dict[str,
         node_id = node_map[node_dto.id]
         if node_dto.role == "input" and node_dto.qubitIndex is not None:
             init_axis = Axis.X if node_dto.inputBasis is None else Axis[node_dto.inputBasis]
-            graph.register_input(node_id, node_dto.qubitIndex, init_axis=init_axis)
+            graph.register_input(
+                node_id,
+                node_dto.qubitIndex,
+                init=Initialization(axis=init_axis, tag=node_dto.inputTag or ""),
+            )
         elif node_dto.role == "output" and node_dto.qubitIndex is not None:
             graph.register_output(node_id, node_dto.qubitIndex)
 
