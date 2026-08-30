@@ -2,11 +2,11 @@
  * Node properties tests.
  */
 
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { NodeProperties } from "@/components/panels/NodeProperties";
 import { useProjectStore } from "@/stores/projectStore";
 import type { GraphQOMBProject, InputNode } from "@/types";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 function projectWithZInput(): GraphQOMBProject {
   return {
@@ -20,6 +20,7 @@ function projectWithZInput(): GraphQOMBProject {
         measBasis: { type: "axis", axis: "X", sign: "PLUS" },
         qubitIndex: 0,
         inputBasis: "Z",
+        inputTag: "init_data",
       },
     ],
     edges: [],
@@ -47,5 +48,19 @@ describe("NodeProperties", () => {
     fireEvent.change(select, { target: { value: "Y" } });
 
     expect(useProjectStore.getState().project.nodes[0]).toMatchObject({ inputBasis: "Y" });
+  });
+
+  it("displays and updates an imported PTN v4 input tag", () => {
+    const inputNode = useProjectStore.getState().project.nodes[0] as InputNode;
+    render(<NodeProperties node={inputNode} />);
+
+    const input = screen.getByLabelText("Input Tag");
+    expect(input).toHaveValue("init_data");
+
+    fireEvent.change(input, { target: { value: "syndrome_ancilla" } });
+
+    expect(useProjectStore.getState().project.nodes[0]).toMatchObject({
+      inputTag: "syndrome_ancilla",
+    });
   });
 });

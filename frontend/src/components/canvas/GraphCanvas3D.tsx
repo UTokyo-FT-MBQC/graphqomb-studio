@@ -11,16 +11,20 @@
 
 "use client";
 
+import { Line, OrbitControls, Text } from "@react-three/drei";
+import { Canvas, type ThreeEvent } from "@react-three/fiber";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
 import { FlowOverlay3D } from "@/components/canvas/FlowOverlay3D";
 import { WorkingPlaneGrid } from "@/components/canvas/WorkingPlaneGrid";
 import { useFTQCVisualization } from "@/hooks/useFTQCVisualization";
 import { useWorkingPlane } from "@/hooks/useWorkingPlane";
 import type { FTQCHighlight } from "@/lib/ftqcColors";
 import {
-  SCHEDULE_OPERATION_COLORS,
-  type ScheduleNodeHighlightKind,
   getScheduleSliceHighlight,
   isEdgeLiveAtTime,
+  SCHEDULE_OPERATION_COLORS,
+  type ScheduleNodeHighlightKind,
 } from "@/lib/scheduleVisualization";
 import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
 import { useProjectStore } from "@/stores/projectStore";
@@ -29,10 +33,6 @@ import { useSelectionStore } from "@/stores/selectionStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { GraphEdge, GraphNode, IntermediateNode, NodeRole } from "@/types";
 import { createEdge } from "@/types";
-import { Line, OrbitControls, Text } from "@react-three/drei";
-import { Canvas, type ThreeEvent } from "@react-three/fiber";
-import { memo, useCallback, useMemo, useRef, useState } from "react";
-import * as THREE from "three";
 
 // Role-based colors matching 2D view
 const ROLE_COLORS: Record<NodeRole, string> = {
@@ -140,7 +140,7 @@ function Node3DComponent({
 
   return (
     <group position={position}>
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: Three.js mesh elements don't support keyboard events */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: Three.js mesh elements don't support DOM roles. */}
       <mesh onClick={onClick} onPointerDown={handlePointerDown}>
         <sphereGeometry args={[nodeRadius, 32, 32]} />
         <meshStandardMaterial

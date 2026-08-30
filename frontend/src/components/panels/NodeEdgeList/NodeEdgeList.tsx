@@ -7,8 +7,8 @@
 
 "use client";
 
-import { useProjectStore } from "@/stores/projectStore";
 import { useState } from "react";
+import { useProjectStore } from "@/stores/projectStore";
 import { EdgeList } from "./EdgeList";
 import { FTQCList } from "./FTQCList";
 import { NodeList } from "./NodeList";

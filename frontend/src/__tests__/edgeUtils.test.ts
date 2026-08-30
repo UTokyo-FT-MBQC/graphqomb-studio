@@ -2,9 +2,9 @@
  * Edge utility tests.
  */
 
-import { calculateEdgeOffsets } from "@/lib/edgeUtils";
-import type { EdgeWithPosition } from "@/lib/edgeUtils";
 import { describe, expect, it } from "vitest";
+import type { EdgeWithPosition } from "@/lib/edgeUtils";
+import { calculateEdgeOffsets } from "@/lib/edgeUtils";
 
 function edge(
   id: string,

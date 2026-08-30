@@ -7,8 +7,8 @@
 
 "use client";
 
-import { useProjectStore } from "@/stores/projectStore";
 import { useCallback, useMemo } from "react";
+import { useProjectStore } from "@/stores/projectStore";
 
 export function useFTQCOperations() {
   const project = useProjectStore((state) => state.project);

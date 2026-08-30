@@ -55,6 +55,7 @@ export interface InputNode {
   measBasis: MeasBasis;
   qubitIndex: number;
   inputBasis?: Axis | undefined;
+  inputTag?: string | undefined;
 }
 
 export interface OutputNode {
@@ -64,6 +65,7 @@ export interface OutputNode {
   measBasis?: MeasBasis | undefined;
   qubitIndex: number;
   inputBasis?: undefined;
+  inputTag?: undefined;
 }
 
 export interface IntermediateNode {
@@ -73,6 +75,7 @@ export interface IntermediateNode {
   measBasis: MeasBasis;
   qubitIndex?: undefined;
   inputBasis?: undefined;
+  inputTag?: undefined;
 }
 
 export type GraphNode = InputNode | OutputNode | IntermediateNode;
@@ -126,6 +129,31 @@ export interface FTQCDefinition {
   parityCheckGroup: string[][]; // list of node ID groups for parity check
   parityCheckTags?: string[] | undefined; // detector tags aligned with parityCheckGroup
   logicalObservableGroup: Record<string, string[]>; // observable index -> target node IDs
+}
+
+export type DetectorMismatchReason =
+  | "axis-mismatch"
+  | "missing-stabilizer-support"
+  | "missing-measurement-support"
+  | "non-pauli-measurement";
+
+export interface DetectorMismatch {
+  nodeId: string;
+  stabilizerAxis: Axis | null;
+  detectorMeasurementAxis: Axis | null;
+  configuredMeasurementAxis: Axis | null;
+  measurementPlane: Plane | null;
+  measurementAngleCoeff: number | null; // a in 2πa
+  reason: DetectorMismatchReason;
+}
+
+export interface DetectorDiagnostic {
+  deterministic: boolean;
+  mismatches: DetectorMismatch[];
+}
+
+export interface CompiledFTQCDefinition extends FTQCDefinition {
+  detectorDiagnostics: DetectorDiagnostic[]; // aligned with parityCheckGroup
 }
 
 export interface ResolvedFlow {

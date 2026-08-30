@@ -13,6 +13,8 @@
 
 "use client";
 
+import type { ChangeEvent } from "react";
+import { useCallback, useMemo } from "react";
 import { FlowEditor } from "@/components/panels/FlowEditor";
 import { MeasBasisEditor } from "@/components/panels/MeasBasisEditor";
 import { useProjectStore } from "@/stores/projectStore";
@@ -25,8 +27,6 @@ import type {
   NodeRole,
   OutputNode,
 } from "@/types";
-import type { ChangeEvent } from "react";
-import { useCallback, useMemo } from "react";
 
 interface NodePropertiesProps {
   node: GraphNode;
@@ -59,6 +59,7 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
           role: "input",
           qubitIndex: 0,
           inputBasis: node.role === "input" ? (node.inputBasis ?? "X") : "X",
+          inputTag: node.role === "input" ? node.inputTag : undefined,
           measBasis:
             node.measBasis !== undefined
               ? node.measBasis
@@ -71,6 +72,7 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
           qubitIndex: 0,
           measBasis: undefined,
           inputBasis: undefined,
+          inputTag: undefined,
         };
         updateNode(node.id, updates);
       } else {
@@ -78,6 +80,7 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
           role: "intermediate",
           qubitIndex: undefined,
           inputBasis: undefined,
+          inputTag: undefined,
           measBasis:
             node.measBasis !== undefined
               ? node.measBasis
@@ -103,6 +106,13 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
   const handleInputBasisChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
       updateNode(node.id, { inputBasis: e.target.value as Axis });
+    },
+    [node.id, updateNode]
+  );
+
+  const handleInputTagChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      updateNode(node.id, { inputTag: e.target.value || undefined });
     },
     [node.id, updateNode]
   );
@@ -217,24 +227,42 @@ export function NodeProperties({ node }: NodePropertiesProps): React.ReactNode {
         )}
 
         {node.role === "input" && (
-          <div>
-            <label
-              htmlFor={`node-${node.id}-input-basis`}
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Input Basis
-            </label>
-            <select
-              id={`node-${node.id}-input-basis`}
-              value={node.inputBasis ?? "X"}
-              onChange={handleInputBasisChange}
-              className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-            >
-              <option value="X">X+</option>
-              <option value="Y">Y+</option>
-              <option value="Z">Z+</option>
-            </select>
-          </div>
+          <>
+            <div>
+              <label
+                htmlFor={`node-${node.id}-input-basis`}
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Input Basis
+              </label>
+              <select
+                id={`node-${node.id}-input-basis`}
+                value={node.inputBasis ?? "X"}
+                onChange={handleInputBasisChange}
+                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+              >
+                <option value="X">X+</option>
+                <option value="Y">Y+</option>
+                <option value="Z">Z+</option>
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor={`node-${node.id}-input-tag`}
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Input Tag
+              </label>
+              <input
+                id={`node-${node.id}-input-tag`}
+                type="text"
+                value={node.inputTag ?? ""}
+                onChange={handleInputTagChange}
+                placeholder="Optional Stim reset tag"
+                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+              />
+            </div>
+          </>
         )}
 
         {/* Measurement Basis */}

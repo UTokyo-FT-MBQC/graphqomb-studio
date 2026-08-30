@@ -4,6 +4,7 @@
  * Tests for the backend API client functions.
  */
 
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   checkHealth,
   compileFTQC,
@@ -14,7 +15,6 @@ import {
   validate,
 } from "@/lib/api";
 import type { GraphQOMBProject, ProjectPayload } from "@/types";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -188,6 +188,17 @@ describe("API Client", () => {
       expect(params.get("max_qubit_count")).toBe("5");
     });
 
+    it("should explicitly request the optimal solver when greedy scheduling is disabled", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}),
+      });
+
+      await schedule(testPayload, { useGreedy: false });
+
+      expect(getLastFetchUrl().searchParams.get("use_greedy")).toBe("false");
+    });
+
     it("should throw ApiError on failure", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
@@ -251,6 +262,7 @@ describe("API Client", () => {
       const mockResponse = {
         parityCheckGroup: [["n0", "n1"]],
         logicalObservableGroup: { "0": ["n0", "n1"] },
+        detectorDiagnostics: [{ deterministic: true, mismatches: [] }],
       };
       mockFetch.mockResolvedValueOnce({
         ok: true,

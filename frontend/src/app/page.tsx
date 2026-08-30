@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { GraphCanvas2D } from "@/components/canvas/GraphCanvas2D";
 import { GraphCanvas3D } from "@/components/canvas/GraphCanvas3D";
 import { Tiling3DDialog } from "@/components/dialogs/Tiling3DDialog";
@@ -11,8 +13,6 @@ import { fetchImportSession, isApiError } from "@/lib/api";
 import { safeValidateProject } from "@/lib/validation";
 import { useProjectStore } from "@/stores/projectStore";
 import { useUIStore } from "@/stores/uiStore";
-import { useCallback, useEffect, useState } from "react";
-import type { ReactNode } from "react";
 
 const MIN_SIDEBAR_WIDTH = 280;
 const MAX_SIDEBAR_WIDTH = 560;
@@ -137,10 +137,14 @@ export default function Home(): ReactNode {
           {show3DCanvas ? <GraphCanvas3D /> : <GraphCanvas2D />}
         </div>
 
+        {/* biome-ignore lint/a11y/useSemanticElements: This is an interactive resize separator, not thematic content. */}
         <div
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize property panel"
+          aria-valuemin={MIN_SIDEBAR_WIDTH}
+          aria-valuemax={MAX_SIDEBAR_WIDTH}
+          aria-valuenow={sidebarWidth}
           tabIndex={0}
           onPointerDown={handleSidebarResizeStart}
           onKeyDown={handleSidebarResizeKeyDown}

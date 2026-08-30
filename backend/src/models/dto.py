@@ -58,6 +58,14 @@ class AxisMeasBasisDTO(BaseModel):
 
 
 MeasBasisDTO = PlannerMeasBasisDTO | AxisMeasBasisDTO
+type AxisName = Literal["X", "Y", "Z"]
+type PlaneName = Literal["XY", "YZ", "XZ"]
+type DetectorMismatchReason = Literal[
+    "axis-mismatch",
+    "missing-stabilizer-support",
+    "missing-measurement-support",
+    "non-pauli-measurement",
+]
 
 
 # === Node DTOs ===
@@ -69,7 +77,7 @@ class GraphNodeDTO(BaseModel):
     - input: requires measBasis and qubitIndex
     - output: may have measBasis when the output is measured, requires qubitIndex
     - intermediate: requires measBasis, must NOT have qubitIndex
-    - inputBasis: optional for inputs (defaults to X semantics), forbidden otherwise
+    - inputBasis/inputTag: optional for inputs, forbidden otherwise
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -80,6 +88,7 @@ class GraphNodeDTO(BaseModel):
     measBasis: MeasBasisDTO | None = None
     qubitIndex: int | None = None
     inputBasis: Literal["X", "Y", "Z"] | None = None
+    inputTag: str | None = None
 
     @model_validator(mode="after")
     def validate_role_requirements(self) -> Self:
@@ -94,6 +103,8 @@ class GraphNodeDTO(BaseModel):
                 raise ValueError("output node requires qubitIndex")
             if self.inputBasis is not None:
                 raise ValueError("output node must not have inputBasis")
+            if self.inputTag is not None:
+                raise ValueError("output node must not have inputTag")
         elif self.role == "intermediate":
             if self.measBasis is None:
                 raise ValueError("intermediate node requires measBasis")
@@ -101,6 +112,8 @@ class GraphNodeDTO(BaseModel):
                 raise ValueError("intermediate node must not have qubitIndex")
             if self.inputBasis is not None:
                 raise ValueError("intermediate node must not have inputBasis")
+            if self.inputTag is not None:
+                raise ValueError("intermediate node must not have inputTag")
         return self
 
 
@@ -160,6 +173,31 @@ class FTQCDefinitionDTO(BaseModel):
         if self.parityCheckTags and len(self.parityCheckTags) != len(self.parityCheckGroup):
             raise ValueError("parityCheckTags must be empty or match parityCheckGroup length")
         return self
+
+
+class DetectorMismatchDTO(BaseModel):
+    """Node-level difference between detector stabilizer and measurement support."""
+
+    nodeId: str
+    stabilizerAxis: AxisName | None
+    detectorMeasurementAxis: AxisName | None
+    configuredMeasurementAxis: AxisName | None
+    measurementPlane: PlaneName | None
+    measurementAngleCoeff: float | None
+    reason: DetectorMismatchReason
+
+
+class DetectorDiagnosticDTO(BaseModel):
+    """Determinism result and mismatched nodes for one detector."""
+
+    deterministic: bool
+    mismatches: list[DetectorMismatchDTO]
+
+
+class CompiledFTQCResponseDTO(FTQCDefinitionDTO):
+    """Compiled FTQC groups with detector determinism diagnostics."""
+
+    detectorDiagnostics: list[DetectorDiagnosticDTO]
 
 
 # === Project DTO ===

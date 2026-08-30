@@ -10,6 +10,7 @@
  * - Even z: data + Z-ancillas, Odd z: data + X-ancillas
  */
 
+import { describe, expect, it } from "vitest";
 import {
   estimateCubicEdgeCount,
   estimateCubicNodeCount,
@@ -23,7 +24,6 @@ import {
   isZAncillaPosition,
   rhgToGeneratedGraph,
 } from "@/lib/tiling/rhg-generator";
-import { describe, expect, it } from "vitest";
 
 describe("2D Position Classification", () => {
   describe("isDataPosition", () => {

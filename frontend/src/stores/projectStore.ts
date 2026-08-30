@@ -5,16 +5,16 @@
  * Includes persistence to localStorage.
  */
 
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import type {
-  FTQCDefinition,
   FlowDefinition,
+  FTQCDefinition,
   GraphEdge,
   GraphNode,
   GraphQOMBProject,
   ScheduleResult,
 } from "@/types";
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
 interface ProjectState {
   project: GraphQOMBProject;
@@ -115,7 +115,7 @@ export const useProjectStore = create<ProjectState>()(
           }
 
           // Remove node from FTQC entries
-          let newFtqc: FTQCDefinition | undefined = undefined;
+          let newFtqc: FTQCDefinition | undefined;
           if (state.project.ftqc !== undefined) {
             const newParityCheckGroup: string[][] = [];
             const newParityCheckTags: string[] = [];

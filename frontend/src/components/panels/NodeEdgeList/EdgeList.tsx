@@ -6,10 +6,10 @@
 
 "use client";
 
+import { useMemo, useState } from "react";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import type { GraphEdge } from "@/types";
-import { useMemo, useState } from "react";
 import { ListControls, type SortOption } from "./ListControls";
 
 type EdgeSortKey = "id" | "source" | "target";

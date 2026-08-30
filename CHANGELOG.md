@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Backend
+
+#### Added
+
+- FTQC compilation reports detector determinism and node-level stabilizer-support/measurement-basis mismatches.
+- PTN import now supports format version 4 and preserves input initialization tags.
+
+#### Changed
+
+- Updated to GraphQOMB 0.5.3, including its `Initialization` API and consolidated scheduler imports.
+- Greedy scheduling is now the default, matching GraphQOMB 0.5.3; the optimal CP-SAT solver remains selectable.
+
+#### Fixed
+
+- Detector diagnostics now distinguish an incompatible non-Pauli measurement from missing detector measurement support.
+
+### Frontend
+
+#### Added
+
+- The FTQC detector list now marks deterministic and non-deterministic detectors and shows each mismatched node using Pauli axes when available, with plane and angle details for non-Pauli bases.
+- Input-node properties now display and edit PTN v4 initialization tags.
+
+#### Changed
+
+- Greedy scheduling is selected by default, while clearing the option explicitly requests the optimal solver.
+
+#### Fixed
+
+- Removing the final FTQC entry now clears cached compiled groups and canvas highlights.
+
 ## [v0.4.0] - 2026-08-04
 
 ### Backend
