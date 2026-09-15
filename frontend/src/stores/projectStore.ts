@@ -7,6 +7,8 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { getZRange } from "@/lib/geometry";
+import { useUIStore } from "@/stores/uiStore";
 import type {
   FlowDefinition,
   FTQCDefinition,
@@ -60,6 +62,7 @@ export const useProjectStore = create<ProjectState>()(
       project: createInitialProject(),
 
       setProject: (project: GraphQOMBProject): void => {
+        useUIStore.getState().setZSlice(getZRange(project.nodes).min);
         set({ project });
       },
 
@@ -342,9 +345,17 @@ export const useProjectStore = create<ProjectState>()(
       },
 
       reset: (): void => {
+        useUIStore.getState().setZSlice(0);
         set({ project: createInitialProject() });
       },
     }),
-    { name: "graphqomb-project" }
+    {
+      name: "graphqomb-project",
+      onRehydrateStorage: () => (state) => {
+        if (state !== undefined) {
+          useUIStore.getState().setZSlice(getZRange(state.project.nodes).min);
+        }
+      },
+    }
   )
 );
