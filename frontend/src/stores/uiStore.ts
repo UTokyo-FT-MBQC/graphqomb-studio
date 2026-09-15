@@ -103,7 +103,7 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  viewMode: "2d-projection",
+  viewMode: "2d-slice",
   currentZSlice: 0,
   showXFlow: false,
   showZFlow: false,
