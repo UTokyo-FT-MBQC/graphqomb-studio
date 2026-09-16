@@ -26,19 +26,21 @@ export function useCompiledFTQC(enabled: boolean): {
 
   const sourceKey = useMemo(
     () =>
-      JSON.stringify({
-        cacheVersion: FTQC_COMPILATION_CACHE_VERSION,
-        nodes: project.nodes.map(({ id, role, measBasis, inputBasis }) => ({
-          id,
-          role,
-          measBasis,
-          inputBasis,
-        })),
-        edges: project.edges,
-        flow: project.flow,
-        ftqc: project.ftqc,
-      }),
-    [project.edges, project.flow, project.ftqc, project.nodes]
+      !enabled || project.ftqc === undefined
+        ? ""
+        : JSON.stringify({
+            cacheVersion: FTQC_COMPILATION_CACHE_VERSION,
+            nodes: project.nodes.map(({ id, role, measBasis, inputBasis }) => ({
+              id,
+              role,
+              measBasis,
+              inputBasis,
+            })),
+            edges: project.edges,
+            flow: project.flow,
+            ftqc: project.ftqc,
+          }),
+    [enabled, project.edges, project.flow, project.ftqc, project.nodes]
   );
 
   useEffect(() => {

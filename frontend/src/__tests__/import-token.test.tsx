@@ -72,6 +72,7 @@ describe("CLI import token loading", () => {
 
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
     window.history.pushState(null, "", "/");
   });
 
@@ -107,5 +108,18 @@ describe("CLI import token loading", () => {
 
     expect(await screen.findByText("Import failed: Import session not found")).toBeInTheDocument();
     expect(useProjectStore.getState().project.name).toBe("Untitled");
+  });
+
+  it("finishes importing and warns about autosave when browser storage is full", async () => {
+    window.history.pushState(null, "", "/?importToken=large");
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => validProject() });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("Quota exceeded", "QuotaExceededError");
+    });
+    render(<Home />);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Autosave is paused");
+    expect(useProjectStore.getState().project.name).toBe("Imported PTN");
+    expect(window.location.search).toBe("");
+    expect(screen.queryByText(/Import failed:/)).not.toBeInTheDocument();
   });
 });

@@ -57,6 +57,18 @@ describe("useResolvedFlow", () => {
     expect(mockComputeZFlow).not.toHaveBeenCalled();
   });
 
+  it("does not serialize the graph while flow visualization is disabled", () => {
+    useProjectStore.getState().setProject(createProject());
+    const stringify = vi.spyOn(JSON, "stringify");
+    try {
+      const { rerender } = renderHook(() => useResolvedFlow(false));
+      rerender();
+      expect(stringify).not.toHaveBeenCalled();
+    } finally {
+      stringify.mockRestore();
+    }
+  });
+
   it("auto-fetches after being enabled", async () => {
     useProjectStore.getState().setProject(createProject());
     mockComputeZFlow.mockResolvedValueOnce({ n0: ["n1"] });

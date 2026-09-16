@@ -12,6 +12,8 @@ import { useSelectionStore } from "@/stores/selectionStore";
 import type { GraphNode } from "@/types";
 import { ListControls, type SortOption } from "./ListControls";
 
+import { PaginatedList } from "./PaginatedList";
+
 type NodeSortKey = "id" | "role" | "x" | "y" | "z";
 
 const NODE_SORT_OPTIONS: SortOption[] = [
@@ -92,14 +94,17 @@ export function NodeList(): React.ReactNode {
             {nodes.length === 0 ? "No nodes" : "No matching nodes"}
           </div>
         ) : (
-          filteredNodes.map((node) => (
-            <NodeListItem
-              key={node.id}
-              node={node}
-              isSelected={node.id === selectedNodeId}
-              onClick={() => selectNode(node.id)}
-            />
-          ))
+          <PaginatedList
+            items={filteredNodes}
+            renderItem={(node) => (
+              <NodeListItem
+                key={node.id}
+                node={node}
+                isSelected={node.id === selectedNodeId}
+                onClick={() => selectNode(node.id)}
+              />
+            )}
+          />
         )}
       </div>
     </div>

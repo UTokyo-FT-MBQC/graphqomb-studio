@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
+import { AutosaveWarning } from "@/components/AutosaveWarning";
 import { GraphCanvas2D } from "@/components/canvas/GraphCanvas2D";
 import { GraphCanvas3D } from "@/components/canvas/GraphCanvas3D";
 import { Tiling3DDialog } from "@/components/dialogs/Tiling3DDialog";
@@ -124,6 +125,7 @@ export default function Home(): ReactNode {
     <main className="flex h-screen flex-col overflow-hidden">
       {/* Toolbar */}
       <Toolbar />
+      <AutosaveWarning />
       {importError !== null && (
         <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
           {importError}

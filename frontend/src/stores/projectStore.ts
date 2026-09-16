@@ -8,6 +8,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { getZRange } from "@/lib/geometry";
+import { projectStorage } from "@/lib/projectStorage";
+import { useAutosaveStore } from "@/stores/autosaveStore";
 import { useUIStore } from "@/stores/uiStore";
 import type {
   FlowDefinition,
@@ -62,6 +64,7 @@ export const useProjectStore = create<ProjectState>()(
       project: createInitialProject(),
 
       setProject: (project: GraphQOMBProject): void => {
+        useAutosaveStore.setState({ paused: false });
         useUIStore.getState().setZSlice(getZRange(project.nodes).min);
         set({ project });
       },
@@ -345,12 +348,15 @@ export const useProjectStore = create<ProjectState>()(
       },
 
       reset: (): void => {
+        useAutosaveStore.setState({ paused: false });
         useUIStore.getState().setZSlice(0);
         set({ project: createInitialProject() });
       },
     }),
     {
       name: "graphqomb-project",
+      storage: projectStorage,
+      partialize: (state) => ({ project: state.project }),
       onRehydrateStorage: () => (state) => {
         if (state !== undefined) {
           useUIStore.getState().setZSlice(getZRange(state.project.nodes).min);

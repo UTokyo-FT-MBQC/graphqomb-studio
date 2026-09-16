@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { computeZFlow } from "@/lib/api";
 import { useProjectStore } from "@/stores/projectStore";
 import { useResolvedFlowStore } from "@/stores/resolvedFlowStore";
@@ -28,12 +28,18 @@ export function useResolvedFlow(enabled = true): {
   const prevDepsKeyRef = useRef<string | null>(null);
 
   // Compute a dependency key for cache invalidation
-  const depsKey = JSON.stringify({
-    xflow: project.flow.xflow,
-    zflow: project.flow.zflow,
-    nodeIds: project.nodes.map((n) => n.id),
-    edgeIds: project.edges.map((e) => e.id),
-  });
+  const depsKey = useMemo(
+    () =>
+      enabled
+        ? JSON.stringify({
+            xflow: project.flow.xflow,
+            zflow: project.flow.zflow,
+            nodeIds: project.nodes.map((n) => n.id),
+            edges: project.edges,
+          })
+        : null,
+    [enabled, project.flow, project.nodes, project.edges]
+  );
 
   const fetchResolvedFlow = useCallback(
     async (force = false) => {
