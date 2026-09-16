@@ -12,6 +12,8 @@ import { useSelectionStore } from "@/stores/selectionStore";
 import type { GraphEdge } from "@/types";
 import { ListControls, type SortOption } from "./ListControls";
 
+import { PaginatedList } from "./PaginatedList";
+
 type EdgeSortKey = "id" | "source" | "target";
 
 const EDGE_SORT_OPTIONS: SortOption[] = [
@@ -80,14 +82,17 @@ export function EdgeList(): React.ReactNode {
             {edges.length === 0 ? "No edges" : "No matching edges"}
           </div>
         ) : (
-          filteredEdges.map((edge) => (
-            <EdgeListItem
-              key={edge.id}
-              edge={edge}
-              isSelected={edge.id === selectedEdgeId}
-              onClick={() => selectEdge(edge.id)}
-            />
-          ))
+          <PaginatedList
+            items={filteredEdges}
+            renderItem={(edge) => (
+              <EdgeListItem
+                key={edge.id}
+                edge={edge}
+                isSelected={edge.id === selectedEdgeId}
+                onClick={() => selectEdge(edge.id)}
+              />
+            )}
+          />
         )}
       </div>
     </div>

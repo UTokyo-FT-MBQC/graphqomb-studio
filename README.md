@@ -83,6 +83,21 @@ For 3D projects (dimension = 3):
 - **Export**: Click "Export" to download the project as JSON
 - **Import**: Click "Import" to load a previously saved project
 
+### Large graphs
+
+- Use **2D Slice Mode** to render the current Z layer and nearby ghost layers. Reduce the
+  ghost range to 0 when only the current layer is needed. Slice navigation uses a Z index
+  so it does not repeatedly scan the entire graph for each ghost node.
+- The Elements panel shows nodes and edges in pages of 100. Filtering and sorting still
+  cover the whole graph.
+- If browser storage is full or unavailable, import and editing continue in memory.
+  An autosave warning provides an **Export project** button. Export before reloading or
+  closing the tab: unsaved changes will be lost, and an older saved project may reopen.
+  Autosave stays paused for that project to avoid repeated serialization and failed writes;
+  importing a project or creating a new one tries autosave again.
+- Import, validation, and indexing still load the complete graph into memory. Performance
+  depends on available memory and the number of nodes and edges in the displayed layers.
+
 ## Tech Stack
 
 ### Frontend

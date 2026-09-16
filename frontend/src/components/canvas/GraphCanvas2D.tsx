@@ -10,23 +10,6 @@
 
 "use client";
 
-import { CustomEdge } from "@/components/canvas/CustomEdge";
-import type { CustomNodeData } from "@/components/canvas/CustomNode";
-import { CustomNode } from "@/components/canvas/CustomNode";
-import { FlowOverlay } from "@/components/canvas/FlowOverlay";
-import { GhostNode, type GhostNodeData } from "@/components/canvas/GhostNode";
-import { TilingPreview2D } from "@/components/canvas/TilingPreview2D";
-import { FTQCHighlightProvider } from "@/contexts/FTQCHighlightContext";
-import { useFTQCVisualization } from "@/hooks/useFTQCVisualization";
-import { useTilingDrag } from "@/hooks/useTilingDrag";
-
-// Internal type for ghost node computation (includes position before converting to React Flow node)
-interface GhostNodeComputedData {
-  node: GraphNode;
-  position: { x: number; y: number };
-  zOffset: number;
-}
-
 import type { Connection, Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
 import {
   Background,
@@ -39,13 +22,23 @@ import {
   useNodesState,
   useReactFlow,
 } from "@xyflow/react";
+import { CustomEdge } from "@/components/canvas/CustomEdge";
+import type { CustomNodeData } from "@/components/canvas/CustomNode";
+import { CustomNode } from "@/components/canvas/CustomNode";
+import { FlowOverlay } from "@/components/canvas/FlowOverlay";
+import { GhostNode, type GhostNodeData } from "@/components/canvas/GhostNode";
+import { TilingPreview2D } from "@/components/canvas/TilingPreview2D";
+import { FTQCHighlightProvider } from "@/contexts/FTQCHighlightContext";
+import { useFTQCVisualization } from "@/hooks/useFTQCVisualization";
+import { useTilingDrag } from "@/hooks/useTilingDrag";
 import { calculateEdgeOffsets, type EdgeWithPosition } from "@/lib/edgeUtils";
-import { getGhostCandidateNodes, getGhostPosition, SCALE } from "@/lib/geometry";
+import { SCALE } from "@/lib/geometry";
 import {
   getScheduleSliceHighlight,
   isEdgeLiveAtTime,
   type ScheduleNodeHighlightKind,
 } from "@/lib/scheduleVisualization";
+import { buildZSliceIndex, type SliceGhost } from "@/lib/zSliceIndex";
 import { useEdgeCreationStore } from "@/stores/edgeCreationStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { useScheduleEditorStore } from "@/stores/scheduleEditorStore";
@@ -88,7 +81,7 @@ function toFlowNode(
 
 // Convert ghost node data to React Flow node
 function toGhostFlowNode(
-  ghostData: GhostNodeComputedData,
+  ghostData: SliceGhost,
   scheduleHighlightKind: ScheduleNodeHighlightKind | undefined,
   isDimmedBySchedule: boolean,
   isLiveBySchedule: boolean
@@ -179,36 +172,17 @@ function GraphCanvas2DInner(): React.ReactNode {
   const isSyncing = useRef(false);
   const previousZSliceRef = useRef(currentZSlice);
 
-  // Filter nodes based on view mode
-  const visibleNodes = useMemo(() => {
-    if (viewMode === "2d-projection") {
-      // Projection mode: show all nodes
-      return project.nodes;
-    }
-    // 2d-slice mode: filter by Z (exact match)
-    return project.nodes.filter((node) => node.coordinate.z === currentZSlice);
-  }, [project.nodes, viewMode, currentZSlice]);
-
-  // Get ghost nodes (only in 2d-slice mode, where |Z diff| <= ghostZRange)
-  const ghostNodesData = useMemo((): GhostNodeComputedData[] => {
-    if (viewMode !== "2d-slice") return [];
-
-    const ghostCandidates = getGhostCandidateNodes(project.nodes, currentZSlice, ghostZRange);
-    const ghostNodes: GhostNodeComputedData[] = [];
-
-    for (const node of ghostCandidates) {
-      const position = getGhostPosition(node, currentZSlice, project.nodes, ghostZRange);
-      if (position !== null) {
-        const zOffset = node.coordinate.z - currentZSlice;
-        ghostNodes.push({ node, position, zOffset });
-      }
-    }
-
-    return ghostNodes;
-  }, [project.nodes, viewMode, currentZSlice, ghostZRange]);
-
-  // Set of visible node IDs for edge filtering
-  const visibleNodeIds = useMemo(() => new Set(visibleNodes.map((n) => n.id)), [visibleNodes]);
+  const sliceIndex = useMemo(
+    () => buildZSliceIndex(project.nodes, project.edges),
+    [project.nodes, project.edges]
+  );
+  const slice = useMemo(
+    () => (viewMode === "2d-slice" ? sliceIndex.getSlice(currentZSlice, ghostZRange) : null),
+    [sliceIndex, viewMode, currentZSlice, ghostZRange]
+  );
+  const visibleNodes = slice?.visibleNodes ?? project.nodes;
+  const ghostNodesData = useMemo(() => slice?.ghostNodes ?? [], [slice]);
+  const visibleEdges = slice?.edges ?? project.edges;
 
   // Set of ghost node IDs
   const ghostNodeIds = useMemo(
@@ -285,24 +259,7 @@ function GraphCanvas2DInner(): React.ReactNode {
 
   // Filter edges based on view mode
   const flowEdges: Edge[] = useMemo(() => {
-    let filteredEdges = project.edges;
-
-    // In 2d-slice mode, filter edges by visible/ghost nodes
-    if (viewMode === "2d-slice") {
-      filteredEdges = project.edges.filter((edge) => {
-        const sourceVisible = visibleNodeIds.has(edge.source);
-        const targetVisible = visibleNodeIds.has(edge.target);
-        const sourceGhost = ghostNodeIds.has(edge.source);
-        const targetGhost = ghostNodeIds.has(edge.target);
-
-        // Show edge if both visible, or one visible and one ghost
-        return (
-          (sourceVisible && targetVisible) ||
-          (sourceVisible && targetGhost) ||
-          (targetVisible && sourceGhost)
-        );
-      });
-    }
+    const filteredEdges = visibleEdges;
 
     // Build edges with position info for offset calculation
     const edgesWithPositions: EdgeWithPosition[] = [];
@@ -350,15 +307,7 @@ function GraphCanvas2DInner(): React.ReactNode {
         ...(isCrossZ ? { style: { strokeDasharray: "5,5", opacity: 0.5 } } : {}),
       };
     });
-  }, [
-    project.edges,
-    viewMode,
-    visibleNodeIds,
-    ghostNodeIds,
-    nodePositions,
-    scheduleHighlight,
-    emphasizeLiveNodes,
-  ]);
+  }, [visibleEdges, ghostNodeIds, nodePositions, scheduleHighlight, emphasizeLiveNodes]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges);
