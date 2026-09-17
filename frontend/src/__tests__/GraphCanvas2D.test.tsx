@@ -3,7 +3,8 @@
  */
 
 import { act, cleanup, render, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { getNodesBounds, getViewportForBounds } from "@xyflow/react";
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from "vitest";
 import { GraphCanvas2D } from "@/components/canvas/GraphCanvas2D";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
@@ -12,6 +13,8 @@ import type { GraphQOMBProject } from "@/types";
 
 const reactFlowState = vi.hoisted(() => ({
   fitView: vi.fn(),
+  width: 1000,
+  height: 600,
   props: undefined as
     | {
         nodes: Array<{ id: string; position: { x: number; y: number } }>;
@@ -23,14 +26,18 @@ const reactFlowState = vi.hoisted(() => ({
           };
         }>;
         nodeOrigin?: [number, number];
+        minZoom: number;
+        maxZoom: number;
       }
     | undefined,
 }));
 
 vi.mock("@xyflow/react", async () => {
   const React = await vi.importActual<typeof import("react")>("react");
+  const actual = await vi.importActual<typeof import("@xyflow/react")>("@xyflow/react");
 
   return {
+    ...actual,
     Background: () => null,
     Controls: () => null,
     ReactFlow: (props: Record<string, unknown>) => {
@@ -51,6 +58,8 @@ vi.mock("@xyflow/react", async () => {
       screenToFlowPosition: ({ x, y }: { x: number; y: number }) => ({ x, y }),
     }),
     useViewport: () => ({ x: 0, y: 0, zoom: 1 }),
+    useStore: (selector: (state: { width: number; height: number }) => unknown) =>
+      selector(reactFlowState),
   };
 });
 
@@ -90,6 +99,11 @@ vi.mock("@/hooks/useTilingDrag", () => ({
   }),
 }));
 
+function getReactFlowProps() {
+  assert.isDefined(reactFlowState.props);
+  return reactFlowState.props;
+}
+
 function createProject(): GraphQOMBProject {
   return {
     $schema: "graphqomb-studio/v1",
@@ -118,6 +132,8 @@ describe("GraphCanvas2D", () => {
   beforeEach(() => {
     reactFlowState.fitView.mockReset();
     reactFlowState.props = undefined;
+    reactFlowState.width = 1000;
+    reactFlowState.height = 600;
     useProjectStore.getState().setProject(createProject());
     useSelectionStore.getState().clearSelection();
     useUIStore.setState({
@@ -128,8 +144,9 @@ describe("GraphCanvas2D", () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     cleanup();
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
     useProjectStore.getState().reset();
   });
 
@@ -166,6 +183,65 @@ describe("GraphCanvas2D", () => {
     });
   });
 
+  it.each([
+    [1000, 0],
+    [0, 1000],
+    [1000000, 1000000],
+  ])("allows the entire graph spanning (%s, %s) to fit", (x, y) => {
+    const project = createProject();
+    project.nodes = project.nodes.map((node, index) => ({
+      ...node,
+      coordinate: { x: index === 0 ? -x : x, y: index === 0 ? -y : y, z: 0 },
+    }));
+    project.edges = [];
+    useProjectStore.getState().setProject(project);
+    render(<GraphCanvas2D />);
+
+    const { nodes, nodeOrigin, minZoom, maxZoom } = getReactFlowProps();
+    assert.isDefined(nodeOrigin);
+    const bounds = getNodesBounds(
+      nodes.map((node) => ({ ...node, data: {}, width: 32, height: 32 })),
+      { nodeOrigin }
+    );
+    // Exercise React Flow's actual fit calculation with the configured limits.
+    const viewport = getViewportForBounds(bounds, 1000, 600, minZoom, maxZoom, 0.2);
+    expect(viewport.zoom).toBeLessThan(0.5);
+    expect(viewport.x + bounds.x * viewport.zoom).toBeGreaterThanOrEqual(0);
+    expect(viewport.y + bounds.y * viewport.zoom).toBeGreaterThanOrEqual(0);
+    expect(viewport.x + (bounds.x + bounds.width) * viewport.zoom).toBeLessThanOrEqual(1000);
+    expect(viewport.y + (bounds.y + bounds.height) * viewport.zoom).toBeLessThanOrEqual(600);
+  });
+
+  it("allows a few-unit detail view and adapts to canvas resizing", () => {
+    reactFlowState.width = 2400;
+    reactFlowState.height = 1500;
+    const { rerender } = render(<GraphCanvas2D />);
+
+    const { minZoom: initialMinZoom, maxZoom } = getReactFlowProps();
+    expect(maxZoom).toBeGreaterThan(2);
+    expect(1500 / (100 * maxZoom)).toBeLessThanOrEqual(3);
+
+    reactFlowState.width = 200;
+    reactFlowState.height = 150;
+    rerender(<GraphCanvas2D />);
+
+    expect(getReactFlowProps().minZoom).toBeLessThan(initialMinZoom);
+    expect(getReactFlowProps().minZoom).toBeGreaterThan(0);
+    expect(getReactFlowProps().maxZoom).toBeGreaterThanOrEqual(2);
+  });
+
+  it("keeps finite positive zoom limits before sizing an empty canvas", () => {
+    useProjectStore.getState().setProject({ ...createProject(), nodes: [], edges: [] });
+    reactFlowState.width = 0;
+    reactFlowState.height = 0;
+    render(<GraphCanvas2D />);
+
+    const { minZoom, maxZoom } = getReactFlowProps();
+    expect(minZoom).toBeGreaterThan(0);
+    expect(Number.isFinite(maxZoom)).toBe(true);
+    expect(maxZoom).toBeGreaterThan(minZoom);
+  });
+
   it("preserves the viewport when the z slice changes", async () => {
     const project = createProject();
     project.nodes.push({
@@ -183,6 +259,7 @@ describe("GraphCanvas2D", () => {
       expect(reactFlowState.fitView).toHaveBeenCalledTimes(1);
     });
     reactFlowState.fitView.mockClear();
+    const { minZoom: initialMinZoom, maxZoom: initialMaxZoom } = getReactFlowProps();
 
     act(() => {
       useUIStore.getState().setZSlice(1);
@@ -196,6 +273,8 @@ describe("GraphCanvas2D", () => {
     });
 
     expect(reactFlowState.fitView).not.toHaveBeenCalled();
+    expect(getReactFlowProps().minZoom).toBe(initialMinZoom);
+    expect(getReactFlowProps().maxZoom).toBe(initialMaxZoom);
   });
 
   it("preserves the viewport when a hidden node is added", async () => {
