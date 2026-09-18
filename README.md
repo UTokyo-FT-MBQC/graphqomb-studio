@@ -88,6 +88,10 @@ For 3D projects (dimension = 3):
 - Use **2D Slice Mode** to render the current Z layer and nearby ghost layers. Reduce the
   ghost range to 0 when only the current layer is needed. Slice navigation uses a Z index
   so it does not repeatedly scan the entire graph for each ghost node.
+- In both 2D modes, zoom limits adapt to the graph extent and canvas size. **Fit View**
+  fits all displayed nodes, including ghosts; zooming in supports a detail view of about
+  three coordinate units along the canvas's shorter side. Switching Z layers preserves
+  the current pan and zoom; use Fit View to reframe the new layer.
 - The Elements panel shows nodes and edges in pages of 100. Filtering and sorting still
   cover the whole graph.
 - If browser storage is full or unavailable, import and editing continue in memory.

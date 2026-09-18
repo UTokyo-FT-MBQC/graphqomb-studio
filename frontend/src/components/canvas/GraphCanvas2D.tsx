@@ -21,6 +21,7 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
+  useStore,
 } from "@xyflow/react";
 import { CustomEdge } from "@/components/canvas/CustomEdge";
 import type { CustomNodeData } from "@/components/canvas/CustomNode";
@@ -32,7 +33,7 @@ import { FTQCHighlightProvider } from "@/contexts/FTQCHighlightContext";
 import { useFTQCVisualization } from "@/hooks/useFTQCVisualization";
 import { useTilingDrag } from "@/hooks/useTilingDrag";
 import { calculateEdgeOffsets, type EdgeWithPosition } from "@/lib/edgeUtils";
-import { SCALE } from "@/lib/geometry";
+import { getAxisRange, SCALE } from "@/lib/geometry";
 import {
   getScheduleSliceHighlight,
   isEdgeLiveAtTime,
@@ -164,6 +165,24 @@ function GraphCanvas2DInner(): React.ReactNode {
   const isTilingMode = useUIStore((state) => state.isTilingMode);
 
   const { fitView, screenToFlowPosition } = useReactFlow();
+  const canvasWidth = useStore((state) => state.width);
+  const canvasHeight = useStore((state) => state.height);
+
+  // Use every Z layer so slice navigation does not change the zoom limits.
+  // Reserve a coordinate unit on each side for node sizes and ghost offsets,
+  // plus room to zoom out beyond Fit View's padding.
+  const graphSize = useMemo(() => {
+    const x = getAxisRange(project.nodes, "x");
+    const y = getAxisRange(project.nodes, "y");
+    return { width: (x.max - x.min + 2) * SCALE, height: (y.max - y.min + 2) * SCALE };
+  }, [project.nodes]);
+  const minZoom = Math.min(
+    0.5,
+    Math.max(1, canvasWidth) / (2 * graphSize.width),
+    Math.max(1, canvasHeight) / (2 * graphSize.height)
+  );
+  // Allow a detail view spanning about three coordinate units on the short side.
+  const maxZoom = Math.max(2, Math.min(canvasWidth, canvasHeight) / (3 * SCALE));
 
   // Tiling drag handlers
   const tilingDrag = useTilingDrag(currentZSlice, viewMode);
@@ -552,6 +571,8 @@ function GraphCanvas2DInner(): React.ReactNode {
           edgeTypes={edgeTypes}
           nodeOrigin={NODE_ORIGIN}
           fitView
+          minZoom={minZoom}
+          maxZoom={maxZoom}
           snapToGrid
           snapGrid={[10, 10]}
           deleteKeyCode={["Backspace", "Delete"]}
