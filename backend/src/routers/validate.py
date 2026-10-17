@@ -4,10 +4,10 @@ POST /api/validate - Validate graph and flow.
 """
 
 from fastapi import APIRouter
-from graphqomb.feedforward import check_flow
+from graphqomb.pauli_frame import make_frame
 
 from src.models.dto import ProjectPayloadDTO, ValidationErrorDTO, ValidationResponseDTO
-from src.services.converter import dto_to_flow, dto_to_graphstate
+from src.services.converter import compute_zflow_from_xflow, dto_to_flow, dto_to_graphstate
 
 router = APIRouter(prefix="/api", tags=["validation"])
 
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/api", tags=["validation"])
 def validate_project(project: ProjectPayloadDTO) -> ValidationResponseDTO:
     """Validate graph structure and flow.
 
-    Uses graphqomb's GraphState.check_canonical_form() and check_flow()
+    Uses graphqomb's GraphState.check_canonical_form() and make_frame()
     to validate the project.
 
     Args:
@@ -31,13 +31,15 @@ def validate_project(project: ProjectPayloadDTO) -> ValidationResponseDTO:
     try:
         # Convert DTO to graphqomb objects
         graph, node_map = dto_to_graphstate(project)
-        xflow, zflow = dto_to_flow(project, node_map)
+        xflow, zflow, cflow = dto_to_flow(project, node_map)
 
         # Check canonical form against graphqomb's graph/input/output conventions.
         graph.check_canonical_form()
 
         # Check flow validity
-        check_flow(graph, xflow, zflow)
+        if zflow is None:
+            zflow = compute_zflow_from_xflow(graph, xflow)
+        make_frame(graph, xflow, zflow, cflow=cflow)
 
     except ValueError as e:
         errors.append(ValidationErrorDTO(type="validation", message=str(e)))

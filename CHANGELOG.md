@@ -11,11 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
+- PTN v5 import preserves normalized Clifford correcting gates. Validation, scheduling, and manual schedule validation include C-flow and reject unordered noncommuting corrections.
+- FTQC compilation uses `Feedforward.backpropagate()` and returns compiled supports together with residual X/Z/C-flow. Clifford-dependent groups compile successfully; unsupported certification is reported per detector while independent Pauli groups retain their diagnostics.
 - FTQC compilation reports detector determinism and node-level stabilizer-support/measurement-basis mismatches.
 - PTN import now supports format version 4 and preserves input initialization tags.
 
 #### Changed
 
+- The workspace installs the sibling GraphQOMB checkout editable for PTN v5 and `Feedforward` support, which are absent from PyPI 0.5.3. Docker Compose supplies that checkout as an additional build context; backend CI checks out the matching library commit in the same sibling layout.
 - Updated to GraphQOMB 0.5.3, including its `Initialization` API and consolidated scheduler imports.
 - Greedy scheduling is now the default, matching GraphQOMB 0.5.3; the optimal CP-SAT solver remains selectable.
 
@@ -27,7 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
+- C-flow targets and gates can be edited for measured nodes and preserved through JSON import/export and autosave. Node deletion cleans up C-flow references.
+- A C-Flow toggle shows purple correction arrows with gate labels in 2D and 3D.
 - The FTQC detector list now marks deterministic and non-deterministic detectors and shows each mismatched node using Pauli axes when available, with plane and angle details for non-Pauli bases.
+- Unavailable detector certification is displayed separately from non-deterministic detectors, with the library's reason.
 - Input-node properties now display and edit PTN v4 initialization tags.
 
 #### Changed

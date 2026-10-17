@@ -118,9 +118,15 @@ export function createEdge(source: string, target: string): GraphEdge {
 
 // === Flow ===
 
+// PTN v5 normalized correcting cosets from graphqomb.clifford_algebra.COSET_NAMES.
+export const CLIFFORD_GATES = ["H", "S", "SH", "HS", "HSH"] as const;
+export type CliffordGate = (typeof CLIFFORD_GATES)[number];
+export type CliffordFlow = Record<string, Record<string, CliffordGate>>;
+
 export interface FlowDefinition {
   xflow: Record<string, string[]>; // nodeId -> correction targets
   zflow: Record<string, string[]> | "auto"; // "auto" = odd_neighbors auto-calculation
+  cflow?: CliffordFlow | undefined; // source -> target -> correcting gate
 }
 
 // === FTQC (Fault-Tolerant Quantum Computing) ===
@@ -148,12 +154,14 @@ export interface DetectorMismatch {
 }
 
 export interface DetectorDiagnostic {
-  deterministic: boolean;
+  deterministic: boolean | null;
   mismatches: DetectorMismatch[];
+  unsupportedReason: string | null;
 }
 
 export interface CompiledFTQCDefinition extends FTQCDefinition {
   detectorDiagnostics: DetectorDiagnostic[]; // aligned with parityCheckGroup
+  flow: FlowDefinition; // residual corrections matching the compiled record supports
 }
 
 export interface ResolvedFlow {

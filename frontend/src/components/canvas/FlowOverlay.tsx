@@ -1,9 +1,10 @@
 /**
  * Flow Overlay
  *
- * Renders flow arrows (X-Flow and Z-Flow) as SVG overlay on the canvas.
+ * Renders flow arrows (X-Flow, Z-Flow, and C-Flow) as SVG overlay on the canvas.
  * - X-Flow: Red arrows
  * - Z-Flow: Blue arrows
+ * - C-Flow: Purple arrows with correcting gate labels
  *
  * Uses React Flow's Panel component for proper positioning with pan/zoom.
  */
@@ -96,6 +97,7 @@ function calculateSelfLoopPath(cx: number, cy: number): string {
 export function FlowOverlay(): React.ReactNode {
   const project = useProjectStore((state) => state.project);
   const showXFlow = useUIStore((state) => state.showXFlow);
+  const showCFlow = useUIStore((state) => state.showCFlow);
   const showZFlow = useUIStore((state) => state.showZFlow);
   const { resolvedFlow } = useResolvedFlow(showZFlow);
   const nodes = useNodes();
@@ -195,15 +197,57 @@ export function FlowOverlay(): React.ReactNode {
     return { zflowArrows: arrows, zflowSelfLoops: selfLoops };
   }, [showZFlow, project.flow.zflow, resolvedFlow, nodePositions]);
 
+  const cflowArrows = useMemo(() => {
+    if (!showCFlow) return [];
+    return Object.entries(project.flow.cflow ?? {}).flatMap(([source, targets]) => {
+      const from = nodePositions[source];
+      if (from === undefined) return [];
+      return Object.entries(targets).flatMap(([target, gate]) => {
+        const to = nodePositions[target];
+        if (to === undefined) return [];
+        if (source === target) {
+          return [
+            {
+              id: `cflow-${source}-${target}`,
+              gate,
+              source,
+              target,
+              path: calculateSelfLoopPath(from.x, from.y),
+              labelX: from.x,
+              labelY: from.y - 45,
+            },
+          ];
+        }
+        const arrow = calculateArrow(from.x, from.y, to.x, to.y);
+        const length = Math.hypot(to.x - from.x, to.y - from.y) || 1;
+        const offsetX = (-(to.y - from.y) / length) * 18;
+        const offsetY = ((to.x - from.x) / length) * 18;
+        const midX = (arrow.x1 + arrow.x2) / 2;
+        const midY = (arrow.y1 + arrow.y2) / 2;
+        return [
+          {
+            id: `cflow-${source}-${target}`,
+            gate,
+            source,
+            target,
+            path: `M ${arrow.x1} ${arrow.y1} Q ${midX + offsetX} ${midY + offsetY} ${arrow.x2} ${arrow.y2}`,
+            labelX: midX + offsetX / 2,
+            labelY: midY + offsetY / 2 - 5,
+          },
+        ];
+      });
+    });
+  }, [showCFlow, project.flow.cflow, nodePositions]);
+
   // Don't render if nothing to show
-  if (!showXFlow && !showZFlow) {
+  if (!showXFlow && !showZFlow && !showCFlow) {
     return null;
   }
 
   const hasXFlow = xflowArrows.length > 0 || xflowSelfLoops.length > 0;
   const hasZFlow = zflowArrows.length > 0 || zflowSelfLoops.length > 0;
 
-  if (!hasXFlow && !hasZFlow) {
+  if (!hasXFlow && !hasZFlow && cflowArrows.length === 0) {
     return null;
   }
 
@@ -243,6 +287,16 @@ export function FlowOverlay(): React.ReactNode {
             orient="auto"
           >
             <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6" />
+          </marker>
+          <marker
+            id="cflow-arrowhead"
+            markerWidth="10"
+            markerHeight="7"
+            refX="9"
+            refY="3.5"
+            orient="auto"
+          >
+            <polygon points="0 0, 10 3.5, 0 7" fill="#a855f7" />
           </marker>
         </defs>
 
@@ -300,6 +354,31 @@ export function FlowOverlay(): React.ReactNode {
             fill="none"
             markerEnd="url(#zflow-arrowhead)"
           />
+        ))}
+        {cflowArrows.map((arrow) => (
+          <g key={arrow.id} aria-label={`C-Flow ${arrow.source} to ${arrow.target}: ${arrow.gate}`}>
+            <title>{`${arrow.source} → ${arrow.target}: ${arrow.gate}`}</title>
+            <path
+              d={arrow.path}
+              fill="none"
+              stroke="#a855f7"
+              strokeWidth={2}
+              strokeDasharray="4 2"
+              markerEnd="url(#cflow-arrowhead)"
+            />
+            <text
+              x={arrow.labelX}
+              y={arrow.labelY}
+              textAnchor="middle"
+              fontSize={12}
+              fill="#9333ea"
+              stroke="white"
+              strokeWidth={3}
+              paintOrder="stroke"
+            >
+              {arrow.gate}
+            </text>
+          </g>
         ))}
       </svg>
     </Panel>

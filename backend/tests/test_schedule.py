@@ -132,7 +132,8 @@ async def test_schedule_passes_max_qubit_count_to_solver(monkeypatch: pytest.Mon
     captured_config: dict[str, ScheduleConfig] = {}
 
     class FakeScheduler:
-        def __init__(self, _graph: Any, _xflow: Any, _zflow: Any) -> None:
+        def __init__(self, _graph: Any, _xflow: Any, _zflow: Any, *, cflow: Any) -> None:
+            assert cflow == {}
             self.prepare_time: dict[int, int | None] = {}
             self.measure_time: dict[int, int | None] = {}
             self.entangle_time: dict[tuple[int, int], int | None] = {}

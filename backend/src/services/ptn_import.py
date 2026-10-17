@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import networkx as nx
+from graphqomb.clifford_algebra import COSET_NAMES
 from graphqomb.command import TICK, E, N
 from graphqomb.common import AxisMeasBasis, Initialization, PlannerMeasBasis
 from graphqomb.ptn_format import loads
@@ -62,13 +63,17 @@ def pattern_to_project(pattern: Pattern, *, name: str = "Imported PTN") -> Proje
     studio_edges = [_edge_to_studio(node1, node2) for node1, node2 in sorted(edges)]
     xflow = _flow_to_studio(pattern.pauli_frame.xflow)
     zflow = _flow_to_studio(pattern.pauli_frame.zflow)
+    cflow = {
+        f"n{source}": {f"n{target}": COSET_NAMES[gate] for target, gate in sorted(targets.items())}
+        for source, targets in sorted(pattern.pauli_frame.cflow.items())
+    }
 
     return {
         "$schema": "graphqomb-studio/v1",
         "name": name,
         "nodes": studio_nodes,
         "edges": studio_edges,
-        "flow": {"xflow": xflow, "zflow": zflow},
+        "flow": {"xflow": xflow, "zflow": zflow, **({"cflow": cflow} if cflow else {})},
         "ftqc": {
             "parityCheckGroup": [_node_set_to_ids(group) for group in pattern.pauli_frame.parity_check_group],
             "parityCheckTags": list(pattern.pauli_frame.parity_check_tags),

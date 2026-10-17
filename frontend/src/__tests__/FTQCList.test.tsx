@@ -20,9 +20,10 @@ vi.mock("@/hooks/useFTQCVisualization", () => ({
     isCompiling: false,
     compilationError: null,
     detectorDiagnostics: [
-      { deterministic: true, mismatches: [] },
+      { deterministic: true, mismatches: [], unsupportedReason: null },
       {
         deterministic: false,
+        unsupportedReason: null,
         mismatches: [
           {
             nodeId: "n1",
@@ -53,7 +54,11 @@ vi.mock("@/hooks/useFTQCVisualization", () => ({
           },
         ],
       },
-      { deterministic: true, mismatches: [] },
+      {
+        deterministic: null,
+        mismatches: [],
+        unsupportedReason: "Clifford feedforward certification is unavailable.",
+      },
     ],
   }),
 }));
@@ -130,5 +135,22 @@ describe("FTQCList", () => {
     expect(
       screen.getByText("n4: required support X, but node measurement is non-Pauli (XY, angle π/4)")
     ).toBeInTheDocument();
+  });
+
+  it("distinguishes unavailable certification from a non-deterministic detector", () => {
+    useProjectStore.getState().updateFTQC({
+      parityCheckGroup: [["n0"], ["n1"], ["n2"]],
+      logicalObservableGroup: {},
+    });
+    useUIStore.getState().setShowParityGroups(true);
+    useUIStore.getState().setDetectorTypeFilter("flag");
+    render(<FTQCList />);
+
+    expect(screen.getByText("Certification unavailable")).toBeInTheDocument();
+    expect(
+      screen.getByText("Clifford feedforward certification is unavailable.")
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 non-deterministic")).toBeInTheDocument();
+    expect(screen.queryByText("Support / measurement mismatch")).not.toBeInTheDocument();
   });
 });

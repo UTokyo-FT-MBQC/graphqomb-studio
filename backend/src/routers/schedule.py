@@ -7,6 +7,7 @@ POST /api/validate-schedule - Validate a manually edited schedule.
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, HTTPException, Query
+from graphqomb.pauli_frame import make_frame
 from graphqomb.scheduler import ScheduleConfig, Scheduler, Strategy
 
 from src.models.dto import (
@@ -16,6 +17,7 @@ from src.models.dto import (
     ValidationResponseDTO,
 )
 from src.services.converter import (
+    compute_zflow_from_xflow,
     dto_to_flow,
     dto_to_graphstate,
     dto_to_schedule,
@@ -66,13 +68,19 @@ def compute_schedule(
     """
     # Convert DTO to graphqomb objects
     graph, node_map = dto_to_graphstate(project)
-    xflow, zflow = dto_to_flow(project, node_map)
+    xflow, zflow, cflow = dto_to_flow(project, node_map)
 
     # Create reverse map for converting back to frontend IDs
     reverse_map = {v: k for k, v in node_map.items()}
 
     # Create scheduler
-    scheduler = Scheduler(graph, xflow, zflow)
+    try:
+        if zflow is None:
+            zflow = compute_zflow_from_xflow(graph, xflow)
+        frame = make_frame(graph, xflow, zflow, cflow=cflow)
+        scheduler = Scheduler(graph, frame.xflow, frame.zflow, cflow=frame.cflow)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Schedule computation failed: {exc}") from exc
 
     # Configure and solve
     config = ScheduleConfig(
@@ -134,13 +142,16 @@ def validate_schedule(
     try:
         # Convert DTO to graphqomb objects
         graph, node_map = dto_to_graphstate(project)
-        xflow, zflow = dto_to_flow(project, node_map)
+        xflow, zflow, cflow = dto_to_flow(project, node_map)
 
         # Create reverse map for error message translation
         reverse_map = {v: k for k, v in node_map.items()}
 
         # Create scheduler
-        scheduler = Scheduler(graph, xflow, zflow)
+        if zflow is None:
+            zflow = compute_zflow_from_xflow(graph, xflow)
+        frame = make_frame(graph, xflow, zflow, cflow=cflow)
+        scheduler = Scheduler(graph, frame.xflow, frame.zflow, cflow=frame.cflow)
 
         # Convert schedule DTO to graphqomb format
         prepare_time, measure_time, entangle_time = dto_to_schedule(schedule, node_map)

@@ -1,9 +1,10 @@
 /**
  * Flow Editor
  *
- * Allows editing of X-Flow and Z-Flow targets for a node.
+ * Allows editing of X-Flow, Z-Flow, and C-Flow targets for a node.
  * - X-Flow: Manual selection of correction targets
  * - Z-Flow: Auto mode (odd_neighbors) or manual selection
+ * - C-Flow: Normalized conditional Clifford correcting gates
  */
 
 "use client";
@@ -11,6 +12,7 @@
 import type { ChangeEvent } from "react";
 import { useCallback, useId, useState } from "react";
 import { useFlowOperations } from "@/hooks/useFlowOperations";
+import { CLIFFORD_GATES, type CliffordGate } from "@/types";
 
 interface FlowEditorProps {
   nodeId: string;
@@ -66,6 +68,7 @@ function TargetSelector({ availableTargets, onAdd, label }: TargetSelectorProps)
     <div className="flex items-center gap-2">
       <select
         id={id}
+        aria-label={label}
         value={selectedTarget}
         onChange={handleChange}
         className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
@@ -80,6 +83,7 @@ function TargetSelector({ availableTargets, onAdd, label }: TargetSelectorProps)
       <button
         type="button"
         onClick={handleAdd}
+        aria-label={`Add ${label}`}
         disabled={selectedTarget === ""}
         className="px-2 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
       >
@@ -91,7 +95,12 @@ function TargetSelector({ availableTargets, onAdd, label }: TargetSelectorProps)
 
 export function FlowEditor({ nodeId }: FlowEditorProps): React.ReactNode {
   const id = useId();
+  const [newGate, setNewGate] = useState<CliffordGate>("H");
   const {
+    cflowTargets,
+    setCFlowTarget,
+    removeCFlowTarget,
+    availableCFlowTargets,
     xflowTargets,
     addXFlowTarget,
     removeXFlowTarget,
@@ -183,6 +192,58 @@ export function FlowEditor({ nodeId }: FlowEditorProps): React.ReactNode {
             />
           </>
         )}
+      </div>
+      <div>
+        <span className="block text-sm font-medium text-purple-700 mb-2">C-Flow Targets</span>
+        <p className="text-xs text-gray-500 mb-2">
+          Conditional correcting gates, applied after X and Z corrections.
+        </p>
+        <div className="space-y-1 mb-2">
+          {Object.entries(cflowTargets).map(([target, gate]) => (
+            <div key={target} className="flex items-center gap-2">
+              <span className="text-xs text-gray-700">{target}</span>
+              <select
+                aria-label={`C-Flow gate for ${target}`}
+                value={gate}
+                onChange={(event) => setCFlowTarget(target, event.target.value as CliffordGate)}
+                className="px-2 py-1 border border-gray-300 rounded text-sm"
+              >
+                {CLIFFORD_GATES.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                aria-label={`Remove C-Flow ${target}`}
+                onClick={() => removeCFlowTarget(target)}
+                className="text-gray-500"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+        <label className="block text-xs text-gray-600 mb-1">
+          New C-Flow gate
+          <select
+            value={newGate}
+            onChange={(event) => setNewGate(event.target.value as CliffordGate)}
+            className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm"
+          >
+            {CLIFFORD_GATES.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <TargetSelector
+          availableTargets={availableCFlowTargets}
+          onAdd={(target) => setCFlowTarget(target, newGate)}
+          label="C-Flow target"
+        />
       </div>
     </div>
   );

@@ -46,9 +46,18 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: backend
+        working-directory: graphqomb-studio/backend
     steps:
       - uses: actions/checkout@v7
+        with:
+          path: graphqomb-studio
+
+      - name: Checkout GraphQOMB feedforward implementation
+        uses: actions/checkout@v7
+        with:
+          repository: UTokyo-FT-MBQC/graphqomb
+          ref: 090429c249c4189f029a6d62a04d51d3bc11c0ae
+          path: graphqomb
 
       - name: Setup Python
         uses: actions/setup-python@v7

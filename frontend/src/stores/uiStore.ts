@@ -27,6 +27,7 @@ interface UIState {
   currentZSlice: number;
   showXFlow: boolean;
   showZFlow: boolean;
+  showCFlow: boolean;
 
   // Ghost node display range (Z distance threshold)
   ghostZRange: number;
@@ -62,8 +63,10 @@ interface UIState {
   decrementZSlice: () => void;
   toggleXFlow: () => void;
   toggleZFlow: () => void;
+  toggleCFlow: () => void;
   setShowXFlow: (show: boolean) => void;
   setShowZFlow: (show: boolean) => void;
+  setShowCFlow: (show: boolean) => void;
   setGhostZRange: (range: number) => void;
 
   // 3D editing actions
@@ -107,6 +110,7 @@ export const useUIStore = create<UIState>((set) => ({
   currentZSlice: 0,
   showXFlow: false,
   showZFlow: false,
+  showCFlow: false,
 
   // Ghost node display range (default: show nodes within Z distance <= 1)
   ghostZRange: 1,
@@ -153,6 +157,10 @@ export const useUIStore = create<UIState>((set) => ({
   toggleXFlow: () => set((state) => ({ showXFlow: !state.showXFlow })),
 
   toggleZFlow: () => set((state) => ({ showZFlow: !state.showZFlow })),
+
+  toggleCFlow: () => set((state) => ({ showCFlow: !state.showCFlow })),
+
+  setShowCFlow: (show) => set({ showCFlow: show }),
 
   setShowXFlow: (show) => set({ showXFlow: show }),
 

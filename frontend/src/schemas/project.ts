@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import { CLIFFORD_GATES, type CliffordFlow } from "@/types";
 
 // === Coordinate Schema ===
 // All coordinates are 3D (x, y, z)
@@ -109,10 +110,13 @@ export const GraphEdgeSchema = z
 
 // === Flow Schema ===
 
+export const CliffordGateSchema = z.enum(CLIFFORD_GATES);
+
 export const FlowDefinitionSchema = z
   .object({
     xflow: z.record(z.string(), z.array(z.string())),
     zflow: z.union([z.record(z.string(), z.array(z.string())), z.literal("auto")]),
+    cflow: z.record(z.string(), z.record(z.string(), CliffordGateSchema)).optional(),
   })
   .strict();
 
@@ -181,6 +185,7 @@ interface ProjectReferenceInput {
   flow: {
     xflow: Record<string, string[]>;
     zflow: Record<string, string[]> | "auto";
+    cflow?: CliffordFlow | undefined;
   };
   ftqc?:
     | {
@@ -192,7 +197,7 @@ interface ProjectReferenceInput {
 }
 
 function addFlowReferenceIssues(
-  flowName: "xflow" | "zflow",
+  flowName: "xflow" | "zflow" | "cflow",
   flow: Record<string, string[]>,
   nodeIds: Set<string>,
   ctx: z.RefinementCtx
@@ -262,6 +267,18 @@ function validateProjectReferences(project: ProjectReferenceInput, ctx: z.Refine
   if (project.flow.zflow !== "auto") {
     addFlowReferenceIssues("zflow", project.flow.zflow, nodeIds, ctx);
   }
+
+  addFlowReferenceIssues(
+    "cflow",
+    Object.fromEntries(
+      Object.entries(project.flow.cflow ?? {}).map(([source, targets]) => [
+        source,
+        Object.keys(targets),
+      ])
+    ),
+    nodeIds,
+    ctx
+  );
 
   for (const [groupIndex, group] of (project.ftqc?.parityCheckGroup ?? []).entries()) {
     for (const [targetIndex, nodeId] of group.entries()) {

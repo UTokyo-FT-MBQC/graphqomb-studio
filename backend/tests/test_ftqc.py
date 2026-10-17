@@ -2,9 +2,6 @@
 
 from typing import Any
 
-import pytest
-from graphqomb.common import Axis
-from graphqomb.pauli_frame import PauliFrame
 from httpx import ASGITransport, AsyncClient
 from src.main import app
 
@@ -73,19 +70,25 @@ def single_node_project(meas_basis: dict[str, Any], *, input_basis: str | None =
     }
 
 
-async def test_compile_ftqc_expands_detectors_and_logical_observables() -> None:
-    """Detector and observable seeds are expanded through their dependent chains."""
+async def test_compile_ftqc_retains_quantum_output_ancestors_with_matching_supports() -> None:
+    """Output ancestors stay adaptive, so their corrections are not counted twice."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post("/api/compile-ftqc", json=closure_project())
 
     assert response.status_code == 200
     assert response.json() == {
-        "parityCheckGroup": [["n0", "n1"]],
+        "parityCheckGroup": [["n1"]],
         "parityCheckTags": ["type=flag"],
-        "logicalObservableGroup": {"0": ["n0", "n1"]},
+        "logicalObservableGroup": {"0": ["n1"]},
+        "flow": {
+            "xflow": {"n0": ["n1"], "n1": ["n2"]},
+            "zflow": {"n0": ["n0"], "n1": ["n1"]},
+            "cflow": {},
+        },
         "detectorDiagnostics": [
             {
                 "deterministic": False,
+                "unsupportedReason": None,
                 "mismatches": [
                     {
                         "nodeId": "n0",
@@ -113,6 +116,7 @@ async def test_compile_ftqc_reports_z_measurement_support_mismatch() -> None:
     assert response.json()["detectorDiagnostics"] == [
         {
             "deterministic": False,
+            "unsupportedReason": None,
             "mismatches": [
                 {
                     "nodeId": "n0",
@@ -148,6 +152,7 @@ async def test_compile_ftqc_reports_stabilizer_support_outside_detector_group() 
     assert response.json()["detectorDiagnostics"] == [
         {
             "deterministic": False,
+            "unsupportedReason": None,
             "mismatches": [
                 {
                     "nodeId": "n1",
@@ -163,45 +168,19 @@ async def test_compile_ftqc_reports_stabilizer_support_outside_detector_group() 
     ]
 
 
-async def test_compile_ftqc_distinguishes_non_pauli_measurement(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """A present non-Pauli basis is not reported as missing detector support."""
+async def test_compile_ftqc_preserves_non_pauli_group_without_claiming_certification() -> None:
+    """A non-Pauli group compiles, with an explicit unavailable certificate."""
     project = single_node_project({"type": "planner", "plane": "XY", "angleCoeff": 0.125})
-
-    def detector_groups(_pauli_frame: PauliFrame) -> list[set[int]]:
-        return [{0}]
-
-    def detector_determinism(_pauli_frame: PauliFrame) -> list[bool]:
-        return [False]
-
-    def detector_stabilizers(_pauli_frame: PauliFrame) -> list[dict[int, Axis]]:
-        return [{0: Axis.X}]
-
-    monkeypatch.setattr(PauliFrame, "detector_groups", detector_groups)
-    monkeypatch.setattr(PauliFrame, "detector_determinism", detector_determinism)
-    monkeypatch.setattr(PauliFrame, "detector_stabilizers", detector_stabilizers)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post("/api/compile-ftqc", json=project)
 
     assert response.status_code == 200
-    assert response.json()["detectorDiagnostics"] == [
-        {
-            "deterministic": False,
-            "mismatches": [
-                {
-                    "nodeId": "n0",
-                    "stabilizerAxis": "X",
-                    "detectorMeasurementAxis": None,
-                    "configuredMeasurementAxis": None,
-                    "measurementPlane": "XY",
-                    "measurementAngleCoeff": 0.125,
-                    "reason": "non-pauli-measurement",
-                }
-            ],
-        }
-    ]
+    assert response.json()["parityCheckGroup"] == [["n0"]]
+    diagnostic = response.json()["detectorDiagnostics"][0]
+    assert diagnostic["deterministic"] is None
+    assert diagnostic["mismatches"] == []
+    assert "measurement axis" in diagnostic["unsupportedReason"]
 
 
 async def test_compile_ftqc_reports_deterministic_detector_without_mismatches() -> None:
@@ -215,11 +194,13 @@ async def test_compile_ftqc_reports_deterministic_detector_without_mismatches() 
         response = await client.post("/api/compile-ftqc", json=project)
 
     assert response.status_code == 200
-    assert response.json()["detectorDiagnostics"] == [{"deterministic": True, "mismatches": []}]
+    assert response.json()["detectorDiagnostics"] == [
+        {"deterministic": True, "mismatches": [], "unsupportedReason": None}
+    ]
 
 
 async def test_compile_ftqc_resolves_auto_zflow() -> None:
-    """Projects using Studio's automatic z-flow can compile closure groups."""
+    """Projects using Studio's automatic z-flow retain quantum-output ancestors."""
     project = closure_project()
     project["flow"]["zflow"] = "auto"
 
@@ -227,7 +208,39 @@ async def test_compile_ftqc_resolves_auto_zflow() -> None:
         response = await client.post("/api/compile-ftqc", json=project)
 
     assert response.status_code == 200
+    assert response.json()["parityCheckGroup"] == [["n1"]]
+
+
+async def test_compile_ftqc_absorbs_removable_feedback_into_both_parity_types() -> None:
+    project = closure_project()
+    project["nodes"][2]["measBasis"] = {"type": "axis", "axis": "X", "sign": "PLUS"}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/compile-ftqc", json=project)
+    assert response.status_code == 200
     assert response.json()["parityCheckGroup"] == [["n0", "n1"]]
+    assert response.json()["logicalObservableGroup"] == {"0": ["n0", "n1"]}
+    assert response.json()["flow"] == {"xflow": {}, "zflow": {"n0": ["n0"], "n1": ["n1"]}, "cflow": {}}
+
+
+async def test_compile_ftqc_keeps_cflow_and_certifies_independent_detectors() -> None:
+    project = closure_project()
+    project["flow"]["cflow"] = {"n0": {"n1": "S"}}
+    project["ftqc"]["parityCheckGroup"].append(["n0"])
+    project["ftqc"]["parityCheckTags"].append("")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/compile-ftqc", json=project)
+    assert response.status_code == 200
+    result = response.json()
+    assert result["parityCheckGroup"] == [["n1"], ["n0"]]
+    assert result["logicalObservableGroup"] == {"0": ["n1"]}
+    assert result["flow"]["cflow"] == {"n0": {"n1": "S"}}
+    assert result["flow"]["xflow"] == project["flow"]["xflow"]
+    unsupported, independent = result["detectorDiagnostics"]
+    assert unsupported["deterministic"] is None
+    assert unsupported["mismatches"] == []
+    assert "Clifford feedforward" in unsupported["unsupportedReason"]
+    assert independent["deterministic"] is False
+    assert independent["unsupportedReason"] is None
 
 
 async def test_compile_ftqc_rejects_unknown_detector_node() -> None:

@@ -262,7 +262,8 @@ describe("API Client", () => {
       const mockResponse = {
         parityCheckGroup: [["n0", "n1"]],
         logicalObservableGroup: { "0": ["n0", "n1"] },
-        detectorDiagnostics: [{ deterministic: true, mismatches: [] }],
+        flow: { xflow: {}, zflow: {}, cflow: {} },
+        detectorDiagnostics: [{ deterministic: true, mismatches: [], unsupportedReason: null }],
       };
       mockFetch.mockResolvedValueOnce({
         ok: true,

@@ -4,13 +4,17 @@ FROM python:3.12-slim
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-WORKDIR /app
+# Preserve the sibling checkout layout required by the local uv source.
+COPY --from=graphqomb pyproject.toml README.md LICENSE /workspace/graphqomb/
+COPY --from=graphqomb graphqomb /workspace/graphqomb/graphqomb
+
+WORKDIR /workspace/graphqomb-studio/backend
 
 # Copy project files
 COPY pyproject.toml uv.lock* ./
 
 # Install dependencies
-RUN uv sync --frozen || uv sync
+RUN uv sync --frozen
 
 # Copy source code
 COPY . .

@@ -18,10 +18,12 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      additional_contexts:
+        graphqomb: ../graphqomb
     ports:
       - "8000:8000"
     volumes:
-      - ./backend/src:/app/src:ro
+      - ./backend/src:/workspace/graphqomb-studio/backend/src:ro
     environment:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1

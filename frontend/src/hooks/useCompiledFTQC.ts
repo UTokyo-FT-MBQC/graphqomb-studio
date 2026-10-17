@@ -1,4 +1,4 @@
-/** Resolve FTQC closure groups through the GraphQOMB backend. */
+/** Compile FTQC supports together with their residual feedforward. */
 
 "use client";
 
@@ -8,7 +8,7 @@ import { useCompiledFTQCStore } from "@/stores/compiledFTQCStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { type CompiledFTQCDefinition, toPayload } from "@/types";
 
-const FTQC_COMPILATION_CACHE_VERSION = 2;
+const FTQC_COMPILATION_CACHE_VERSION = 3;
 
 export function useCompiledFTQC(enabled: boolean): {
   compiledFTQC: CompiledFTQCDefinition | null;
@@ -30,9 +30,10 @@ export function useCompiledFTQC(enabled: boolean): {
         ? ""
         : JSON.stringify({
             cacheVersion: FTQC_COMPILATION_CACHE_VERSION,
-            nodes: project.nodes.map(({ id, role, measBasis, inputBasis }) => ({
+            nodes: project.nodes.map(({ id, role, qubitIndex, measBasis, inputBasis }) => ({
               id,
               role,
+              qubitIndex,
               measBasis,
               inputBasis,
             })),

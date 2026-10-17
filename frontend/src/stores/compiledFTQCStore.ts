@@ -1,4 +1,4 @@
-/** Cached GraphQOMB closure results for the current FTQC definition. */
+/** Cached GraphQOMB supports, residual flow, and detector diagnostics. */
 
 import { create } from "zustand";
 import type { CompiledFTQCDefinition } from "@/types";

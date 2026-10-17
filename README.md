@@ -9,7 +9,8 @@ A web application for visually editing Graph, Flow, and Schedule for Measurement
 - **Edge Connections**: Connect nodes to build quantum graph states
 - **Measurement Basis Editor**: Configure measurement basis (Planner/Axis mode) for each node
 - **Flow Editor**: Configure X-flow targets and Z-flow mode (Auto/Manual) per node
-- **Flow Visualization**: Toggle X-flow (red) and Z-flow (blue) arrows on the canvas
+- **Clifford Feedforward**: Import and edit PTN v5 C-flow correcting gates (H, S, SH, HS, HSH)
+- **Flow Visualization**: Toggle X-flow (red), Z-flow (blue), and C-flow (purple, with gate labels) in 2D and 3D
 - **Import/Export**: Save and load projects in JSON format
 - **Backend Validation**: Validate graph structure and flow definitions via API
 - **Auto Z-Flow Computation**: Compute Z-flow from X-flow using odd_neighbors algorithm
@@ -127,7 +128,8 @@ For 3D projects (dimension = 3):
 - pnpm 10+
 - Python 3.12+
 - uv (Python package manager)
-- GraphQOMB 0.5.3+ (installed by `uv`)
+- A sibling `../graphqomb` checkout with PTN v5, Clifford feedforward, and `Feedforward.backpropagate()` support
+  (installed editable by `uv`; the PyPI 0.5.3 release supports PTN v1–v4 only)
 
 ### Development Setup
 
@@ -144,6 +146,13 @@ For 3D projects (dimension = 3):
    ```
 
 3. **Install backend dependencies**
+
+   This workspace uses `backend/pyproject.toml` to select the sibling GraphQOMB
+   checkout (`../../graphqomb` relative to `backend/`). Keep `graphqomb-studio/`
+   and `graphqomb/` next to each other. The local checkout currently also reports
+   package version 0.5.3, so that version number alone does not indicate PTN v5 support.
+   Backend CI checks out the required GraphQOMB commit alongside Studio; its revision
+   is recorded in `.github/workflows/ci.yml`.
    ```bash
    cd backend
    uv sync
@@ -151,10 +160,24 @@ For 3D projects (dimension = 3):
 
 4. **Open a `.ptn` file with the CLI**
 
-   PTN format versions 1 through 4 are supported. Version 2 input bases are preserved
+   PTN format versions 1 through 5 are supported. Version 2 input bases are preserved
    as X+, Y+, or Z+ input-node properties. Version 3 detector tags are preserved,
    and `type=flag` detectors can be highlighted separately from non-flag detectors.
    Version 4 input initialization tags are preserved and can be edited in node properties.
+   Version 5 `.cflow source -> target:NAME` correcting cosets are preserved as
+   `flow.cflow[source][target]` in Studio JSON. Older projects may omit `cflow`.
+   Select a measured node to add, change, or remove its C-flow targets, including
+   unmeasured outputs. Enable **C-Flow** to display purple arrows with gate names.
+   X, then Z, then C-flow gates are applied for each source/target correction.
+   Validation checks combined causality and rejects unordered noncommuting corrections;
+   scheduling and manual schedule validation include C-flow dependencies.
+
+   FTQC compilation transforms a GraphQOMB `Feedforward` before pattern lowering.
+   Detector/observable supports stop at protected Clifford boundaries and their
+   ancestors. The API returns the matching residual X/Z/C-flow with the supports.
+   Symbolic detector certification across C-flow remains unsupported; these groups
+   are displayed with "Certification unavailable" and the library's explanation.
+   Independent Pauli detector diagnostics remain available.
 
    ```bash
    cd backend
@@ -172,8 +195,8 @@ For 3D projects (dimension = 3):
 
 5. **Start development servers manually**
    ```bash
-   # Using Docker Compose (recommended)
-   docker-compose up
+   # Using Docker Compose with additional build contexts
+   docker compose up --build
 
    # Or manually:
    # Terminal 1 - Frontend

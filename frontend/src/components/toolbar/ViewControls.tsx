@@ -3,7 +3,7 @@
  *
  * Provides toggle controls for:
  * - View mode (XY Projection / Z Slice / 3D View)
- * - Flow visualization (X-Flow, Z-Flow)
+ * - Flow visualization (X-Flow, Z-Flow, C-Flow)
  */
 
 "use client";
@@ -14,6 +14,8 @@ export function ViewControls(): React.ReactNode {
   const viewMode = useUIStore((state) => state.viewMode);
   const setViewMode = useUIStore((state) => state.setViewMode);
   const showXFlow = useUIStore((state) => state.showXFlow);
+  const showCFlow = useUIStore((state) => state.showCFlow);
+  const toggleCFlow = useUIStore((state) => state.toggleCFlow);
   const showZFlow = useUIStore((state) => state.showZFlow);
   const toggleXFlow = useUIStore((state) => state.toggleXFlow);
   const toggleZFlow = useUIStore((state) => state.toggleZFlow);
@@ -107,6 +109,15 @@ export function ViewControls(): React.ReactNode {
           className="w-4 h-4 accent-blue-500"
         />
         <span className="text-sm text-blue-600">Z-Flow</span>
+      </label>
+      <label className="flex items-center gap-1.5 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={showCFlow}
+          onChange={toggleCFlow}
+          className="w-4 h-4 accent-purple-500"
+        />
+        <span className="text-sm text-purple-600">C-Flow</span>
       </label>
     </div>
   );

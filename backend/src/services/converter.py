@@ -8,6 +8,7 @@ import math
 from collections.abc import Sequence
 from typing import Any
 
+from graphqomb.clifford_algebra import COSET_NAMES, C1Element
 from graphqomb.common import Axis, AxisMeasBasis, Initialization, Plane, PlannerMeasBasis, Sign
 from graphqomb.graphstate import GraphState
 
@@ -92,7 +93,7 @@ def dto_to_meas_basis(dto: PlannerMeasBasisDTO | AxisMeasBasisDTO) -> PlannerMea
 def dto_to_flow(
     project: ProjectPayloadDTO,
     node_map: dict[str, int],
-) -> tuple[dict[int, set[int]], dict[int, set[int]] | None]:
+) -> tuple[dict[int, set[int]], dict[int, set[int]] | None, dict[int, dict[int, C1Element]]]:
     """Convert FlowDefinitionDTO to graphqomb flow format.
 
     Args:
@@ -100,23 +101,30 @@ def dto_to_flow(
         node_map: Mapping from frontend node IDs to graphqomb indices.
 
     Returns:
-        A tuple of (xflow, zflow) where:
+        A tuple of (xflow, zflow, cflow) where:
         - xflow: dict mapping node indices to sets of correction target indices
         - zflow: dict mapping node indices to sets of correction target indices,
                  or None if zflow is "auto"
+        - cflow: normalized Clifford gates indexed by source and target
     """
     xflow: dict[int, set[int]] = {}
     for node_id, targets in project.flow.xflow.items():
         xflow[node_map[node_id]] = {node_map[t] for t in targets}
 
+    gates_by_name = {name: gate for gate, name in COSET_NAMES.items()}
+    cflow = {
+        node_map[source]: {node_map[target]: gates_by_name[name] for target, name in targets.items()}
+        for source, targets in project.flow.cflow.items()
+    }
+
     if project.flow.zflow == "auto":
-        return xflow, None
+        return xflow, None, cflow
 
     zflow: dict[int, set[int]] = {}
     for node_id, targets in project.flow.zflow.items():
         zflow[node_map[node_id]] = {node_map[t] for t in targets}
 
-    return xflow, zflow
+    return xflow, zflow, cflow
 
 
 def schedule_to_dto(

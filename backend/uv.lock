@@ -252,7 +252,7 @@ wheels = [
 [[package]]
 name = "graphqomb"
 version = "0.5.3"
-source = { registry = "https://pypi.org/simple" }
+source = { editable = "../../graphqomb" }
 dependencies = [
     { name = "matplotlib" },
     { name = "networkx" },
@@ -261,10 +261,32 @@ dependencies = [
     { name = "scipy" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/47/49/4a4fa22910d9e82f7d2b6ae2aa97216dc641e4518947df858cff73ce244e/graphqomb-0.5.3.tar.gz", hash = "sha256:da88dd33f1fc3179309083a47f833323829a7552cd0458d3152fa21b6c3e9a96", size = 224768, upload-time = "2026-08-14T12:57:48.16Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/88/db/112f56725170478f8aea5acf6934308d2f2126b4cbd5a76157315d27c53f/graphqomb-0.5.3-py3-none-any.whl", hash = "sha256:c37afebfffefc7901c9ddc16453cb14798a150738dc4d9c73aaf3b9dbb349b73", size = 151772, upload-time = "2026-08-14T12:57:46.451Z" },
+
+[package.metadata]
+requires-dist = [
+    { name = "furo", marker = "extra == 'doc'", specifier = ">=2025.12.19" },
+    { name = "matplotlib" },
+    { name = "matplotlib", marker = "extra == 'doc'", specifier = ">=3.7.0" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = "==2.4.0" },
+    { name = "networkx" },
+    { name = "numpy", specifier = ">=1.22,<3" },
+    { name = "ortools", specifier = ">=9,<10" },
+    { name = "pre-commit", marker = "extra == 'dev'", specifier = "==4.6.2" },
+    { name = "pyright", marker = "extra == 'dev'", specifier = "==1.1.414" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = "==9.1.1" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = "==7.1.0" },
+    { name = "pyzx", marker = "extra == 'pyzx'", specifier = ">=0.10" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = "==0.16.10" },
+    { name = "scipy", specifier = ">=1.15.3" },
+    { name = "scipy-stubs", marker = "extra == 'dev'", specifier = ">=1.15.3.0" },
+    { name = "sphinx", marker = "extra == 'doc'", specifier = ">=8.1.3" },
+    { name = "sphinx-gallery", marker = "extra == 'doc'", specifier = ">=0.17.0" },
+    { name = "stim", marker = "extra == 'stim'", specifier = ">=1.16" },
+    { name = "ty", marker = "extra == 'dev'", specifier = "==0.0.84" },
+    { name = "types-networkx", marker = "extra == 'dev'", specifier = "==3.6.1.20260911" },
+    { name = "typing-extensions" },
 ]
+provides-extras = ["dev", "doc", "pyzx", "stim"]
 
 [[package]]
 name = "graphqomb-studio-backend"
@@ -291,7 +313,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.141.1" },
-    { name = "graphqomb", specifier = ">=0.5.3" },
+    { name = "graphqomb", editable = "../../graphqomb" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=2.3.0" },
     { name = "networkx", specifier = ">=3.0" },

@@ -77,7 +77,8 @@ describe("useFTQCVisualization", () => {
       parityCheckGroup: [["n0", "n1"]],
       parityCheckTags: ["type=flag"],
       logicalObservableGroup: { "0": ["n0", "n1"] },
-      detectorDiagnostics: [{ deterministic: true, mismatches: [] }],
+      flow: { xflow: {}, zflow: {}, cflow: {} },
+      detectorDiagnostics: [{ deterministic: true, mismatches: [], unsupportedReason: null }],
     });
     const { result } = renderHook(() => ({
       canvas: useFTQCVisualization(),
@@ -94,11 +95,12 @@ describe("useFTQCVisualization", () => {
         parityCheckGroup: [["n0", "n1"]],
         parityCheckTags: ["type=flag"],
         logicalObservableGroup: { "0": ["n0", "n1"] },
-        detectorDiagnostics: [{ deterministic: true, mismatches: [] }],
+        flow: { xflow: {}, zflow: {}, cflow: {} },
+        detectorDiagnostics: [{ deterministic: true, mismatches: [], unsupportedReason: null }],
       })
     );
     expect(result.current.list.detectorDiagnostics).toEqual([
-      { deterministic: true, mismatches: [] },
+      { deterministic: true, mismatches: [], unsupportedReason: null },
     ]);
     expect([...result.current.canvas.highlights.keys()]).toEqual(["n0", "n1"]);
   });
@@ -116,10 +118,11 @@ describe("useFTQCVisualization", () => {
       parityCheckGroup: [["n0"], ["n1"], ["n2"]],
       parityCheckTags: ["type=flag", "", "type=flag"],
       logicalObservableGroup: {},
+      flow: { xflow: {}, zflow: {}, cflow: {} },
       detectorDiagnostics: [
-        { deterministic: true, mismatches: [] },
-        { deterministic: true, mismatches: [] },
-        { deterministic: true, mismatches: [] },
+        { deterministic: true, mismatches: [], unsupportedReason: null },
+        { deterministic: true, mismatches: [], unsupportedReason: null },
+        { deterministic: true, mismatches: [], unsupportedReason: null },
       ],
     });
     const { result } = renderHook(() => useFTQCVisualization());
@@ -143,12 +146,14 @@ describe("useFTQCVisualization", () => {
       .mockResolvedValueOnce({
         parityCheckGroup: [["n0", "n1"]],
         logicalObservableGroup: { "0": ["n0", "n1"] },
-        detectorDiagnostics: [{ deterministic: false, mismatches: [] }],
+        flow: { xflow: {}, zflow: {}, cflow: {} },
+        detectorDiagnostics: [{ deterministic: false, mismatches: [], unsupportedReason: null }],
       })
       .mockResolvedValueOnce({
         parityCheckGroup: [["n0", "n1"]],
         logicalObservableGroup: { "0": ["n0", "n1"] },
-        detectorDiagnostics: [{ deterministic: true, mismatches: [] }],
+        flow: { xflow: {}, zflow: {}, cflow: {} },
+        detectorDiagnostics: [{ deterministic: true, mismatches: [], unsupportedReason: null }],
       });
     const { result } = renderHook(() => useFTQCVisualization());
 
@@ -171,7 +176,8 @@ describe("useFTQCVisualization", () => {
     mockCompileFTQC.mockResolvedValueOnce({
       parityCheckGroup: [["n0", "n1"]],
       logicalObservableGroup: { "0": ["n0", "n1"] },
-      detectorDiagnostics: [{ deterministic: true, mismatches: [] }],
+      flow: { xflow: {}, zflow: {}, cflow: {} },
+      detectorDiagnostics: [{ deterministic: true, mismatches: [], unsupportedReason: null }],
     });
     const { result } = renderHook(() => useFTQCVisualization());
 

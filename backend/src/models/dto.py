@@ -142,12 +142,13 @@ class GraphEdgeDTO(BaseModel):
 
 
 class FlowDefinitionDTO(BaseModel):
-    """Flow definition (xflow + zflow)."""
+    """Pauli flows and normalized PTN v5 Clifford correction gates."""
 
     model_config = ConfigDict(extra="forbid")
 
     xflow: dict[str, list[str]]
     zflow: dict[str, list[str]] | Literal["auto"]
+    cflow: dict[str, dict[str, Literal["H", "S", "SH", "HS", "HSH"]]] = Field(default_factory=dict)
 
 
 # === FTQC DTOs ===
@@ -190,14 +191,16 @@ class DetectorMismatchDTO(BaseModel):
 class DetectorDiagnosticDTO(BaseModel):
     """Determinism result and mismatched nodes for one detector."""
 
-    deterministic: bool
+    deterministic: bool | None
     mismatches: list[DetectorMismatchDTO]
+    unsupportedReason: str | None = None
 
 
 class CompiledFTQCResponseDTO(FTQCDefinitionDTO):
     """Compiled FTQC groups with detector determinism diagnostics."""
 
     detectorDiagnostics: list[DetectorDiagnosticDTO]
+    flow: FlowDefinitionDTO
 
 
 # === Project DTO ===
@@ -236,6 +239,9 @@ class ProjectPayloadDTO(BaseModel):
         self._validate_flow_references("xflow", self.flow.xflow, node_id_set)
         if self.flow.zflow != "auto":
             self._validate_flow_references("zflow", self.flow.zflow, node_id_set)
+        self._validate_flow_references(
+            "cflow", {source: list(targets) for source, targets in self.flow.cflow.items()}, node_id_set
+        )
 
         if self.ftqc is not None:
             for group_index, group in enumerate(self.ftqc.parityCheckGroup):

@@ -2,13 +2,14 @@
  * Flow Operations Hook
  *
  * Provides business logic for flow editing operations.
- * Encapsulates X-Flow and Z-Flow manipulation.
+ * Encapsulates Pauli and Clifford flow manipulation.
  */
 
 "use client";
 
 import { useCallback, useMemo } from "react";
 import { useProjectStore } from "@/stores/projectStore";
+import type { CliffordGate } from "@/types";
 
 export function useFlowOperations(nodeId: string) {
   const project = useProjectStore((state) => state.project);
@@ -121,7 +122,40 @@ export function useFlowOperations(nodeId: string) {
     return availableTargets.filter((id) => !zflowTargets.includes(id));
   }, [availableTargets, zflowTargets]);
 
+  const cflowTargets = project.flow.cflow?.[nodeId] ?? {};
+  const setCFlowTarget = useCallback(
+    (targetId: string, gate: CliffordGate) => {
+      updateFlow({
+        ...project.flow,
+        cflow: {
+          ...project.flow.cflow,
+          [nodeId]: { ...project.flow.cflow?.[nodeId], [targetId]: gate },
+        },
+      });
+    },
+    [nodeId, project.flow, updateFlow]
+  );
+  const removeCFlowTarget = useCallback(
+    (targetId: string) => {
+      const targets = { ...project.flow.cflow?.[nodeId] };
+      delete targets[targetId];
+      const cflow = { ...project.flow.cflow };
+      if (Object.keys(targets).length === 0) delete cflow[nodeId];
+      else cflow[nodeId] = targets;
+      updateFlow({ ...project.flow, cflow });
+    },
+    [nodeId, project.flow, updateFlow]
+  );
+  // Clifford gates can correct measured nodes, unmeasured outputs, and self-targets.
+  const availableCFlowTargets = project.nodes
+    .filter((node) => !(node.id in cflowTargets))
+    .map((node) => node.id);
+
   return {
+    cflowTargets,
+    setCFlowTarget,
+    removeCFlowTarget,
+    availableCFlowTargets,
     // X-Flow
     xflowTargets,
     addXFlowTarget,

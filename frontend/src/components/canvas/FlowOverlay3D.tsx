@@ -1,16 +1,17 @@
 /**
  * Flow Overlay 3D
  *
- * Renders flow arrows (X-Flow and Z-Flow) as 3D elements in Three.js.
+ * Renders flow arrows (X-Flow, Z-Flow, and C-Flow) as 3D elements in Three.js.
  * - X-Flow: Red dashed arrows
  * - Z-Flow: Blue dashed arrows
+ * - C-Flow: Purple dashed arrows with correcting gate labels
  *
  * Uses drei's Line component for dashed lines and coneGeometry for arrowheads.
  */
 
 "use client";
 
-import { Line } from "@react-three/drei";
+import { Billboard, Line, Text } from "@react-three/drei";
 import { memo, useMemo } from "react";
 import * as THREE from "three";
 import { useResolvedFlow } from "@/hooks/useResolvedFlow";
@@ -205,11 +206,12 @@ interface FlowOverlay3DProps {
 /**
  * Flow Overlay 3D Component
  *
- * Renders X-Flow and Z-Flow arrows in 3D space
+ * Renders Pauli and Clifford correction arrows in 3D space
  */
 export function FlowOverlay3D({ nodePositions }: FlowOverlay3DProps): React.ReactNode {
   const project = useProjectStore((state) => state.project);
   const showXFlow = useUIStore((state) => state.showXFlow);
+  const showCFlow = useUIStore((state) => state.showCFlow);
   const showZFlow = useUIStore((state) => state.showZFlow);
   const { resolvedFlow } = useResolvedFlow(showZFlow);
 
@@ -291,15 +293,54 @@ export function FlowOverlay3D({ nodePositions }: FlowOverlay3DProps): React.Reac
     return { zflowArrows: arrows, zflowSelfLoops: selfLoops };
   }, [showZFlow, project.flow.zflow, resolvedFlow, nodePositions]);
 
+  const cflowArrows = useMemo(() => {
+    if (!showCFlow) return [];
+    return Object.entries(project.flow.cflow ?? {}).flatMap(([source, targets]) => {
+      const from = nodePositions.get(source);
+      if (from === undefined) return [];
+      return Object.entries(targets).flatMap(([target, gate]) => {
+        const to = nodePositions.get(target);
+        if (to === undefined) return [];
+        // Offset the Clifford arrow so coincident X/Z corrections stay visible.
+        const direction = to.clone().sub(from);
+        const offset = direction.clone().cross(new THREE.Vector3(0, 0, 1));
+        if (offset.lengthSq() === 0) offset.set(1, 0, 0);
+        offset.normalize().multiplyScalar(0.08);
+        if (source === target) offset.set(0, 0.12, 0);
+        const arrowFrom = from.clone().add(offset);
+        const arrowTo = to.clone().add(offset);
+        const labelPosition =
+          source === target
+            ? arrowFrom
+                .clone()
+                .add(new THREE.Vector3(0, SELF_LOOP_HEIGHT + SELF_LOOP_RADIUS + 0.1, 0))
+            : arrowFrom
+                .clone()
+                .lerp(arrowTo, 0.5)
+                .add(new THREE.Vector3(0, 0.15, 0));
+        return [
+          {
+            id: `cflow-${source}-${target}`,
+            from: arrowFrom,
+            to: arrowTo,
+            gate,
+            labelPosition,
+            self: source === target,
+          },
+        ];
+      });
+    });
+  }, [showCFlow, project.flow.cflow, nodePositions]);
+
   // Don't render if nothing to show
-  if (!showXFlow && !showZFlow) {
+  if (!showXFlow && !showZFlow && !showCFlow) {
     return null;
   }
 
   const hasXFlow = xflowArrows.length > 0 || xflowSelfLoops.length > 0;
   const hasZFlow = zflowArrows.length > 0 || zflowSelfLoops.length > 0;
 
-  if (!hasXFlow && !hasZFlow) {
+  if (!hasXFlow && !hasZFlow && cflowArrows.length === 0) {
     return null;
   }
 
@@ -323,6 +364,20 @@ export function FlowOverlay3D({ nodePositions }: FlowOverlay3DProps): React.Reac
       {/* Z-Flow self-loops (blue) */}
       {zflowSelfLoops.map((loop) => (
         <FlowSelfLoop3D key={loop.id} position={loop.position} color={Z_FLOW_COLOR} />
+      ))}
+      {cflowArrows.map((arrow) => (
+        <group key={arrow.id}>
+          {arrow.self ? (
+            <FlowSelfLoop3D position={arrow.from} color="#a855f7" />
+          ) : (
+            <FlowArrow3D from={arrow.from} to={arrow.to} color="#a855f7" />
+          )}
+          <Billboard position={arrow.labelPosition}>
+            <Text fontSize={0.12} color="#9333ea" anchorX="center" anchorY="middle">
+              {arrow.gate}
+            </Text>
+          </Billboard>
+        </group>
       ))}
     </group>
   );

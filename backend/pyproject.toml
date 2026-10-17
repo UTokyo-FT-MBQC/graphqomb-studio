@@ -14,6 +14,10 @@ dependencies = [
 [project.scripts]
 gqomb-vis = "src.cli:main"
 
+[tool.uv.sources]
+# PTN v5 and Clifford feedforward are not available in the PyPI 0.5.3 release.
+graphqomb = { path = "../../graphqomb", editable = true }
+
 [project.optional-dependencies]
 dev = [
     "pytest>=9.1.1",
@@ -102,6 +106,7 @@ disallow_untyped_decorators = false
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 include = ["src", "tests"]
+extraPaths = ["../../graphqomb"]
 venvPath = "."
 venv = ".venv"
 reportMissingTypeStubs = false

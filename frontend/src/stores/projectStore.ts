@@ -120,6 +120,15 @@ export const useProjectStore = create<ProjectState>()(
             newZflow = zf;
           }
 
+          const newCflow: NonNullable<FlowDefinition["cflow"]> = {};
+          for (const [source, targets] of Object.entries(state.project.flow.cflow ?? {})) {
+            if (source === id) continue;
+            const remaining = Object.fromEntries(
+              Object.entries(targets).filter(([target]) => target !== id)
+            );
+            if (Object.keys(remaining).length > 0) newCflow[source] = remaining;
+          }
+
           // Remove node from FTQC entries
           let newFtqc: FTQCDefinition | undefined;
           if (state.project.ftqc !== undefined) {
@@ -164,7 +173,12 @@ export const useProjectStore = create<ProjectState>()(
               ...state.project,
               nodes: state.project.nodes.filter((n) => n.id !== id),
               edges: state.project.edges.filter((e) => e.source !== id && e.target !== id),
-              flow: { xflow: newXflow, zflow: newZflow },
+              flow: {
+                ...state.project.flow,
+                xflow: newXflow,
+                zflow: newZflow,
+                ...(state.project.flow.cflow === undefined ? {} : { cflow: newCflow }),
+              },
               ftqc: newFtqc,
               schedule: undefined,
             },

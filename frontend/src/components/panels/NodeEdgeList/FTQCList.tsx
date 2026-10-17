@@ -107,7 +107,7 @@ export function FTQCList(): React.ReactNode {
   const flagGroupCount = parityGroupOptions.filter((option) => option.isFlag).length;
   const nonFlagGroupCount = parityGroupOptions.length - flagGroupCount;
   const nonDeterministicCount = detectorDiagnostics.filter(
-    (diagnostic) => !diagnostic.deterministic
+    (diagnostic) => diagnostic.deterministic === false
   ).length;
   const filteredParityGroupOptions = parityGroupOptions.filter((option) =>
     ftqcVisualization.detectorTypeFilter === "flag" ? option.isFlag : !option.isFlag
@@ -258,12 +258,18 @@ export function FTQCList(): React.ReactNode {
                     {diagnostic !== undefined && (
                       <span
                         className={`ml-auto rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                          diagnostic.deterministic
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
+                          diagnostic.deterministic === null
+                            ? "bg-gray-100 text-gray-700"
+                            : diagnostic.deterministic
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
                         }`}
                       >
-                        {diagnostic.deterministic ? "Deterministic" : "Non-deterministic"}
+                        {diagnostic.deterministic === null
+                          ? "Certification unavailable"
+                          : diagnostic.deterministic
+                            ? "Deterministic"
+                            : "Non-deterministic"}
                       </span>
                     )}
                   </div>
@@ -273,7 +279,12 @@ export function FTQCList(): React.ReactNode {
                   >
                     {group.length > 0 ? group.join(", ") : "(empty)"}
                   </div>
-                  {diagnostic !== undefined && !diagnostic.deterministic && (
+                  {diagnostic?.unsupportedReason && (
+                    <div className="ml-5 mt-1 text-[11px] text-gray-600">
+                      {diagnostic.unsupportedReason}
+                    </div>
+                  )}
+                  {diagnostic?.deterministic === false && (
                     <div className="ml-5 mt-1 space-y-1 rounded bg-red-50 px-2 py-1.5 text-[11px] leading-relaxed text-red-700">
                       <div className="font-medium">Support / measurement mismatch</div>
                       {diagnostic.mismatches.map((mismatch) => (

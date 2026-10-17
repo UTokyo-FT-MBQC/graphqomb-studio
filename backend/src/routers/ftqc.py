@@ -3,10 +3,13 @@
 import math
 from collections.abc import Mapping, Sequence
 from collections.abc import Set as AbstractSet
+from copy import copy
 
 from fastapi import APIRouter, HTTPException
+from graphqomb.clifford_algebra import COSET_NAMES
 from graphqomb.common import Axis, Plane, determine_pauli_axis
-from graphqomb.pauli_frame import PauliFrame
+from graphqomb.feedforward import Feedforward
+from graphqomb.pauli_frame import PauliFrame, make_frame
 
 from src.models.dto import (
     AxisName,
@@ -14,6 +17,7 @@ from src.models.dto import (
     DetectorDiagnosticDTO,
     DetectorMismatchDTO,
     DetectorMismatchReason,
+    FlowDefinitionDTO,
     PlaneName,
     ProjectPayloadDTO,
 )
@@ -28,54 +32,100 @@ PLANE_NAMES: dict[Plane, PlaneName] = {Plane.XY: "XY", Plane.YZ: "YZ", Plane.XZ:
 @router.post("/compile-ftqc", response_model=CompiledFTQCResponseDTO)
 def compile_ftqc(project: ProjectPayloadDTO) -> CompiledFTQCResponseDTO:
     """Compile FTQC groups and diagnose detector determinism with GraphQOMB."""
-    if project.ftqc is None:
-        return CompiledFTQCResponseDTO(
-            parityCheckGroup=[],
-            parityCheckTags=[],
-            logicalObservableGroup={},
-            detectorDiagnostics=[],
-        )
-
     graph, node_map = dto_to_graphstate(project)
     reverse_map = {node: node_id for node_id, node in node_map.items()}
-    xflow, zflow = dto_to_flow(project, node_map)
+    xflow, zflow, cflow = dto_to_flow(project, node_map)
     if zflow is None:
         zflow = compute_zflow_from_xflow(graph, xflow)
 
     try:
-        parity_check_group = [{node_map[node_id] for node_id in group} for group in project.ftqc.parityCheckGroup]
-        parity_check_tags = project.ftqc.parityCheckTags or [""] * len(parity_check_group)
+        parity_check_group = (
+            [{node_map[node_id] for node_id in group} for group in project.ftqc.parityCheckGroup]
+            if project.ftqc is not None
+            else []
+        )
+        parity_check_tags = project.ftqc.parityCheckTags if project.ftqc is not None else None
         logical_observables = {
             int(key): {node_map[node_id] for node_id in targets}
-            for key, targets in project.ftqc.logicalObservableGroup.items()
+            for key, targets in (project.ftqc.logicalObservableGroup.items() if project.ftqc is not None else ())
         }
-        pauli_frame = PauliFrame(
-            graph,
+        feedforward = Feedforward(
             xflow,
             zflow,
+            cflow,
             parity_check_group=parity_check_group,
-            parity_check_tags=parity_check_tags,
+            parity_check_tags=parity_check_tags or None,
             logical_observables=logical_observables,
+        ).backpropagate(graph)
+        pauli_frame = make_frame(
+            graph,
+            feedforward.xflow,
+            feedforward.zflow or {},
+            cflow=feedforward.cflow,
+            parity_check_group=feedforward.parity_check_group,
         )
-        detector_groups = pauli_frame.detector_groups()
-        compiled_detectors = [sorted(reverse_map[node] for node in group) for group in detector_groups]
-        detector_diagnostics = _detector_diagnostics(pauli_frame, detector_groups, reverse_map)
+        compiled_detectors = [sorted(reverse_map[node] for node in group) for group in feedforward.parity_check_group]
+        detector_diagnostics = _detector_diagnostics(pauli_frame, reverse_map)
         compiled_observables = {
-            str(index): sorted(reverse_map[node] for node in pauli_frame.logical_observables_group(targets))
-            for index, targets in sorted(logical_observables.items())
+            str(index): sorted(reverse_map[node] for node in targets)
+            for index, targets in sorted(feedforward.logical_observables.items())
         }
-    except (KeyError, ValueError) as exc:
+    except (KeyError, ValueError, NotImplementedError) as exc:
         raise HTTPException(status_code=400, detail=f"Unable to compile FTQC groups: {exc}") from exc
 
     return CompiledFTQCResponseDTO(
         parityCheckGroup=compiled_detectors,
-        parityCheckTags=parity_check_tags,
+        parityCheckTags=feedforward.parity_check_tags,
         logicalObservableGroup=compiled_observables,
         detectorDiagnostics=detector_diagnostics,
+        flow=FlowDefinitionDTO.model_validate(
+            {
+                "xflow": {
+                    reverse_map[source]: sorted(reverse_map[target] for target in targets)
+                    for source, targets in feedforward.xflow.items()
+                },
+                "zflow": {
+                    reverse_map[source]: sorted(reverse_map[target] for target in targets)
+                    for source, targets in (feedforward.zflow or {}).items()
+                },
+                "cflow": {
+                    reverse_map[source]: {reverse_map[target]: COSET_NAMES[gate] for target, gate in targets.items()}
+                    for source, targets in feedforward.cflow.items()
+                },
+            }
+        ),
     )
 
 
 def _detector_diagnostics(
+    pauli_frame: PauliFrame,
+    reverse_map: Mapping[int, str],
+) -> list[DetectorDiagnosticDTO]:
+    """Diagnose supported detectors while retaining unsupported groups for display."""
+    diagnostics: list[DetectorDiagnosticDTO] = []
+    supported_indices: list[int] = []
+    supported_seeds: list[set[int]] = []
+    nominal_groups: list[set[int]] = []
+    analysis_frame = copy(pauli_frame)
+    for index, group in enumerate(pauli_frame.parity_check_group):
+        analysis_frame.parity_check_group = [group]
+        try:
+            nominal_groups.extend(analysis_frame.detector_groups())
+        except (NotImplementedError, ValueError) as exc:
+            diagnostics.append(DetectorDiagnosticDTO(deterministic=None, mismatches=[], unsupportedReason=str(exc)))
+        else:
+            supported_indices.append(index)
+            supported_seeds.append(group)
+            diagnostics.append(DetectorDiagnosticDTO(deterministic=None, mismatches=[]))
+
+    analysis_frame.parity_check_group = supported_seeds
+    supported_diagnostics = _pauli_detector_diagnostics(analysis_frame, nominal_groups, reverse_map)
+    for index, diagnostic in zip(supported_indices, supported_diagnostics, strict=True):
+        diagnostics[index] = diagnostic
+    return diagnostics
+
+
+def _pauli_detector_diagnostics(
     pauli_frame: PauliFrame,
     detector_groups: Sequence[AbstractSet[int]],
     reverse_map: Mapping[int, str],
