@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Changed
 
 - The workspace installs the sibling GraphQOMB checkout editable for PTN v5 and `Feedforward` support, which are absent from PyPI 0.5.3. Docker Compose supplies that checkout as an additional build context; backend CI checks out the matching library commit in the same sibling layout.
+- Backend CI tracks the library revision retaining legacy frame-side compilation and default Stim export, with deprecation planned for v0.8.0. Studio continues to compile supports through `Feedforward`.
 - Updated to GraphQOMB 0.5.3, including its `Initialization` API and consolidated scheduler imports.
 - Greedy scheduling is now the default, matching GraphQOMB 0.5.3; the optimal CP-SAT solver remains selectable.
 
